@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no"/>
+  <title>Parallax Template - Materialize</title>
+
+  <!-- CSS  -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="css/materialize.css" type="text/css" rel="stylesheet" media="screen,projection"/>
+  <link href="css/style.css" type="text/css" rel="stylesheet" media="screen,projection"/>
+</head>
+
+<body>
+  <!--NAVBAR-->
+  <nav class="white" role="navigation">
+    <div class="nav-wrapper container">
+      <a id="logo-container" href="#" class="brand-logo">TF</a>
+      <ul class="right hide-on-med-and-down">
+        <li><a href="#">Resume</a></li>
+        <li><a href="#">Contact</a></li>
+        <li><a href="#">Portfolio</a></li>
+      </ul>
+
+      <ul id="nav-mobile" class="side-nav">
+        <li><a href="#">Resume</a></li>
+        <li><a href="#">Contact</a></li>
+        <li><a href="#">Portfolio</a></li>
+      </ul>
+      <a href="#" data-activates="nav-mobile" class="button-collapse"><i class="material-icons">menu</i></a>
+    </div>
+  </nav>
+  <!--END NAVBAR-->
+  
+
+
+  <!--BODY WITH SIDEBAR-->
+  <div class="row">
+    <div class="col s12 m4 l3">
+      <!--    This sidebar will be:
+      3-columns-wide on large screens,
+      4-columns-wide on medium screens,
+      12-columns-wide on small screens  -->
+
+      <div class="container">
+        <div class="section">
+          
+          <div class="divider"></div><!-- dividers are just 1 pixel lines to break up content-->
+          <p class="left-align light">Bacon ipsum dolor amet shankle fatback chicken tenderloin chuck flank. Cow biltong kielbasa tenderloin leberkas. Kielbasa flank ribeye cow ground round frankfurter short ribs fatback. Pork ham capicola, boudin shank pastrami drumstick jowl salami. Ham hock bacon pig cow pork chop meatloaf, shank pork loin biltong kevin flank swine cupim. Brisket picanha boudin jerky beef ribs tenderloin, corned beef tail pastrami ground round ribeye t-bone.</p>
+          <div class="divider"></div><!-- dividers are just 1 pixel lines to break up content-->
+        
+        </div>
+      </div>
+    </div>
+
+    <div class="col s12 m8 l9">
+      <!--    This body content will be:
+      9-columns-wide on large screens,
+      8-columns-wide on medium screens,
+      12-columns-wide on small screens  -->
+
+      <div class="container">
+        <div class="section">
+          
+          <div class="divider"></div><!-- dividers are just 1 pixel lines to break up content-->
+          <p class="left-align light">Bacon ipsum dolor amet shankle fatback chicken tenderloin chuck flank. Cow biltong kielbasa tenderloin leberkas. Kielbasa flank ribeye cow ground round frankfurter short ribs fatback. Pork ham capicola, boudin shank pastrami drumstick jowl salami. Ham hock bacon pig cow pork chop meatloaf, shank pork loin biltong kevin flank swine cupim. Brisket picanha boudin jerky beef ribs tenderloin, corned beef tail pastrami ground round ribeye t-bone.</p>
+          <div class="divider"></div><!-- dividers are just 1 pixel lines to break up content-->
+        
+
+          <!-- Modal Trigger -->
+          <button data-target="modal1" class="waves-effect waves-light btn modal-trigger">Modal2</button>
+
+  
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <!--END BODY-->
+
+
+
+
+
+
+
+  <!--FOOTER-->
+  <footer class="page-footer teal">
+    <div class="container">
+      <div class="row">
+        <div class="col l6 s12">
+          <h5 class="white-text">Bio</h5>
+          <p class="grey-text text-lighten-4">Thomas Fisher is student studying Information Systems in the Marriott School of Business at Brigham Young University. He hopes to get his Masters Degree and head down to Silicon Valley, but until then he'll have to put up with being in the heart of Silicon Slopes, Utah.</p>
+
+
+        </div>
+        <div class="col l3 s12">
+          <h5 class="white-text"></h5>
+          <ul>
+            <li><a class="white-text" href="#!"></a></li>
+            <li><a class="white-text" href="#!"></a></li>
+            <li><a class="white-text" href="#!"></a></li>
+            <li><a class="white-text" href="#!"></a></li>
+          </ul>
+        </div>
+        <div class="col l3 s12">
+          <h5 class="white-text">Connect</h5>
+          <ul>
+            <li><a class="white-text" href="#!">LinkedIn</a></li>
+            <li><a class="white-text" href="#!">Twitter</a></li>
+            <li><a class="white-text" href="#!">Stack</a></li>
+            <li><a class="white-text" href="#!">Github</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-copyright">
+      <div class="container">
+        TF Designs
+      </div>
+    </div>
+  </footer>
+  <!--END FOOTER-->
+
+
+
+  <!--Contact Modal-->
+  <div id="modal1" class="modal bottom-sheet">
+    <div class="modal-content">
+      <h4>Modal Header</h4>
+      <p>A bunch of text</p>
+    </div>
+    <div class="modal-footer">
+      <a href="#!" class=" modal-action modal-close waves-effect waves-green btn-flat">Agree</a>
+    </div>
+  </div>
+  <!--End Contact Modal-->
+
+
+
+
+  <!--  Scripts-->
+  <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+  <script src="js/materialize.js"></script>
+  <script src="js/init.js"></script>
+  <script>
+    $(document).ready(function(){
+      $('.modal-trigger').leanModal();
+    });
+  </script>
+
+  </body>
+</html>
