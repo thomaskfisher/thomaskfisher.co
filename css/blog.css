@@ -1,0 +1,53 @@
+body, html {
+    height: 100%;
+    font-family: 'Raleway', sans-serif !important;
+}
+
+#date {
+    color: rgb(126, 137, 155);
+    font-size: 0.75em;
+}
+
+.blog-header {
+    text-align: center;
+    margin: 50px;
+}
+
+h4 {
+    margin-top: 30px !important;
+    margin-bottom: 30px !important;
+}
+
+p {
+    letter-spacing: 1px;
+    font-size: 16px;
+    line-height: 180%;
+}
+
+.blog-image {
+    margin-top: 30px;
+    margin-bottom: 30px;
+    width: 85%;
+}
+
+a {
+    color: #F05F40 !important;
+}
+
+hr {
+    border-color: #F05F40 !important;
+    border-width: 3px !important;
+    max-width: 50px !important;
+}
+
+.contact {
+    margin-top: 50px;
+    padding-bottom: 300px;
+}
+
+.image-description {
+    text-align: center;
+    font-style: italic;
+    font-size: 12px;
+    margin-bottom: 35px;
+}
