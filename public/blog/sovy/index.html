@@ -18,78 +18,83 @@
 <body>
 
     <div class="container">
-        <h1 id="title">Sovy IO</h1>
+        <h1 id="title">Sovy io</h1>
         <p id="date">January 2nd, 2018</p>
         <br><br>
 
-        <img class="img-thumbnail" src="housing-feed.png">
+        <img class="img-thumbnail center-block" src="Home.png">
 
         <h2 class="blog-header">What was it?</h2>
         <p>
-            The Campus Market was an online marketplace tailored to BYU and UVU students looking to buy and selling housing contracts. I built it along with two friends that I'd known since elementary school, <a href="https://joewesemann.github.io/about/" target="_blank">Joe Wesemann</a> and <a href="https://sdixon.app/work" target="_blank">Spencer Dixon</a>.
+            Sovy was the madeup name of a project I worked on during my junior year of undergrad and into my first internship with Tesla.
+            Ben, a friend of mine who was in his second and final year of the graduate program, had the idea of giving people the hands-on opportunity to safely experience online phishing.
+        </p>
+        <p>
+            In case you aren't familiar, phishing is a type of social engineering where an attacker sends a fraudulent message designed to trick a person into revealing sensitive information or to deploy malicious software on the victim's computer.
+            A common example of phishing are fake emails that look like they came from Amazon notifying you that an order you never placed has been shipped. Conveniently there's a way to dispute the charge, and if you click on it you're taken to a login page that looks near-identical to Amazon's login page. If you enter your Amazon credentials you've just revealed sensitive information to a malicious person.
+        </p>
+        <p>
+            Ben wanted to create a service that would send customers phishing emails to give them real-world exposure to what they looked like and how to spot them.
         </p>
         <h2 class="blog-header">Why did we build it?</h2>
         <p>
-            In the Fall of 2017, I was in California doing an internship with Tesla. I'd be going back to BYU in January and needed to find an apartment to live in. Unfortunately for me, BYU has a unique relationship with student housing; all undergraduate students are required to live in an apartment that is approved by the university. Because of this, it is notoriously difficult to find a place to live in the middle of the school year.
-        </p>
-        <div class="text-center">
-            <img class="img-thumbnail blog-image" src="fb-scrolling.gif">
-        </div>
-        <p class="image-description">Scrolling through my Facebook feed was the best option for finding housing during the school year.</p>
-        <p>
-            I was dismayed to discover that the best way to find a suitable apartment was by scrolling endlessly through Facebook pages dedicated to BYU housing (of which there are many). The University didn't facilitate any way for students to buy or sell their contracts, and the unique housing requirements meant that other online marketplaces weren't tailored to students' needs and therefore couldn't create a good user experience (like filtering by men's housing or women's housing). Eventually, I found someone selling, but after going through that painful process I decided to do something about it. And The Campus Market was born.
+            Phishing, and phishing emails specifically, can be very difficult to detect.
+            All of us that worked on Sovy were in the undergrad or graduate Information Systems programs at BYU, and even some of us had fallen for phishing scams.
+            We were aware that some companies sent phishing emails to their own employees in an attempt to give them practice recognizing malicious emails. We wanted to offer the same kind of training/hands-on experirence to anyone.
         </p>
         <h2 class="blog-header">What did it do?</h2>
-        <h4>Student Verification</h4>
+        <h4>Random Phishing Emails</h4>
         <p>
-            To ensure that only students were using our site (and to prevent an onslaught of bots) we required new users to sign up with an .edu email address and then activate their account with an email sent to the provided university email. Without signing up users could still view listings but couldn't access any other features.
+            The idea was simple, when you signed up for the Sovy service you would start to receive phishing emails.
+            You might get 3 emails one week, and no emails the next. You would receive emails at random intervals and they would always be disguised as if they were from someone other than Sovy.
+            Some of the emails were generic phishing attempts, below are a coupe of examples.
         </p>
         <div class="text-center">
-            <img class="img-thumbnail blog-image" src="register.png">
+            <img class="img-thumbnail blog-image" src="Generic.png">
         </div>
-        <p class="image-description">To register for an account, a user was required to signup with an .edu email account that they owned.</p>
-        <h4>Tailored Functionality</h4>
+        <p class="image-description">Two separate examples of generic phishing emails we created.</p>
         <p>
-            We needed to draw users away from competitors that had the advantage of a massive user base (something that is critical to a successful marketplace). One of the ways we encouraged users to switch to us was by making it easy and fast to post on our app while also providing a much more tailored experience than any of the other competitors (i.e. Facebook groups, KSL Classifieds, Craigslist). We even would cross-post ads from our platform to our competitor's marketplaces if the user opted-in. That way they had the convenience of using our tailored platform while also ensuring their ad was seen by as many people as possible.
+            Other phishing emails were much more targeted. They used the names and logos of well known brands that many people would be familiar with and likely use.
+            For these targeted phishing emails we would also recreate the login forms, so that if a user clicked on a link they'd be taken to a legitimate looking login page.
+            This gave users even more exposure and practice. These login forms weren't actually capturing any user information, and as soon as they clicked submit or login they'd be taken to the Sovy website.
+            Here are two examples of the more tailored phisihing attempts.
         </p>
         <div class="text-center">
-            <img class="img-thumbnail blog-image" src="Filter.gif">
+            <img class="img-thumbnail blog-image" src="Facebook.png">
         </div>
-        <p class="image-description">You could easily search by men's or women's approved housing, and even search by location via the map.</p>
+        <p class="image-description">A phishing email that looks like it came from Facebook</p>
         <div class="text-center">
-            <img class="img-thumbnail blog-image" src="Jarvis.gif">
+            <img class="img-thumbnail blog-image" src="Yahoo.png">
         </div>
-        <p class="image-description">Before finalizing their listing, a user could choose to have our listing assistant named Jarvis post their ad on other marketplaces to ensure maximum exposure.</p>
-        <h4>Privacy</h4>
+        <p class="image-description">A fake login page that a user would be redirected to if they clicked on a link in our Yahoo phishing email.</p>
         <p>
-            We wanted to create a safe way for students to communicate and meet with each other. Rather than displaying user emails or phone numbers on our listings (something we actively stopped), we built chat functionality into the app so our users could communicate without needing to give away any private contact information.
+            Each phishing email could track if it had been opened and if any links had been clicked.
+            We would give you a passing grade if the email was never opened, or if the email was opened but no links were clicked within a specific period of time after it had been sent.
+            Once the test was over and it was determined that you had passed, we would send a follow up email.
+            The follow up would include a screenshot of the phishing email and gave a summary of the various ways you could've determined it was phishing.
         </p>
-        <div class="text-center">
-            <img class="img-thumbnail blog-image" src="Notification.gif">
-        </div>
-        <p class="image-description">Users would receive in-app notifications when someone sent them a message. They could also opt-in to receive text and/or email notifications to ensure they never missed a message</p>
-        <h4>Mobile App</h4>
         <p>
-            In the last semester of my graduate program I decided to build a mobile app for my capstone. With the help of a classmate, Alex Campbell, we built Android and iOS mobile apps using Google Flutter that complimented the live web app. We never launched on any app stores but learning Flutter while it was still in its infancy was a fantastic experience.
+            If you received a phishing email from us and you did click on a link you would be redirected to the Sovy website.
+            On our site we had explanations for how you could spot the red flags for each of our phishing emails.
+            We also had more general educational information on phishing and miscellanrous online securty.
+            If you failed one of our phishing tests you would receive the same email again sometime in the future.
         </p>
-        <div class="text-center">
-            <img class="img-thumbnail blog-image" src="mobile.png">
-        </div>
-        <p class="image-description">The iOS and Android mobile apps had the same functionality as the web application, but with the added convenience of mobile notifications and being able to take pictures of your apartment or textbook and list them for sale within the app.</p>
+        
         <h2 class="blog-header">How did it go?</h2>
-        <p>That depends on how you define success.</p>
-        <p>Did we become millionaires? No.</p>
-        <p>Did we get thousands of users overnight? No.</p>
-        <p>Did people see me on campus and say "Hey! You're the guy that built that cool tool that helped me sell my contract!"? No.</p>
-        <br>
         <p>
-            ... But building a site from the bottom up that had a lot of cool features and where we had to support real users taught me more than any class ever had. At its peak, The Campus Market had about 200 active users and over 300 listings. We won an I-CORPS grant and were given a few thousand dollars to do usability testing, we were accepted into the Google Cloud for Startups program and given a few thousand to cover the hosting costs, we were awarded Best Overall Capstone Project, and we received 1st Place in the BYU Mobile App Competition. In my opinion, I'd call that a success.
+            Sovy never really made it off the ground. The group of students that were working on it were all graduate students aside from me, and when they graduated it was quickly forgotten.
+            Ben and I continued for a while after. I worked on the website and our phishing emails while Ben worked on business plans/pricing/sales/etc.
+            We did get a few paying customers for a month or two, and maybe made $50 or so. But as my Tesla internship progressed I had less time, and Ben was starting his first job out of school.
+            There were a lot of ideas we wanted to implement but never got to such as customer phishing scores, partnerships with companies, and expanding into other online security areas.
         </p>
         <p>
-            In the end, we pulled the plug simply because we had lost interest. We had learned so much but after a year and a half, we were ready to move on and try something new. To all of the users of The Campus Market, thank you for your support!
+            This was my first real experience writingn code out of school.
+            I learned a lot from the grad students that helped in the beggining, both technical and how to work with a team remotely.
+            In the end nothing really came out of this project, but even to this day I think it's a great idea and could help a lot of people learn.
+            Who knows, maybe one day I'll start working on it again and phishing emails will become a thing of the past.
         </p>
         <div class="text-center">
-            <img class="img-thumbnail blog-image" src="app-competition.png">
+            <img class="img-thumbnail blog-image" src="Sovy-Coming-Soon.jpg">
         </div>
 
         <div class="contact">
