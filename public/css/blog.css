@@ -51,3 +51,11 @@ hr {
     font-size: 12px;
     margin-bottom: 35px;
 }
+
+.logo-icon {
+    display: inline-block;
+    height: 20px;
+    background-size: cover;
+    background-position: center;
+    margin-right: 5px;
+  }
