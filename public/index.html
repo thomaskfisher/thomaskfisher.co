@@ -4,508 +4,596 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Thomas Fisher — Senior Technical Product Manager based in Salt Lake City, Utah.">
     <link rel="icon" type="image/x-icon" href="assets/logo/Logo-light.png">
-    <title>Thomas F</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <title>Thomas Fisher</title>
+
+    <!-- Fonts: Space Grotesk (display) + Inter (body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:ital,wght@0,300;0,400;0,500;1,400&display=swap"
+        rel="stylesheet">
+
     <link href="css/index.css" rel="stylesheet">
 </head>
 
-<body data-bs-theme="dark">
-    <nav class="navbar navbar-expand-lg bg-body-tertiary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">
-                <img src="assets/logo/Logo-light.png" alt="Bootstrap" width="30" height="24">
-            </a>
-            <div class="collapse navbar-collapse" id="navbarNavDropdown">
-                <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#about">About</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#recommendations">Recommendations</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#portfolio">Portfolio</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#contact">Contact</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+<body>
 
-    <section id="hero" style="padding: 0px;">
-        <div class="hero-image">
-            <div class="hero-text">
-                <p>THOMAS FISHER</p>
-                <!-- <button href="#about" class="btn btn-primary btn-lg page-scroll">Meet Me!</button> -->
-            </div>
+    <!-- ═══════════════════════════════════════ NAVIGATION -->
+    <header class="site-header" id="siteHeader">
+        <div class="header-inner">
+            <a class="header-logo" href="#hero">TF</a>
+            <nav class="header-nav">
+                <a href="#about">About</a>
+                <a href="#recommendations">Recommendations</a>
+                <a href="#portfolio">Portfolio</a>
+                <a href="#contact">Contact</a>
+            </nav>
         </div>
-    </section>
+    </header>
 
-    <section id="about">
-        <div class="container">
-            <div class="row">
-                <div class="text-center">
-                    <h2>About</h2>
-                    <hr><br>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-lg-6 col-md-6 col-sm-6">
-                    <p>My name is Thomas Fisher and I'm currently located in Salt Lake City, Utah.</p>
-                    <p>I have a Master's Degree in Information Systems Management and experience in software product
-                        management, technical project/program management, software engineering, and turning side
-                        projects into businesses (with varying levels of success).</p>
-                    <p>Here's what I've been up to in the last few years:</p>
-                    <ul>
-                        <li>Sr Product Manager at Lucid Software (2024 - Present) <img src="assets/companies/Lucid.png"
-                            class="logo-icon" style="background-color: white;"></li>
-                        <li>Software Product Manager at Tesla (2022 - 2024) <img src="assets/companies/Tesla.png"
-                                class="logo-icon"></li>
-                        <li>Co-Founder at Step Friends LLC (2016 - 2023) <img src="assets/companies/TCM.png"
-                                class="logo-icon">
-                        </li>
-                        <li>Technical Program Manager at Tesla (2021) <img src="assets/companies/Tesla.png"
-                                class="logo-icon">
-                        </li>
-                        <li>Software Support Engineer at Tesla (2020) <img src="assets/companies/Tesla.png"
-                                class="logo-icon">
-                        </li>
-                        <li>Program Management Intern at Tesla (2019) <img src="assets/companies/Tesla.png"
-                                class="logo-icon">
-                        </li>
-                        <li>Operations Intern at Lucid Software (2018) <img src="assets/companies/Lucid.png"
-                                class="logo-icon" style="background-color: white;"></li>
-                        <li>QA Engineer Intern at American Express (2018) <img src="assets/companies/Amex.png"
-                                class="logo-icon">
-                        </li>
-                        <li>Project Management Intern at Tesla (2017) <img src="assets/companies/Tesla.png"
-                                class="logo-icon">
-                        </li>
-                    </ul>
-                    <p>In my free time I like to go off-roading in Moab, play soccer, golf (poorly), work on antique cars, ride motorcycles, and mess around with 3D design and printing.</p>
-                    <p>You can email me at <a href="mailto:tfisher3035@gmail.com"
-                            style="color: white;">tfisher3035@gmail.com</a> or
-                        reach out on <a href="https://www.linkedin.com/in/thomaskfisher/" target="_blank"
-                            style="color: white;">LinkedIn</a></p>
-                </div>
-                <div class="col-lg-6 col-md-6 col-sm-6">
-                    <img src="assets/Thomas.jpg" class="img-fluid">
-                </div>
-            </div>
+    <!-- ═══════════════════════════════════════ HERO -->
+    <section id="hero" class="hero">
+        <div class="hero-backdrop"></div>
+        <div class="hero-content">
+            <p class="hero-location">Salt Lake City, Utah</p>
+            <h1 class="hero-name">
+                <span>Thomas</span>
+                <span>Fisher</span>
+            </h1>
+            <p class="hero-role">Senior Technical Product Manager</p>
+            <button class="hero-scroll" onclick="document.getElementById('about').scrollIntoView({behavior:'smooth'})">
+                Scroll
+                <svg width="16" height="22" viewBox="0 0 16 22" fill="none" aria-hidden="true">
+                    <path d="M8 2v18M3 15l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+            </button>
         </div>
     </section>
 
-    <section id="recommendations">
+    <!-- ═══════════════════════════════════════ ABOUT -->
+    <section id="about" class="section">
         <div class="container">
-            <div class="row">
-                <div class="text-center">
-                    <h2>Recommendations</h2>
-                    <hr><br>
-                </div>
+
+            <div class="section-eyebrow">
+                <span class="eyebrow-num">01</span>
+                <span class="eyebrow-dash">—</span>
+                <span>About</span>
             </div>
-            <div class="row">
-                <div class="col-lg-10 col-xl-8 mx-auto">
-                    <div class="p-5 bg-white shadow rounded">
-                        <div id="carouselExampleAutoplaying" class="carousel slide" data-bs-ride="carousel">
-                            <div class="carousel-inner">
-                                <!-- Jennifer Bozzuto -->
-                                <div class="carousel-item active" data-bs-interval="5000">
-                                    <div class="media">
-                                        <div class="media-body ml-3">
-                                            <blockquote class="blockquote border-0 p-0">
-                                                <p class="font-italic lead"> <i
-                                                        class="fa fa-quote-left mr-3 text-success"></i>Exceptional drive
-                                                    and determination is what comes to mind when I think about Thomas. I
-                                                    had the
-                                                    pleasure of working with Thomas on a large scale project that
-                                                    included many stakeholders. Thomas
-                                                    expertly stepped into this project position and "took the bull by
-                                                    the horns" when no one else
-                                                    did. He took a project that should have taken months to complete,
-                                                    across in the finish line in a
-                                                    matter of weeks. His ability to engage multiple stakeholders was
-                                                    what contributed to such a
-                                                    successful product launch. Anyone would be lucky to have Thomas be a
-                                                    part of their company and
-                                                    organization!</p>
-                                                <br>
-                                                <footer class="blockquote-footer">Jennifer Bozzuto
-                                                    <cite title="Source Title">(Tesla Business Operations
-                                                        Managment)</cite>
-                                                </footer>
-                                            </blockquote>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Scott Thornock -->
-                                <div class="carousel-item" data-bs-interval="5000">
-                                    <div class="media">
-                                        <div class="media-body ml-3">
-                                            <blockquote class="blockquote border-0 p-0">
-                                                <p class="font-italic lead"> <i
-                                                        class="fa fa-quote-left mr-3 text-success"></i>Thomas rocks! He
-                                                    communicates well, takes on tasks outside of his assigned duties,
-                                                    and covers
-                                                    for me when swamped. He saved us on multiple occasions by finding
-                                                    hidden project requirements.
-                                                    He is a self starter who gets stuff done. Overall I highly recommend
-                                                    him.</p>
-                                                <br>
-                                                <footer class="blockquote-footer">Scott Thornock
-                                                    <cite title="Source Title">(Tesla Senior Product Manager)</cite>
-                                                </footer>
-                                            </blockquote>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Yong Zhang -->
-                                <div class="carousel-item" data-bs-interval="5000">
-                                    <div class="media">
-                                        <div class="media-body ml-3">
-                                            <blockquote class="blockquote border-0 p-0">
-                                                <p class="font-italic lead"> <i
-                                                        class="fa fa-quote-left mr-3 text-success"></i>Having Thomas on
-                                                    the team makes a huge difference. He always get job done and done
-                                                    well. I've
-                                                    had the pleasure of knowing Thomas for almost three years at the
-                                                    Tesla, working and
-                                                    collaborating with him on daily basis. I was particularly impressed
-                                                    by his ability of taking on
-                                                    challenging tasks and finding a way to address it. Thomas also has a
-                                                    great personality that makes him pleasant to work with. I am sure
-                                                    that Thomas
-                                                    would be a valuable member of any group.</p>
-                                                <br>
-                                                <footer class="blockquote-footer">Yong Zhang
-                                                    <cite title="Source Title">(Tesla Senior Software Engineer)</cite>
-                                                </footer>
-                                            </blockquote>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Colin Marshall -->
-                                <div class="carousel-item" data-bs-interval="5000">
-                                    <div class="media">
-                                        <div class="media-body ml-3">
-                                            <blockquote class="blockquote border-0 p-0">
-                                                <p class="font-italic lead"> <i
-                                                        class="fa fa-quote-left mr-3 text-success"></i>Thomas was always
-                                                    willing to go out of his way to help anybody who needed it. I worked
-                                                    with him
-                                                    while he was on the Document Systems team, and he was a huge
-                                                    proponent in making sure we got our
-                                                    documents correct. Thomas was the first one I would go to when I had
-                                                    a template or contract
-                                                    generation issue, and you could always count on him to point you in
-                                                    the right direction even if
-                                                    he didn't have the answer. Thomas was friendly and a pleasure to
-                                                    work with, and helped me
-                                                    succeed in my current position today. I would highly recommend him
-                                                    to any team who is looking
-                                                    for someone with dedication and integrity.</p>
-                                                <br>
-                                                <footer class="blockquote-footer">Colin Marshall
-                                                    <cite title="Source Title">(Tesla Software QA Engineer)</cite>
-                                                </footer>
-                                            </blockquote>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Shruti Varma -->
-                                <div class="carousel-item" data-bs-interval="5000">
-                                    <div class="media">
-                                        <div class="media-body ml-3">
-                                            <blockquote class="blockquote border-0 p-0">
-                                                <p class="font-italic lead"> <i
-                                                        class="fa fa-quote-left mr-3 text-success"></i>I had the
-                                                    privilege of working with and managing Thomas during his internship
-                                                    at Tesla. His
-                                                    sense of ownership and responsibility is second to none. He was a
-                                                    pleasure to work with for the
-                                                    entire team. I appreciated the creativity and grit he brought to the
-                                                    projects. He is sharp and
-                                                    hard-working. Thomas will be an asset to any team he joins.</p>
-                                                <br>
-                                                <footer class="blockquote-footer">Shruti Varma
-                                                    <cite title="Source Title">(Tesla Senior Manager Software
-                                                        Engineering)</cite>
-                                                </footer>
-                                            </blockquote>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Moin Moinuddin -->
-                                <div class="carousel-item" data-bs-interval="5000">
-                                    <div class="media">
-                                        <div class="media-body ml-3">
-                                            <blockquote class="blockquote border-0 p-0">
-                                                <p class="font-italic lead"> <i
-                                                        class="fa fa-quote-left mr-3 text-success"></i>Its rare that you
-                                                    come across a talent like Thomas. I had the pleasure of working with
-                                                    Thomas
-                                                    at Tesla on a critical project with tight timeline. I was
-                                                    particularly impressed with Thomas’s
-                                                    ability to handle high pressure time bound project with many
-                                                    unknowns. When I met him initially
-                                                    I thought he was an experienced employee, but when I learned he is
-                                                    an intern, I was totally
-                                                    blown away. What stood out for me is his passion, amazing work
-                                                    ethics, and thoroughness in his
-                                                    work. Its delightful to see how he takes ownership seriously and
-                                                    delivers on his
-                                                    responsibilities. When the time came for him to leave Tesla as he
-                                                    was completing his internship,
-                                                    there were many of us wishing he would stay behind as we all miss
-                                                    him very much at Tesla. Thomas
-                                                    would be an asset to any team he joins but hoping he’ll opt to come
-                                                    back to Tesla when he is
-                                                    done with his education.</p>
-                                                <br>
-                                                <footer class="blockquote-footer">Moin Moinuddin
-                                                    <cite title="Source Title">(Tesla Product and Engineering
-                                                        Lead)</cite>
-                                                </footer>
-                                            </blockquote>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Trey Davis -->
-                                <div class="carousel-item" data-bs-interval="5000">
-                                    <div class="media">
-                                        <div class="media-body ml-3">
-                                            <blockquote class="blockquote border-0 p-0">
-                                                <p class="font-italic lead"> <i
-                                                        class="fa fa-quote-left mr-3 text-success"></i>Few people learn
-                                                    quickly and execute like Thomas Fisher. I worked with Thomas at
-                                                    Lucid
-                                                    Software
-                                                    during his Fall internship. We gave him a messy, expansive CRM data
-                                                    scheme and asked him to
-                                                    bring order to the chaos for our CSMs. Thomas got up to speed
-                                                    quickly and delivered
-                                                    reporting
-                                                    and insight that our team desperately needed. Thomas and I shared
-                                                    similar interests in
-                                                    Christoper Nolan’s work, but we agreed to disagree on our feelings
-                                                    about Tesla. I’d be more
-                                                    than
-                                                    happy to work with Thomas again.</p>
-                                                <br>
-                                                <footer class="blockquote-footer">Trey Davis
-                                                    <cite title="Source Title">(Lucid Software Customer Success
-                                                        Operations Manager)</cite>
-                                                </footer>
-                                            </blockquote>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Greg Ziarko -->
-                                <div class="carousel-item" data-bs-interval="5000">
-                                    <div class="media">
-                                        <div class="media-body ml-3">
-                                            <blockquote class="blockquote border-0 p-0">
-                                                <p class="font-italic lead"> <i
-                                                        class="fa fa-quote-left mr-3 text-success"></i>Thomas is one of
-                                                    the rare ones. His hunger to learn, do more and his willingness to
-                                                    do
-                                                    whatever it takes was awesome. It can sound cliche, but Thomas
-                                                    actually is one of those
-                                                    employees. I had the accidental privilege of having Thomas assigned
-                                                    to work for me at
-                                                    Tesla
-                                                    and we really miss him now that he has returned to school. Feel free
-                                                    to let Thomas know
-                                                    if
-                                                    you'd like to hear more and he can connect us!</p>
-                                                <br>
-                                                <footer class="blockquote-footer">Greg Ziarko
-                                                    <cite title="Source Title">(Tesla Senior Manager Systems
-                                                        Engineering)</cite>
-                                                </footer>
-                                            </blockquote>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Mike Burrell -->
-                                <div class="carousel-item" data-bs-interval="5000">
-                                    <div class="media">
-                                        <div class="media-body ml-3">
-                                            <blockquote class="blockquote border-0 p-0">
-                                                <p class="font-italic lead"> <i
-                                                        class="fa fa-quote-left mr-3 text-success"></i>During his
-                                                    internship with Tesla, Thomas made himself indispensable. He quickly
-                                                    integrated
-                                                    with the Commerce team and truly became a key player in keeping
-                                                    everything moving
-                                                    forward.
-                                                    What impressed me most about Thomas was his ability to learn new
-                                                    things incredibly quick
-                                                    with little direction. Technical documentation, prototyping, data
-                                                    and analytics, user
-                                                    story
-                                                    creation, mentoring new hires, and much more -- Thomas did it all. I
-                                                    could always count
-                                                    on
-                                                    Thomas to do nothing less than the highest quality of work. In
-                                                    addition to his excellent
-                                                    work ethic, Thomas' positive attitude made the work environment that
-                                                    much better.</p>
-                                                <br>
-                                                <footer class="blockquote-footer">Mike Burrell
-                                                    <cite title="Source Title">(Tesla Senior Staff Engineer)</cite>
-                                                </footer>
-                                            </blockquote>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+
+            <div class="about-layout">
+                <div class="about-text">
+                    <h2 class="section-heading" style="margin-bottom:28px;">Builder.<br>Operator.<br>Problem Solver.
+                    </h2>
+                    <p class="about-lead">
+                        I have a Master's Degree in Information Systems Management and experience spanning software
+                        product management, technical program management, software engineering, and turning side
+                        projects into real businesses.
+                    </p>
+                    <p class="about-body">
+                        Currently Sr. Product Manager at Lucid Software, based in Salt Lake City. Previously spent
+                        several years at Tesla across engineering, program management, and product roles.
+                    </p>
+                    <p class="about-body">
+                        Outside of work: off-roading in Moab, soccer, golf (poorly), wrenching on a 1971 Land Cruiser,
+                        motorcycles, and 3D design & printing.
+                    </p>
+                    <div class="about-ctas">
+                        <a href="mailto:tfisher3035@gmail.com" class="btn-primary">Get in touch</a>
+                        <a href="https://www.linkedin.com/in/thomaskfisher/" target="_blank" class="btn-ghost">LinkedIn
+                            →</a>
+                    </div>
+                </div>
+
+                <div class="about-photo">
+                    <div class="photo-frame">
+                        <img src="assets/Thomas.jpg" alt="Thomas Fisher" loading="lazy">
                     </div>
                 </div>
             </div>
 
-            <br>
-            <p style="text-align: center;">Additional recommendations can be found on my LinkedIn profile</p>
+            <!-- Experience -->
+            <p class="experience-label">Experience</p>
+            <div class="experience-grid">
 
-        </div>
-    </section>
-
-    <section id="portfolio">
-        <div class="container">
-            <div class="row">
-                <div class="text-center">
-                    <h2>Portfolio, Resume, and Blog</h2>
-                    <hr><br>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-lg-4 col-md-6 col-sm-6 extra-padding">
-                        <div class="portfolio-block">
-                        <img src="assets/portfolio/Ownership.png" class="d-block w-100 portfolio-image" alt="Coming Soon">
-                        <div class="overlay">
-                            <div class="text">
-                                <!-- <h1>Ownership</h1> -->
-                                <p>Portfolio:<br>KeepTrack<br>(coming soon)</p>
-                            </div>
-                        </div>
+                <div class="exp-card fade-up">
+                    <div class="exp-period">2024 – Present</div>
+                    <div class="exp-role">Sr. Product Manager</div>
+                    <div class="exp-company">
+                        <img src="assets/companies/Lucid.png" alt="Lucid Software"
+                            style="background:#fff;padding:2px;border-radius:3px;">
+                        Lucid Software
                     </div>
                 </div>
-                <div class="col-lg-4 col-md-6 col-sm-6 extra-padding">
-                    <a class="portfolio-block" href="https://thomaskfisher.com/blog/rentsoft/index.html"
-                        target="_blank">
-                        <img src="assets/portfolio/RentSoft.png" class="d-block w-100 portfolio-image" alt="RentSoft">
-                        <div class="overlay">
-                            <div class="text">
-                                <!-- <h1>RentSoft</h1> -->
-                                <p>Blog:<br>RentSoft</p>
-                            </div>
-                        </div>
-                    </a>
+
+                <div class="exp-card fade-up">
+                    <div class="exp-period">2022 – 2024</div>
+                    <div class="exp-role">Software Product Manager</div>
+                    <div class="exp-company">
+                        <img src="assets/companies/Tesla.png" alt="Tesla">
+                        Tesla
+                    </div>
                 </div>
-                <div class="col-lg-4 col-md-6 col-sm-6 extra-padding">
-                    <a class="portfolio-block" href="https://thomaskfisher.com/blog/tcm/index.html" target="_blank">
-                        <img src="assets/portfolio/The-Campus-Market.png" class="d-block w-100 portfolio-image"
-                            alt="The Campus Market">
-                        <div class="overlay">
-                            <div class="text">
-                                <!-- <h1>The Campus Market</h1> -->
-                                <p>Blog:<br>The Campus Market</p>
-                            </div>
-                        </div>
-                    </a>
+
+                <div class="exp-card fade-up">
+                    <div class="exp-period">2016 – 2023</div>
+                    <div class="exp-role">Co-Founder</div>
+                    <div class="exp-company">
+                        <img src="assets/companies/TCM.png" alt="Step Friends LLC">
+                        Step Friends LLC
+                    </div>
                 </div>
-                <div class="col-lg-4 col-md-6 col-sm-6 extra-padding">
-                    <a class="portfolio-block" href="https://thomaskfisher.com/blog/sovy/index.html" target="_blank">
-                        <img src="assets/portfolio/Sovy.png" class="d-block w-100 portfolio-image" alt="Sovy">
-                        <div class="overlay">
-                            <div class="text">
-                                <!-- <h1>Sovy</h1> -->
-                                <p>Blog:<br>Sovy</p>
-                            </div>
-                        </div>
-                    </a>
+
+                <div class="exp-card fade-up">
+                    <div class="exp-period">2021</div>
+                    <div class="exp-role">Technical Program Manager</div>
+                    <div class="exp-company">
+                        <img src="assets/companies/Tesla.png" alt="Tesla">
+                        Tesla
+                    </div>
                 </div>
-                <div class="col-lg-4 col-md-6 col-sm-6 extra-padding">
-                    <a class="portfolio-block"
-                        href="https://www.linkedin.com/feed/update/urn:li:activity:6511372281313398785" target="_blank">
-                        <img src="assets/portfolio/Mobile-App-Competition.png" class="d-block w-100 portfolio-image"
-                            alt="BYU Mobile App Competition Award">
-                        <div class="overlay">
-                            <div class="text">
-                                <!-- <h1>Mobile App Award</h1> -->
-                                <p>News:<br>1st Place BYU Mobile App Competition</p>
-                            </div>
-                        </div>
-                    </a>
+
+                <div class="exp-card fade-up">
+                    <div class="exp-period">2020</div>
+                    <div class="exp-role">Software Support Engineer</div>
+                    <div class="exp-company">
+                        <img src="assets/companies/Tesla.png" alt="Tesla">
+                        Tesla
+                    </div>
                 </div>
-                <div class="col-lg-4 col-md-6 col-sm-6 extra-padding">
-                    <a class="portfolio-block" href="https://marriottschool.byu.edu/news/article?id=1224"
-                        target="_blank">
-                        <img src="assets/portfolio/AITP.png" class="d-block w-100 portfolio-image"
-                            alt="AITP Competition Awards">
-                        <div class="overlay">
-                            <div class="text">
-                                <!-- <h1>AITP Awards</h1> -->
-                                <p>News:<br>2017 AITP National Conference Awards</p>
-                            </div>
-                        </div>
-                    </a>
+
+                <div class="exp-card fade-up">
+                    <div class="exp-period">2019</div>
+                    <div class="exp-role">Program Management Intern</div>
+                    <div class="exp-company">
+                        <img src="assets/companies/Tesla.png" alt="Tesla">
+                        Tesla
+                    </div>
                 </div>
-                <div class="col-lg-4 col-md-6 col-sm-6 extra-padding">
-                    <a class="portfolio-block" href="https://hov-bracket.web.app/" target="_blank">
-                        <img src="assets/portfolio/HOV.png" class="d-block w-100 portfolio-image"
-                            alt="Utah Clean Air HOV Pass Bracket">
-                        <div class="overlay">
-                            <div class="text">
-                                <!-- <h1>Utah HOV Pass</h1> -->
-                                <p>Portfolio:<br>Utah HOV Brackets</p>
-                            </div>
-                        </div>
-                    </a>
+
+                <div class="exp-card fade-up">
+                    <div class="exp-period">2018</div>
+                    <div class="exp-role">Operations Intern</div>
+                    <div class="exp-company">
+                        <img src="assets/companies/Lucid.png" alt="Lucid Software"
+                            style="background:#fff;padding:2px;border-radius:3px;">
+                        Lucid Software
+                    </div>
                 </div>
-                <div class="col-lg-4 col-md-6 col-sm-6 extra-padding">
-                    <a class="portfolio-block" href="assets/portfolio/Apr 2024 Resume.pdf" target="_blank">
-                        <img src="assets/portfolio/Blurred-Resume.png" class="d-block w-100 portfolio-image"
-                            alt="Resume">
-                        <div class="overlay">
-                            <div class="text">
-                                <!-- <h1>Resume</h1> -->
-                                <p>Resume: April 2024</p>
-                            </div>
-                        </div>
-                    </a>
+
+                <div class="exp-card fade-up">
+                    <div class="exp-period">2018</div>
+                    <div class="exp-role">QA Engineer Intern</div>
+                    <div class="exp-company">
+                        <img src="assets/companies/Amex.png" alt="American Express">
+                        American Express
+                    </div>
                 </div>
+
+                <div class="exp-card fade-up">
+                    <div class="exp-period">2017</div>
+                    <div class="exp-role">Project Management Intern</div>
+                    <div class="exp-company">
+                        <img src="assets/companies/Tesla.png" alt="Tesla">
+                        Tesla
+                    </div>
+                </div>
+
             </div>
         </div>
     </section>
 
-    <section id="contact">
+    <!-- ═══════════════════════════════════════ RECOMMENDATIONS -->
+    <section id="recommendations" class="section section--alt">
         <div class="container">
-            <div class="row">
-                <div class="text-center">
-                    <h2>Contact</h2>
-                    <hr>
-                    <p>Send me an email or reach out on LinkedIn</p>
+
+            <div class="section-eyebrow fade-up">
+                <span class="eyebrow-num">02</span>
+                <span class="eyebrow-dash">—</span>
+                <span>Recommendations</span>
+            </div>
+            <h2 class="section-heading fade-up">What colleagues say</h2>
+
+            <div class="testimonials-wrapper">
+                <div class="testimonials-viewport" id="testimonialsViewport">
+                    <div class="testimonials-track" id="testimonialsTrack">
+
+                        <!-- 1 — Jennifer Bozzuto -->
+                        <div class="testimonial">
+                            <blockquote>
+                                <span class="quote-decoration">"</span>
+                                <p>Exceptional drive and determination is what comes to mind when I think about Thomas.
+                                    He expertly stepped into a large-scale project and "took the bull by the horns" when
+                                    no one else did. He took a project that should have taken months to complete, across
+                                    the finish line in a matter of weeks. His ability to engage multiple stakeholders
+                                    was what contributed to such a successful product launch. Anyone would be lucky to
+                                    have Thomas be a part of their company.</p>
+                                <div class="testimonial-footer">
+                                    <div>
+                                        <strong>Jennifer Bozzuto</strong>
+                                        <span>Business Operations Management · Tesla</span>
+                                    </div>
+                                </div>
+                            </blockquote>
+                        </div>
+
+                        <!-- 2 — Scott Thornock -->
+                        <div class="testimonial">
+                            <blockquote>
+                                <span class="quote-decoration">"</span>
+                                <p>Thomas rocks! He communicates well, takes on tasks outside of his assigned duties,
+                                    and covers for me when swamped. He saved us on multiple occasions by finding hidden
+                                    project requirements. He is a self-starter who gets stuff done. Overall I highly
+                                    recommend him.</p>
+                                <div class="testimonial-footer">
+                                    <div>
+                                        <strong>Scott Thornock</strong>
+                                        <span>Senior Product Manager · Tesla</span>
+                                    </div>
+                                </div>
+                            </blockquote>
+                        </div>
+
+                        <!-- 3 — Yong Zhang -->
+                        <div class="testimonial">
+                            <blockquote>
+                                <span class="quote-decoration">"</span>
+                                <p>Having Thomas on the team makes a huge difference. He always gets the job done and
+                                    done well. I was particularly impressed by his ability to take on challenging tasks
+                                    and find a way to address them. Thomas also has a great personality that makes him
+                                    pleasant to work with. I am sure that Thomas would be a valuable member of any
+                                    group.</p>
+                                <div class="testimonial-footer">
+                                    <div>
+                                        <strong>Yong Zhang</strong>
+                                        <span>Senior Software Engineer · Tesla</span>
+                                    </div>
+                                </div>
+                            </blockquote>
+                        </div>
+
+                        <!-- 4 — Colin Marshall -->
+                        <div class="testimonial">
+                            <blockquote>
+                                <span class="quote-decoration">"</span>
+                                <p>Thomas was always willing to go out of his way to help anybody who needed it. He was
+                                    the first one I would go to when I had a template or contract generation issue, and
+                                    you could always count on him to point you in the right direction even if he didn't
+                                    have the answer. Thomas was friendly and a pleasure to work with, and helped me
+                                    succeed in my current position today. I would highly recommend him to any team.</p>
+                                <div class="testimonial-footer">
+                                    <div>
+                                        <strong>Colin Marshall</strong>
+                                        <span>Software QA Engineer · Tesla</span>
+                                    </div>
+                                </div>
+                            </blockquote>
+                        </div>
+
+                        <!-- 5 — Shruti Varma -->
+                        <div class="testimonial">
+                            <blockquote>
+                                <span class="quote-decoration">"</span>
+                                <p>I had the privilege of working with and managing Thomas during his internship at
+                                    Tesla. His sense of ownership and responsibility is second to none. He was a
+                                    pleasure to work with for the entire team. I appreciated the creativity and grit he
+                                    brought to the projects. He is sharp and hard-working. Thomas will be an asset to
+                                    any team he joins.</p>
+                                <div class="testimonial-footer">
+                                    <div>
+                                        <strong>Shruti Varma</strong>
+                                        <span>Senior Manager, Software Engineering · Tesla</span>
+                                    </div>
+                                </div>
+                            </blockquote>
+                        </div>
+
+                        <!-- 6 — Moin Moinuddin -->
+                        <div class="testimonial">
+                            <blockquote>
+                                <span class="quote-decoration">"</span>
+                                <p>It's rare that you come across a talent like Thomas. I was particularly impressed
+                                    with his ability to handle a high-pressure, time-bound project with many unknowns.
+                                    When I met him initially I thought he was an experienced employee, but when I
+                                    learned he was an intern, I was totally blown away. His passion, amazing work
+                                    ethics, and thoroughness are what stood out most.</p>
+                                <div class="testimonial-footer">
+                                    <div>
+                                        <strong>Moin Moinuddin</strong>
+                                        <span>Product and Engineering Lead · Tesla</span>
+                                    </div>
+                                </div>
+                            </blockquote>
+                        </div>
+
+                        <!-- 7 — Trey Davis -->
+                        <div class="testimonial">
+                            <blockquote>
+                                <span class="quote-decoration">"</span>
+                                <p>Few people learn quickly and execute like Thomas Fisher. We gave him a messy,
+                                    expansive CRM data scheme and asked him to bring order to the chaos for our CSMs.
+                                    Thomas got up to speed quickly and delivered the reporting and insight our team
+                                    desperately needed. I'd be more than happy to work with Thomas again.</p>
+                                <div class="testimonial-footer">
+                                    <div>
+                                        <strong>Trey Davis</strong>
+                                        <span>Customer Success Operations Manager · Lucid Software</span>
+                                    </div>
+                                </div>
+                            </blockquote>
+                        </div>
+
+                        <!-- 8 — Greg Ziarko -->
+                        <div class="testimonial">
+                            <blockquote>
+                                <span class="quote-decoration">"</span>
+                                <p>Thomas is one of the rare ones. His hunger to learn, do more, and his willingness to
+                                    do whatever it takes was awesome. I had the accidental privilege of having Thomas
+                                    assigned to work for me at Tesla and we really miss him. Feel free to let Thomas
+                                    know if you'd like to hear more and he can connect us!</p>
+                                <div class="testimonial-footer">
+                                    <div>
+                                        <strong>Greg Ziarko</strong>
+                                        <span>Senior Manager, Systems Engineering · Tesla</span>
+                                    </div>
+                                </div>
+                            </blockquote>
+                        </div>
+
+                        <!-- 9 — Mike Burrell -->
+                        <div class="testimonial">
+                            <blockquote>
+                                <span class="quote-decoration">"</span>
+                                <p>During his internship with Tesla, Thomas made himself indispensable. What impressed
+                                    me most was his ability to learn new things incredibly quickly with little
+                                    direction. Technical documentation, prototyping, data and analytics, user story
+                                    creation, mentoring new hires — Thomas did it all. I could always count on Thomas
+                                    for nothing less than the highest quality of work.</p>
+                                <div class="testimonial-footer">
+                                    <div>
+                                        <strong>Mike Burrell</strong>
+                                        <span>Senior Staff Engineer · Tesla</span>
+                                    </div>
+                                </div>
+                            </blockquote>
+                        </div>
+
+                    </div><!-- /track -->
+                </div><!-- /viewport -->
+
+                <div class="testimonials-controls">
+                    <button class="t-btn" id="tPrev" aria-label="Previous recommendation">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                            <path d="M11 3L5 9l6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                    <div class="t-dots" id="tDots"></div>
+                    <button class="t-btn" id="tNext" aria-label="Next recommendation">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                            <path d="M7 3l6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                    </button>
                 </div>
-                <div class="col-lg-6 text-center">
-                    <img src="assets/companies/Gmail.png" class="logo-icon">
-                    <p><a href="mailto:tfisher3035@gmail.com">tfisher3035@gmail.com</a></p>
+
+                <p class="testimonials-note">
+                    More recommendations on <a href="https://www.linkedin.com/in/thomaskfisher/"
+                        target="_blank">LinkedIn</a>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════ PORTFOLIO -->
+    <section id="portfolio" class="section">
+        <div class="container">
+
+            <div class="section-eyebrow fade-up">
+                <span class="eyebrow-num">03</span>
+                <span class="eyebrow-dash">—</span>
+                <span>Portfolio &amp; Blog</span>
+            </div>
+            <h2 class="section-heading fade-up">Selected Work</h2>
+
+            <div class="portfolio-grid">
+
+                <div class="pf-card pf-card--locked fade-up">
+                    <div class="pf-img-wrap">
+                        <img src="assets/portfolio/Ownership.png" alt="KeepTrack — coming soon" loading="lazy">
+                    </div>
+                    <div class="pf-meta">
+                        <span class="pf-tag">Portfolio</span>
+                        <h3 class="pf-title">KeepTrack</h3>
+                        <p class="pf-desc">Coming Soon</p>
+                    </div>
                 </div>
-                <div class="col-lg-6 text-center">
-                    <img src="assets/companies/Linkedin.png" class="logo-icon">
-                    <p><a href="https://www.linkedin.com/in/thomaskfisher/" target="_blank">Thomas Fisher</a></p>
+
+                <a href="blog/rentsoft/index.html" target="_blank" class="pf-card fade-up">
+                    <div class="pf-img-wrap">
+                        <img src="assets/portfolio/RentSoft.png" alt="RentSoft" loading="lazy">
+                    </div>
+                    <div class="pf-meta">
+                        <span class="pf-tag">Blog</span>
+                        <h3 class="pf-title">RentSoft</h3>
+                        <p class="pf-desc">Custom POS for a video rental store</p>
+                    </div>
+                </a>
+
+                <a href="blog/tcm/index.html" target="_blank" class="pf-card fade-up">
+                    <div class="pf-img-wrap">
+                        <img src="assets/portfolio/The-Campus-Market.png" alt="The Campus Market" loading="lazy">
+                    </div>
+                    <div class="pf-meta">
+                        <span class="pf-tag">Blog</span>
+                        <h3 class="pf-title">The Campus Market</h3>
+                        <p class="pf-desc">Student housing marketplace at BYU</p>
+                    </div>
+                </a>
+
+                <a href="blog/sovy/index.html" target="_blank" class="pf-card fade-up">
+                    <div class="pf-img-wrap">
+                        <img src="assets/portfolio/Sovy.png" alt="Sovy" loading="lazy">
+                    </div>
+                    <div class="pf-meta">
+                        <span class="pf-tag">Blog</span>
+                        <h3 class="pf-title">Sovy</h3>
+                        <p class="pf-desc">Phishing awareness training platform</p>
+                    </div>
+                </a>
+
+                <a href="https://www.linkedin.com/feed/update/urn:li:activity:6511372281313398785" target="_blank"
+                    class="pf-card fade-up">
+                    <div class="pf-img-wrap">
+                        <img src="assets/portfolio/Mobile-App-Competition.png" alt="BYU Mobile App Competition"
+                            loading="lazy">
+                    </div>
+                    <div class="pf-meta">
+                        <span class="pf-tag">News</span>
+                        <h3 class="pf-title">BYU Mobile App Competition</h3>
+                        <p class="pf-desc">1st Place Award</p>
+                    </div>
+                </a>
+
+                <a href="https://marriottschool.byu.edu/news/article?id=1224" target="_blank" class="pf-card fade-up">
+                    <div class="pf-img-wrap">
+                        <img src="assets/portfolio/AITP.png" alt="AITP National Conference Awards" loading="lazy">
+                    </div>
+                    <div class="pf-meta">
+                        <span class="pf-tag">News</span>
+                        <h3 class="pf-title">AITP National Conference</h3>
+                        <p class="pf-desc">Awards in multiple categories</p>
+                    </div>
+                </a>
+
+                <a href="https://hov-bracket.web.app/" target="_blank" class="pf-card fade-up">
+                    <div class="pf-img-wrap">
+                        <img src="assets/portfolio/HOV.png" alt="Utah HOV Brackets" loading="lazy">
+                    </div>
+                    <div class="pf-meta">
+                        <span class="pf-tag">Portfolio</span>
+                        <h3 class="pf-title">Utah HOV Brackets</h3>
+                        <p class="pf-desc">Clean air pass sticker bracketl</p>
+                    </div>
+                </a>
+
+                <a href="assets/portfolio/ResumeApr2025.pdf" target="_blank" class="pf-card fade-up">
+                    <div class="pf-img-wrap">
+                        <img src="assets/portfolio/Blurred-Resume.png" alt="Resume — April 2024" loading="lazy">
+                    </div>
+                    <div class="pf-meta">
+                        <span class="pf-tag">Resume</span>
+                        <h3 class="pf-title">PDF Copy</h3>
+                        <p class="pf-desc">Updated Apr 2025</p>
+                    </div>
+                </a>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════ CONTACT -->
+    <section id="contact" class="section section--contact">
+        <div class="container">
+            <div class="contact-block">
+                <div class="section-eyebrow fade-up">
+                    <span class="eyebrow-num">04</span>
+                    <span class="eyebrow-dash">—</span>
+                    <span>Contact</span>
+                </div>
+                <h2 class="contact-heading fade-up">Let's<br>connect.</h2>
+                <div class="contact-links fade-up">
+                    <a href="mailto:tfisher3035@gmail.com" class="contact-item">
+                        <span class="contact-label">Email</span>
+                        <span class="contact-value">
+                            tfisher3035@gmail.com
+                            <em class="contact-arrow">→</em>
+                        </span>
+                    </a>
+                    <a href="https://www.linkedin.com/in/thomaskfisher/" target="_blank" class="contact-item">
+                        <span class="contact-label">LinkedIn</span>
+                        <span class="contact-value">
+                            thomaskfisher
+                            <em class="contact-arrow">→</em>
+                        </span>
+                    </a>
                 </div>
             </div>
         </div>
     </section>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
-        crossorigin="anonymous"></script>
+    <!-- ═══════════════════════════════════════ FOOTER -->
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <span>© 2024 Thomas Fisher</span>
+            <span>Salt Lake City, Utah</span>
+        </div>
+    </footer>
+
+    <script>
+        // ── Nav: add scrolled class ───────────────────────────
+        const header = document.getElementById('siteHeader');
+        const onScroll = () => header.classList.toggle('scrolled', window.scrollY > 30);
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+
+        // ── Testimonial Carousel ──────────────────────────────
+        (function () {
+            const track = document.getElementById('testimonialsTrack');
+            const dotsEl = document.getElementById('tDots');
+            const slides = track.querySelectorAll('.testimonial');
+            let current = 0;
+            let timer;
+
+            // Build dot buttons
+            slides.forEach(function (_, i) {
+                const dot = document.createElement('button');
+                dot.className = 't-dot';
+                dot.setAttribute('aria-label', 'Slide ' + (i + 1));
+                dot.addEventListener('click', function () { goTo(i); });
+                dotsEl.appendChild(dot);
+            });
+
+            function goTo(index) {
+                current = ((index % slides.length) + slides.length) % slides.length;
+                track.style.transform = 'translateX(-' + current * 100 + '%)';
+                document.querySelectorAll('.t-dot').forEach(function (d, i) {
+                    d.classList.toggle('active', i === current);
+                });
+                clearInterval(timer);
+                timer = setInterval(function () { goTo(current + 1); }, 6000);
+            }
+
+            document.getElementById('tPrev').addEventListener('click', function () { goTo(current - 1); });
+            document.getElementById('tNext').addEventListener('click', function () { goTo(current + 1); });
+
+            // Pause on hover
+            const viewport = document.getElementById('testimonialsViewport');
+            viewport.addEventListener('mouseenter', function () { clearInterval(timer); });
+            viewport.addEventListener('mouseleave', function () { goTo(current); });
+
+            goTo(0);
+        }());
+
+        // ── Scroll Reveal ─────────────────────────────────────
+        (function () {
+            const observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+            document.querySelectorAll('.fade-up').forEach(function (el) {
+                observer.observe(el);
+            });
+        }());
+    </script>
+
 </body>
 
 </html>
