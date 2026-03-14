@@ -6,6 +6,13 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "redirects": [
+      {
+        "source": "/resume",
+        "destination": "/assets/portfolio/Thomas Fisher Resume Feb 2026.pdf",
+        "type": 301
+      }
+    ],
     "rewrites": [
       {
         "source": "**",
