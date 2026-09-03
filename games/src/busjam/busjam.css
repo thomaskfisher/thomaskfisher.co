@@ -1,0 +1,433 @@
+/* ==========================================================================
+   Bus Jam.
+
+   The grid is a lattice of --cell sized tiles set from JS. Tiles exist only
+   where the board is walkable, so the walls need no styling of their own — the
+   ragged outline is what is left when they are absent.
+   ========================================================================== */
+
+.stop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 14px 10px;
+}
+
+/* ------------------------------------------------------------------ buses */
+
+/* One lane: the buses at the stop, then the ones still to arrive behind them. */
+.lane {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  /* fitLane keeps the contents inside this, but a stale measurement during an
+     orientation change must not be allowed to paint over the phone's edge.
+     The padding is what keeps that clip off the wheels, which hang below the
+     bus body on purpose. */
+  padding-bottom: 8px;
+  overflow: hidden;
+}
+
+.buses {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.bus {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--bus-width, 110px);
+  height: var(--bus-height, 58px);
+  padding: 0 10%;
+  /* Rounded at the front, squarer at the back — enough of a silhouette to read
+     as a bus at a glance without a sprite. */
+  border-radius: 30% 14px 10px 30% / 40% 14px 10px 40%;
+  background: linear-gradient(168deg, var(--bus, #555) 0%, var(--bus-edge, #333) 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.26),
+    0 3px 6px var(--shadow);
+  transition: transform 0.18s cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+
+/* The queue ran dry — no more buses are coming. */
+.bus.is-gone {
+  background: var(--glass);
+  box-shadow: none;
+  opacity: 0.28;
+}
+
+.bus-seats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6%;
+  width: 100%;
+  height: 62%;
+}
+
+.seat {
+  display: grid;
+  place-items: center;
+  flex: 1 1 0;
+  height: 100%;
+  border-radius: 5px 5px 3px 3px;
+  background: rgba(0, 0, 0, 0.26);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.seat.is-taken {
+  animation: seat-fill 0.28s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+
+@keyframes seat-fill {
+  from {
+    transform: scale(0.4);
+  }
+}
+
+.bus-wheels {
+  position: absolute;
+  bottom: -5px;
+  left: 16%;
+  right: 16%;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.bus-wheels span {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #1b2130;
+  box-shadow: inset 0 0 0 3.5px #5b667e;
+}
+
+.bus.is-gone .bus-wheels {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ queue */
+
+/* The buses still to pull in, next first. Queued in the lane behind the ones at
+   the stop, shrinking with distance, because only the near ones are worth
+   reading — they are what decides whether parking someone pays off. */
+.queue {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  min-height: calc(var(--queue-bus, 20px) * 0.62);
+  padding-bottom: 4px;
+}
+
+/* `display: flex` above outranks the user-agent rule for [hidden], so the last
+   bus arriving would leave an empty strip holding its height. */
+.queue[hidden] {
+  display: none;
+}
+
+.queue-bus {
+  display: grid;
+  place-items: center;
+  width: var(--queue-bus, 20px);
+  height: calc(var(--queue-bus, 20px) * 0.62);
+  border-radius: 34% 4px 3px 34% / 46% 4px 3px 46%;
+  background: linear-gradient(168deg, var(--bus) 0%, var(--bus-edge) 100%);
+  box-shadow: 0 1px 2px var(--shadow);
+  /* Fade with distance down the queue: the next bus is the one worth reading. */
+  opacity: calc(1 - var(--queue-rank, 0) * 0.22);
+  transform: scale(calc(1 - var(--queue-rank, 0) * 0.08));
+}
+
+.queue-bus.is-unknown {
+  background: var(--glass);
+  box-shadow: none;
+  opacity: 0.3;
+  transform: scale(0.6);
+}
+
+.queue-glyph {
+  width: 52%;
+  height: 52%;
+  fill: rgba(255, 255, 255, 0.9);
+}
+
+/* ------------------------------------------------------------------ bench */
+
+.bench {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 7px;
+  padding: 4px 10px;
+  border-radius: 14px;
+  background: var(--glass);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* The bench filling up is how you lose, so it says so before it does. */
+.bench.is-critical {
+  background: color-mix(in srgb, var(--danger) 22%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 45%, transparent);
+}
+
+/* And says so loudly once it has. The sheet arrives 420ms later, so this is
+   what connects the tap to the loss. */
+.bench.is-overflowed {
+  animation: bench-overflow 0.42s ease-in-out 2 both;
+}
+
+@keyframes bench-overflow {
+  0%,
+  100% {
+    background: color-mix(in srgb, var(--danger) 22%, transparent);
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  50% {
+    background: color-mix(in srgb, var(--danger) 62%, transparent);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bench.is-overflowed {
+    animation: none;
+    background: color-mix(in srgb, var(--danger) 62%, transparent);
+  }
+}
+
+.bench-slot {
+  display: grid;
+  place-items: end center;
+  width: var(--bench-slot, 26px);
+  height: var(--bench-slot, 26px);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.bench-slot.is-filled {
+  background: rgba(255, 255, 255, 0.07);
+  animation: seat-fill 0.28s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+
+/* ------------------------------------------------------------------ board */
+
+/* The grid is capped in cell size, so on a tall phone it does not fill the row
+   it is given. Centring it keeps the crowd under the stop it feeds rather than
+   stranded against the top of the empty space.
+
+   The `min-width`/`min-height` of 0 is load-bearing, not tidiness: a grid item
+   defaults to `auto` there and so refuses to shrink below its content, which
+   would let a large board push its own container around. The other half of that
+   fix is the pinned column on `.app` in shell.css. */
+.board {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+}
+
+/*
+ * The exit row is not marked.
+ *
+ * Row 0 is where people step off, but that is a fact about the *edge* of the
+ * board rather than about those cells — anyone with a clear path walks out,
+ * from wherever they are standing. Every way of signposting it, a tint or a
+ * gap, claims those cells matter and sends players looking for a rule that
+ * does not exist. The buses sit directly above the row; that is the cue.
+ */
+.grid {
+  position: relative;
+  width: calc(var(--cell, 40px) * var(--grid-w, 6));
+  height: calc(var(--cell, 40px) * var(--grid-h, 8));
+  margin: auto;
+}
+
+.grid.is-celebrating {
+  animation: grid-cheer 0.7s ease both;
+}
+
+@keyframes grid-cheer {
+  40% {
+    transform: scale(1.04) rotate(-1.2deg);
+  }
+}
+
+.tile {
+  position: absolute;
+  left: calc(var(--cx) * var(--cell, 40px));
+  top: calc(var(--cy) * var(--cell, 40px));
+  width: var(--cell, 40px);
+  height: var(--cell, 40px);
+  padding: 2px;
+  background-clip: content-box;
+  border-radius: 9px;
+  background-color: rgba(233, 240, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(233, 240, 255, 0.08);
+}
+
+:root[data-theme='light'] .tile {
+  background-color: rgba(255, 255, 255, 0.92);
+  box-shadow:
+    inset 0 0 0 1px rgba(22, 35, 60, 0.06),
+    0 1px 2px rgba(24, 40, 70, 0.08);
+}
+
+/* -------------------------------------------------------------- the crowd */
+
+.person {
+  position: absolute;
+  left: calc(var(--cx) * var(--cell, 40px));
+  top: calc(var(--cy) * var(--cell, 40px));
+  width: var(--cell, 40px);
+  height: var(--cell, 40px);
+  padding: 0;
+  display: grid;
+  place-items: center;
+  transition: transform 0.14s ease;
+}
+
+.person:active:not(:disabled) {
+  transform: scale(0.88);
+}
+
+.person.is-gone {
+  display: none;
+}
+
+/* The figure itself: a head over a torso with shoulders. Used on the board, on
+   the bench, in a bus seat, and by the walking clone, so all four read as the
+   same person moving rather than as four different sprites. */
+.person-art {
+  position: relative;
+  display: block;
+  width: 62%;
+  height: 78%;
+}
+
+.person-head {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 52%;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, var(--skin) 0%, var(--skin-edge) 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.person-torso {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 62%;
+  display: grid;
+  place-items: center;
+  /* Wide at the shoulders, tapering in — enough to read as a body at 20px. */
+  border-radius: 42% 42% 22% 22% / 34% 34% 14% 14%;
+  background: linear-gradient(165deg, var(--skin) 0%, var(--skin-edge) 100%);
+  box-shadow: inset 0 -2px 3px rgba(0, 0, 0, 0.22);
+}
+
+.person-glyph {
+  width: 62%;
+  height: 62%;
+  fill: rgba(255, 255, 255, 0.9);
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+/* A passenger only ever boards a bus of their own colour, so a seated figure is
+   by definition the same hue as the panel behind it and disappears into it. The
+   rim is what keeps the seat readable as occupied. */
+.bench-slot .person-art,
+.seat .person-art {
+  width: 74%;
+  height: 88%;
+  filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.75));
+}
+
+.seat.is-taken {
+  background: rgba(0, 0, 0, 0.34);
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+/* Tapped someone who cannot get out. */
+.person.is-rejected {
+  animation: person-shake 0.34s ease-in-out both;
+}
+
+@keyframes person-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px) rotate(-9deg);
+  }
+  60% {
+    transform: translateX(4px) rotate(9deg);
+  }
+}
+
+/* The people doing the blocking, so the refusal explains itself. */
+.person.is-blocking {
+  animation: person-blocking 0.62s ease-in-out both;
+}
+
+@keyframes person-blocking {
+  30%,
+  70% {
+    filter: brightness(1.5) drop-shadow(0 0 5px var(--danger));
+  }
+}
+
+.person.is-hinted {
+  animation: person-hint 0.7s ease-in-out 2 both;
+}
+
+@keyframes person-hint {
+  50% {
+    transform: scale(1.18) translateY(-3px);
+    filter: drop-shadow(0 0 6px var(--accent));
+  }
+}
+
+/* A passenger walking their route to the bench or a seat. */
+.person-walk {
+  position: fixed;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------- end of level */
+
+.win-title,
+.lose-title {
+  margin: 0 0 6px;
+  font-size: 1.6rem;
+  text-align: center;
+}
+
+.lose-title {
+  color: var(--danger);
+}

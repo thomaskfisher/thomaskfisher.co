@@ -1,0 +1,412 @@
+/* ==========================================================================
+   Shared app shell.
+
+   Everything here applies to all three games. The touch and viewport rules at
+   the top are the ones that decide whether this feels like an app or like a
+   web page: without them a phone will zoom on double-tap, bounce the whole
+   board when you drag, and reset a level on an accidental pull-to-refresh.
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  /* Not 100vh: iOS counts the collapsing URL bar in vh and the board is then
+     taller than the visible area. */
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none; /* kills pull-to-refresh mid-level */
+}
+
+body {
+  font-family: ui-rounded, 'SF Pro Rounded', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation; /* no double-tap zoom, no 300ms delay */
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* --------------------------------------------------------------- palette */
+
+:root {
+  --bg: #101a2e;
+  --bg-glow: #1b2c4d;
+  --surface: #1b2a45;
+  --surface-raised: #24375a;
+  --text: #eef3fb;
+  --text-dim: #93a4c4;
+  --accent: #4da3ff;
+  --accent-soft: rgba(77, 163, 255, 0.16);
+  --danger: #ff6b6b;
+  --glass: rgba(233, 240, 255, 0.16);
+  --glass-edge: rgba(233, 240, 255, 0.38);
+  --shadow: rgba(4, 10, 22, 0.5);
+  --radius: 16px;
+}
+
+:root[data-theme='light'] {
+  --bg: #eef2f9;
+  --bg-glow: #ffffff;
+  --surface: #ffffff;
+  --surface-raised: #f4f7fc;
+  --text: #16233c;
+  --text-dim: #5d6c88;
+  --accent: #1f6feb;
+  --accent-soft: rgba(31, 111, 235, 0.12);
+  --danger: #d64545;
+  --glass: rgba(22, 35, 60, 0.07);
+  --glass-edge: rgba(22, 35, 60, 0.2);
+  --shadow: rgba(24, 40, 70, 0.16);
+}
+
+/* ------------------------------------------------------------ app layout */
+
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  /* Not the implicit `auto` column. An auto column sizes to its content, so a
+     board wider than the phone widens this column instead of overflowing it —
+     and any code that measures the row to size the board then measures the
+     widened box and sizes the board bigger still. `minmax(0, 1fr)` pins the
+     column to the screen and makes that measurement trustworthy. */
+  grid-template-columns: minmax(0, 1fr);
+  height: 100dvh;
+  /* Keep content clear of the notch and the home indicator. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  background:
+    radial-gradient(120% 70% at 50% 0%, var(--bg-glow) 0%, transparent 62%),
+    var(--bg);
+}
+
+.app--screwland,
+.app--busjam {
+  grid-template-rows: auto auto 1fr auto;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px 4px;
+}
+
+.topbar-level {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.topbar-level b {
+  font-size: 1.28rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.topbar-level span {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  color: var(--text-dim);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.icon-button:hover,
+.icon-button:focus-visible {
+  background: var(--glass);
+  color: var(--text);
+}
+
+.icon-button svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Controls sit in the bottom third, inside comfortable one-handed reach. */
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 14px calc(14px + env(safe-area-inset-bottom));
+}
+
+.control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 78px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.74rem;
+  font-weight: 600;
+  box-shadow: 0 2px 0 var(--shadow);
+  transition: transform 0.12s ease, opacity 0.15s ease;
+}
+
+.control:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.control:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.control svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* --------------------------------------------------------------- overlay */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(6, 12, 24, 0.62);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  z-index: 20;
+  animation: fade-in 0.2s ease both;
+}
+
+.sheet {
+  width: min(420px, 100%);
+  max-height: 82dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 22px;
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: 0 20px 60px var(--shadow);
+  animation: rise 0.24s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+.sheet h2 {
+  margin: 0 0 4px;
+  font-size: 1.3rem;
+}
+
+.sheet p {
+  margin: 0 0 18px;
+  color: var(--text-dim);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.sheet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 0;
+  border-top: 1px solid var(--glass);
+}
+
+.sheet-row:first-of-type {
+  border-top: none;
+}
+
+.sheet-row-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.sheet-row-label small {
+  font-weight: 400;
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.button {
+  padding: 12px 20px;
+  border-radius: 13px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 700;
+  transition: transform 0.12s ease, filter 0.15s ease;
+}
+
+.button:active {
+  transform: translateY(1px);
+}
+
+.button--ghost {
+  background: var(--glass);
+  color: var(--text);
+}
+
+.button--full {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.button--danger {
+  background: transparent;
+  color: var(--danger);
+}
+
+/* Switch */
+.switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 50px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--glass);
+  transition: background 0.18s ease;
+}
+
+.switch[aria-checked='true'] {
+  background: var(--accent);
+}
+
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.18s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.switch[aria-checked='true']::after {
+  transform: translateX(20px);
+}
+
+/* Segmented control */
+.segmented {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--glass);
+}
+
+.segmented button {
+  padding: 7px 13px;
+  border-radius: 9px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.segmented button[aria-pressed='true'] {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.field {
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 11px;
+  border: 1px solid var(--glass-edge);
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.8rem;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.note {
+  margin: 10px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.note--error {
+  color: var(--danger);
+}
+
+.note--ok {
+  color: var(--accent);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

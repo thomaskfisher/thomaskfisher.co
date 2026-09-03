@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "thomaskfisher-d6a4e"
-  }
+  },
+  "targets": {
+    "thomaskfisher-d6a4e": {
+      "hosting": {
+        "portfolio": [
+          "thomaskfisher-d6a4e"
+        ],
+        "games": [
+          "thomaskfisher-games"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

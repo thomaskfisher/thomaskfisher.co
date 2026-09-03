@@ -1,0 +1,423 @@
+/* ==========================================================================
+   Screw Land.
+
+   The board is a grid of --cell sized units set from JS. Plates and screws are
+   absolutely positioned within it and stacked by z-index, which is what makes
+   a buried screw both invisible and unclickable with no extra work.
+   ========================================================================== */
+
+.sinks {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px 10px;
+}
+
+.boxes {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+}
+
+.box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: var(--box-size, 60px);
+  height: var(--box-size, 60px);
+  padding: 7px;
+  border-radius: 13px;
+  background: linear-gradient(160deg, var(--box, #444) 0%, var(--box-edge, #222) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 2px 5px var(--shadow);
+  transition: transform 0.18s cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+
+.box.is-closed {
+  background: var(--glass);
+  box-shadow: none;
+  opacity: 0.35;
+}
+
+.hole {
+  display: grid;
+  place-items: center;
+  width: 25%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.32);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.hole.is-filled {
+  /* A seated screw, not a white plug: same head treatment as on the board so
+     the connection between the two is obvious. */
+  background: radial-gradient(circle at 34% 28%, #f2f5fb 0%, #b9c3d4 100%);
+  box-shadow:
+    inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 0, 0, 0.2);
+  animation: hole-pop 0.28s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+
+.hole.is-filled .screw-slot::before,
+.hole.is-filled .screw-slot::after {
+  background: rgba(0, 0, 0, 0.34);
+  box-shadow: none;
+}
+
+@keyframes hole-pop {
+  from {
+    transform: scale(0.4);
+  }
+}
+
+.box-complete {
+  animation: box-clear 0.34s ease both;
+}
+
+@keyframes box-clear {
+  40% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* --------------------------------------------------------------- queue */
+
+/* The colours waiting to open, next first. Sits between the boxes it feeds and
+   the tray it rescues, because that is the decision it informs. */
+.queue {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--queue-chip, 18px);
+}
+
+/* `display: flex` above outranks the user-agent rule for [hidden], so the last
+   box opening would leave an empty strip holding its height. */
+.queue[hidden] {
+  display: none;
+}
+
+.queue-chip {
+  width: var(--queue-chip, 18px);
+  height: var(--queue-chip, 18px);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, var(--head) 0%, var(--head-edge) 100%);
+  box-shadow: 0 1px 2px var(--shadow);
+  /* Fade with distance down the queue: the next box is the one worth reading. */
+  opacity: calc(1 - var(--queue-rank, 0) * 0.22);
+  transform: scale(calc(1 - var(--queue-rank, 0) * 0.08));
+}
+
+.queue-chip.is-unknown {
+  background: var(--glass);
+  box-shadow: none;
+  opacity: 0.3;
+  transform: scale(0.6);
+}
+
+.queue .screw-glyph,
+.queue .screw-slot {
+  transform: scale(0.7);
+}
+
+/* ------------------------------------------------------------------ tray */
+
+.tray {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--glass);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* The tray filling up is how you lose, so it says so before it does. */
+.tray.is-critical {
+  background: color-mix(in srgb, var(--danger) 22%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 45%, transparent);
+}
+
+/* And says so loudly once it has. The sheet arrives 420ms later, so this is
+   what connects the tap to the loss. */
+.tray.is-overflowed {
+  animation: tray-overflow 0.42s ease-in-out 2 both;
+}
+
+@keyframes tray-overflow {
+  0%,
+  100% {
+    background: color-mix(in srgb, var(--danger) 22%, transparent);
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  50% {
+    background: color-mix(in srgb, var(--danger) 62%, transparent);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tray.is-overflowed {
+    animation: none;
+    background: color-mix(in srgb, var(--danger) 62%, transparent);
+  }
+}
+
+.tray-slot {
+  display: grid;
+  place-items: center;
+  width: var(--tray-slot, 24px);
+  height: var(--tray-slot, 24px);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.26);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.tray-slot.is-filled {
+  background: radial-gradient(circle at 34% 30%, var(--head) 0%, var(--head-edge) 100%);
+  box-shadow:
+    inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+    0 1px 2px var(--shadow);
+  animation: hole-pop 0.28s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+
+/* ----------------------------------------------------------------- board */
+
+.structure {
+  position: relative;
+  width: calc(var(--cell, 34px) * var(--grid-w, 8));
+  height: calc(var(--cell, 34px) * var(--grid-h, 10));
+  margin: auto;
+  /* Plates carry z-index: layer * 10, which climbs past 20 on any board more
+     than two plates deep. Without a stacking context here those values compete
+     with the whole page and a deep plate paints straight over the settings
+     overlay (z-index: 20). Isolating keeps the stack's ordering internal, which
+     is all it was ever meant to control. */
+  isolation: isolate;
+}
+
+.structure.is-celebrating {
+  animation: structure-cheer 0.7s ease both;
+}
+
+@keyframes structure-cheer {
+  40% {
+    transform: scale(1.04) rotate(-1.5deg);
+  }
+}
+
+.plate {
+  position: absolute;
+  left: calc(var(--px) * var(--cell, 34px));
+  top: calc(var(--py) * var(--cell, 34px));
+  width: calc(var(--pw) * var(--cell, 34px));
+  height: calc(var(--ph) * var(--cell, 34px));
+  border-radius: 9px;
+  background: linear-gradient(150deg, var(--plate-a) 0%, var(--plate-b) 100%);
+  /* A crisp rim plus a real drop shadow: without them a deep stack reads as
+     one flat grey shape and the player cannot tell what is on top of what. */
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.22),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.28),
+    0 4px 10px rgba(3, 8, 18, 0.55);
+}
+
+/* Four alternating grains keep a deep stack readable as separate pieces. */
+.plate[data-tone='0'] {
+  --plate-a: #5d6c88;
+  --plate-b: #3e4a60;
+}
+.plate[data-tone='1'] {
+  --plate-a: #8492ac;
+  --plate-b: #63718b;
+}
+.plate[data-tone='2'] {
+  --plate-a: #6d7c98;
+  --plate-b: #4d5a72;
+}
+.plate[data-tone='3'] {
+  --plate-a: #9aa7c0;
+  --plate-b: #77849e;
+}
+
+:root[data-theme='light'] .plate[data-tone='0'] {
+  --plate-a: #cdd6e6;
+  --plate-b: #aab6cc;
+}
+:root[data-theme='light'] .plate[data-tone='1'] {
+  --plate-a: #d8e0ee;
+  --plate-b: #b7c2d6;
+}
+:root[data-theme='light'] .plate[data-tone='2'] {
+  --plate-a: #c3ccdf;
+  --plate-b: #a1aec6;
+}
+:root[data-theme='light'] .plate[data-tone='3'] {
+  --plate-a: #e0e7f2;
+  --plate-b: #c0cadd;
+}
+
+.plate.is-falling {
+  animation: plate-fall 0.46s cubic-bezier(0.5, 0, 0.75, 0.4) both;
+  pointer-events: none;
+}
+
+@keyframes plate-fall {
+  to {
+    transform: translate(var(--fall-drift, 0), 120vh) rotate(var(--fall-spin, 25deg));
+    opacity: 0;
+  }
+}
+
+.plate.is-down {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- screws */
+
+.screw {
+  position: absolute;
+  left: calc((var(--sx) + 0.5) * var(--cell, 34px));
+  top: calc((var(--sy) + 0.5) * var(--cell, 34px));
+  width: var(--screw-size, 26px);
+  height: var(--screw-size, 26px);
+  margin-left: calc(var(--screw-size, 26px) / -2);
+  margin-top: calc(var(--screw-size, 26px) / -2);
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, var(--head, #ccc) 0%, var(--head-edge, #888) 100%);
+  box-shadow:
+    inset 0 -1px 2px rgba(0, 0, 0, 0.32),
+    0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: transform 0.14s ease;
+}
+
+.screw:active:not(:disabled) {
+  transform: scale(0.86);
+}
+
+/* A buried screw is already hidden behind its plate; this is belt and braces
+   for the moment a plate is mid-fall. */
+.screw.is-buried {
+  pointer-events: none;
+}
+
+.screw.is-gone {
+  display: none;
+}
+
+.screw-slot {
+  position: relative;
+  width: 56%;
+  height: 56%;
+}
+
+/* Crossed slots, so the head reads as a screw rather than a minus sign. */
+.screw-slot::before,
+.screw-slot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.42);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.screw-slot::before {
+  width: 100%;
+  height: 2.5px;
+}
+
+.screw-slot::after {
+  width: 2.5px;
+  height: 100%;
+}
+
+.screw-glyph {
+  width: 58%;
+  height: 58%;
+  fill: rgba(255, 255, 255, 0.88);
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+.screw.is-rejected {
+  animation: screw-shake 0.32s ease-in-out both;
+}
+
+@keyframes screw-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px) rotate(-12deg);
+  }
+  60% {
+    transform: translateX(4px) rotate(12deg);
+  }
+}
+
+.screw.is-hinted {
+  animation: screw-hint 0.7s ease-in-out 2 both;
+}
+
+@keyframes screw-hint {
+  50% {
+    box-shadow:
+      0 0 0 4px var(--accent-soft),
+      0 0 0 2px var(--accent),
+      0 1px 3px rgba(0, 0, 0, 0.4);
+    transform: scale(1.16);
+  }
+}
+
+/* Screw in flight from the board to a box or tray slot. */
+.screw-flight {
+  position: fixed;
+  z-index: 40;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, var(--head) 0%, var(--head-edge) 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  transition: transform 0.34s cubic-bezier(0.4, 0, 0.5, 1), opacity 0.34s ease;
+}
+
+/* ---------------------------------------------------------------- states */
+
+.board-note {
+  display: grid;
+  place-items: center;
+  color: var(--text-dim);
+  font-size: 0.86rem;
+}
+
+/* --------------------------------------------------------- end of level */
+
+.win-title,
+.lose-title {
+  margin: 0 0 6px;
+  font-size: 1.6rem;
+  text-align: center;
+}
+
+.lose-title {
+  color: var(--danger);
+}

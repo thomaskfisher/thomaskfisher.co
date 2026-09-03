@@ -1,0 +1,33 @@
+{
+  "name": "Screw Land",
+  "short_name": "Screw Land",
+  "description": "Take it apart, one screw at a time. No ads, no timers, no accounts — and it works offline.",
+  "id": "/screwland/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#101a2e",
+  "theme_color": "#101a2e",
+  "categories": ["games", "puzzle"],
+  "icons": [
+    {
+      "src": "../icons/screwland-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/screwland-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/screwland-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
