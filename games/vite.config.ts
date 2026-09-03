@@ -27,6 +27,7 @@ export default defineConfig({
         colorsort: 'colorsort/index.html',
         screwland: 'screwland/index.html',
         busjam: 'busjam/index.html',
+        survival: 'survival/index.html',
       },
     },
   },

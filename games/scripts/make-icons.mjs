@@ -320,6 +320,92 @@ function drawBusJam(size, { maskable }) {
   return encodePng(size, size, canvas.data);
 }
 
+
+/**
+ * The lane in miniature: a red horde across the top, two gates below it in the
+ * colours the game uses for add and multiply, and the squad at the bottom.
+ * Reads at 48px as "get past those to reach that", which is the whole game.
+ */
+function drawSurvival(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.19 : size * 0.11;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const area = size - inset * 2;
+
+  // The horde: a packed band across the top.
+  fillRoundedRect(canvas, inset, inset, area, area * 0.24, area * 0.06, hex('#b6303f'));
+  const headR = area * 0.037;
+  for (let column = 0; column < 6; column++) {
+    for (let rank = 0; rank < 2; rank++) {
+      const cx = inset + area * (0.11 + column * 0.156);
+      const cy = inset + area * (0.08 + rank * 0.09);
+      fillRoundedRect(canvas, cx - headR, cy - headR, headR * 2, headR * 2, headR, hex('#8e2331'));
+    }
+  }
+
+  // Two gates, one per operation, side by side the way a row of them sits.
+  const gateW = area * 0.44;
+  const gateH = area * 0.23;
+  const gateY = inset + area * 0.36;
+  fillRoundedRect(canvas, inset, gateY, gateW, gateH, area * 0.05, hex('#35b56a'));
+  fillRoundedRect(canvas, inset + area - gateW, gateY, gateW, gateH, area * 0.05, hex('#2b7fe8'));
+
+  // A plus on the left gate and a cross on the right, drawn as bars so they
+  // survive the downscale to 48px where a glyph would turn to mush.
+  const bar = area * 0.045;
+  const armL = gateW * 0.3;
+  const leftX = inset + gateW / 2;
+  const midY = gateY + gateH / 2;
+  fillRoundedRect(canvas, leftX - armL / 2, midY - bar / 2, armL, bar, bar / 2, hex('#ffffff'));
+  fillRoundedRect(canvas, leftX - bar / 2, midY - armL / 2, bar, armL, bar / 2, hex('#ffffff'));
+
+  const rightX = inset + area - gateW / 2;
+  for (const sign of [1, -1]) {
+    // A rotated bar, rasterised as a short stack of offset segments.
+    const steps = 9;
+    for (let i = 0; i < steps; i++) {
+      const t = (i / (steps - 1) - 0.5) * armL * 0.78;
+      fillRoundedRect(
+        canvas,
+        rightX + t - bar / 2,
+        midY + t * sign - bar / 2,
+        bar,
+        bar,
+        bar / 2,
+        hex('#ffffff'),
+      );
+    }
+  }
+
+  // The squad: a small wedge of soldiers at the bottom, in the accent blue.
+  const soldierR = area * 0.055;
+  const wedge = [
+    [0.5, 0.74],
+    [0.38, 0.86],
+    [0.62, 0.86],
+    [0.5, 0.94],
+  ];
+  for (const [fx, fy] of wedge) {
+    const cx = inset + area * fx;
+    const cy = inset + area * fy;
+    fillRoundedRect(
+      canvas,
+      cx - soldierR,
+      cy - soldierR,
+      soldierR * 2,
+      soldierR * 2,
+      soldierR,
+      hex('#4da3ff'),
+    );
+  }
+
+  return encodePng(size, size, canvas.data);
+}
+
 /* --------------------------------------------------------------- generate */
 
 mkdirSync(OUT_DIR, { recursive: true });
@@ -337,6 +423,10 @@ const targets = [
   ['busjam-192.png', 192, { maskable: false }, drawBusJam],
   ['busjam-512.png', 512, { maskable: false }, drawBusJam],
   ['busjam-maskable-512.png', 512, { maskable: true }, drawBusJam],
+  ['survival-180.png', 180, { maskable: false }, drawSurvival],
+  ['survival-192.png', 192, { maskable: false }, drawSurvival],
+  ['survival-512.png', 512, { maskable: false }, drawSurvival],
+  ['survival-maskable-512.png', 512, { maskable: true }, drawSurvival],
 ];
 
 for (const [name, size, options, draw] of targets) {

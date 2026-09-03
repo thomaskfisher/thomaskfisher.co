@@ -9,6 +9,7 @@ in-game currency. Everything is static; all state lives on the player's device.
 | Color Sort | Playable |
 | Screw Land | Playable |
 | Bus Jam | Playable |
+| Survival | Playable |
 
 ## Working on it
 
@@ -37,7 +38,35 @@ someone enjoying a puzzle on the couch, not running a search. See
 than a board, levels are reproducible from a bug report, and the whole save fits
 in well under a kilobyte.
 
-**Two of the three games share an engine.** Screw Land has a five-slot tray and
+**Survival is a route, not a runner.** The original is a real-time lane game —
+your squad scrolls towards a wall of gates and you drag left and right to weave
+between them. The maths in it is trivial (99 beats 1) and the difficulty is
+thumb speed, which is the half worth keeping least. Rows of gates across a few
+lanes, one lane of sideways movement per row, and the whole board visible turns
+the same fantasy into a planning puzzle: the `x4` four rows up may not be
+reachable from the `+900` in front of you, and `x3` then `+50` is not `+50` then
+`x3`. Each step still runs when you commit it — the run is per row rather than a
+replay at the end, which also means undo never has a multi-second animation to
+race.
+
+**Survival's solver is exact rather than bounded.** Every operation is monotone
+non-decreasing in the incoming soldier count — more soldiers is never worse,
+barriers included — so of two ways to reach the same cell, the one carrying more
+is at least as good from there on. One number per cell is therefore enough, and
+the sweep is O(rows x lanes). "Unsolvable" means unsolvable, not "the budget ran
+out". `model.test.ts` checks monotonicity over the whole node space, because if
+it ever stops holding this file silently stops being correct.
+
+**Survival's horde is a percentile, not a fraction.** Deriving it as
+`best x margin` put deep levels at four winning routes out of fourteen hundred:
+arithmetically a puzzle, in practice a lottery. Generation now enumerates what
+every route on the board actually finishes on — nine rows of at most three
+onward lanes is a few thousand walks — and places the horde so that a target
+share of them get through. "How many ways are there to win" becomes the literal
+difficulty dial, it means the same thing on a board full of multipliers and a
+board full of barriers, and at least one winner is guaranteed by construction.
+
+**Two of the four games share an engine.** Screw Land has a five-slot tray and
 boxes taking three matching screws; Bus Jam has a five-slot bench and buses
 taking three matching passengers. Same thing — `shared/buffer-sink.ts`. Bus Jam
 adds grid pathfinding on top.
@@ -81,6 +110,7 @@ src/shared/           rng, storage, progress, difficulty, audio, ui, pwa,
 src/colorsort/        model, solve, generate, layout, render, game, main
 src/screwland/        model, solve, generate, render, game, main
 src/busjam/           model, solve, generate, render, game, main
+src/survival/         model, solve, generate, render, game, main
 public/               icons, per-game manifest + service worker (copied verbatim)
 examples/             reference material for the originals — never deployed
 scripts/make-icons.mjs
@@ -101,6 +131,14 @@ firebase hosting:channel:deploy preview --only games
 # Ship
 firebase deploy --only hosting:games
 ```
+
+### Cut from Survival v1
+
+Boss enemies with their own health bars, squad splitting across two lanes
+("PICK YOUR LANE" in `examples/survival/survival1.png`), and weapon or fire-rate
+upgrades. The first is a barrier with different art and adds no decision; the
+other two each add a whole second thing to reason about, and neither is worth
+carrying while the core is still being calibrated.
 
 ### Cut from Bus Jam v1
 
@@ -123,6 +161,26 @@ them; they belong in later as optional modifiers, not as load-bearing rules.
 - **Hints must follow one cached plan.** Re-solving after every move can return
   a different winning line whose opening move undoes the previous one, and the
   hint button ping-pongs forever. All three games cache a plan and consume it.
+- **Punishing rows compound downwards.** Survival prices barriers and negative
+  gates as a fraction of the count reaching them, exactly as multipliers are a
+  multiple of it. Spending more than about two rows in five on them makes the
+  board net-deflationary, and the first build finished deep levels on eight
+  soldiers against a horde of seven — a fine puzzle, entirely the wrong feeling.
+  Barriers and hostile rows now share one row budget, and the difficulty that
+  used to come from them comes from the horde percentile, which costs no
+  magnitude at all.
+- **A per-board difficulty target normalises the other levers away.** Once
+  Survival's horde was calibrated to a fixed share of winning routes, adding
+  barriers stopped moving the measured trap rate — the horde simply moved to
+  compensate. That is not the band rejecting candidates (rejection stayed at
+  one or two attempts a level); it is the signal being defined in terms of the
+  answer. The other levers still change what a board *feels* like, and it is
+  worth knowing that is now all they do.
+- **shell.css owns some very ordinary class names.** `field`, `note` and
+  `button` are all defined globally, and Survival's board wrapper was called
+  `.field` — so it silently inherited a text input's border, which showed up as
+  a mystery rounded rectangle around the whole board. Check the shared sheet
+  before naming a container something generic.
 - **Never size a board from an element that the board can resize.** `.app` is a
   grid, and a grid item defaults to sizing its column to its content. A board
   wider than the phone therefore widened its own container, `fitBoard` measured

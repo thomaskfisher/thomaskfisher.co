@@ -1,0 +1,312 @@
+/* ==========================================================================
+   Survival.
+
+   Portrait, one-handed, and the whole lane visible at once — looking further
+   up the board is the game, so nothing here may scroll and nothing that is
+   still ahead of the squad may be dimmed to the point of being unreadable.
+   ========================================================================== */
+
+.app--survival {
+  grid-template-rows: auto 1fr auto;
+}
+
+/* ------------------------------------------------------------------ board */
+
+.board {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: 4px 10px 8px;
+}
+
+/* Not `.field`: shell.css already uses that for text inputs, and a board
+   wrapper called that quietly inherits an input's border. */
+.lane-view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+/* ------------------------------------------------------------------ horde */
+
+.horde {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 7px 16px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #b6303f 0%, #8e2331 100%);
+  color: #fff;
+  box-shadow: 0 2px 0 rgba(80, 14, 22, 0.85);
+  /* The crowd, abstracted: a row of heads packed shoulder to shoulder. */
+  background-image:
+    radial-gradient(circle at 6px 3px, rgba(255, 255, 255, 0.15) 2.4px, transparent 2.6px),
+    linear-gradient(180deg, #b6303f 0%, #8e2331 100%);
+  background-size: 12px 9px, auto;
+}
+
+.horde-count {
+  font-size: 1.42rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+
+.horde-label {
+  font-size: 0.66rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  opacity: 0.82;
+}
+
+.horde.is-outnumbered {
+  background-image: linear-gradient(180deg, #2f8f56 0%, #226b41 100%);
+  box-shadow: 0 2px 0 rgba(14, 60, 34, 0.85);
+}
+
+/* ------------------------------------------------------------------- grid */
+
+.grid {
+  position: relative;
+  /* The squad chip and the taken-cell rings both stack. Containing them here
+     means those z-indexes compete with each other and never with the settings
+     sheet, however deep a board gets. */
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: repeat(var(--lanes, 4), var(--cell-w, 68px));
+  grid-template-rows: repeat(var(--rows, 7), var(--cell-h, 46px)) var(--start-h, 34px);
+  gap: var(--gap, 6px);
+  justify-content: center;
+}
+
+.grid[data-empty] {
+  min-height: 220px;
+}
+
+/* ------------------------------------------------------------------- cell */
+
+.cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 11px;
+  background: var(--op);
+  box-shadow: 0 2px 0 var(--op-shade);
+  color: #fff;
+  transition:
+    opacity 0.16s ease,
+    filter 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.12s ease;
+}
+
+.cell--add {
+  --op: #35b56a;
+  --op-shade: #22874c;
+}
+.cell--mul {
+  --op: #2b7fe8;
+  --op-shade: #1b5aad;
+}
+.cell--sub {
+  --op: #f47b20;
+  --op-shade: #c25a0d;
+}
+.cell--div {
+  --op: #9b5de5;
+  --op-shade: #7038b8;
+}
+
+/* A hinged steel plate. Different rule, so it has to look like a different
+   object rather than a fifth colour of gate. */
+.cell--barrier {
+  --op: #67748f;
+  --op-shade: #454f64;
+  border-radius: 5px;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(245, 197, 24, 0.9) 0 6px,
+    rgba(26, 32, 44, 0.9) 6px 12px
+  );
+  background-size: auto 7px;
+  background-repeat: no-repeat;
+  background-position: top left;
+}
+
+.cell-face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  height: 100%;
+}
+
+.cell--barrier .cell-face {
+  padding-top: 6px; /* clear of the hazard stripe */
+  background: var(--op);
+  border-radius: inherit;
+  margin-top: 6px;
+  height: calc(100% - 6px);
+}
+
+.cell-label {
+  font-size: min(calc(var(--cell-w, 68px) * 0.3), 24px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.22);
+}
+
+.cell--wide .cell-label {
+  font-size: min(calc(var(--cell-w, 68px) * 0.23), 19px);
+}
+
+.cell--xwide .cell-label {
+  font-size: min(calc(var(--cell-w, 68px) * 0.185), 16px);
+}
+
+.cell-glyph {
+  width: min(calc(var(--cell-w, 68px) * 0.2), 15px);
+  height: min(calc(var(--cell-w, 68px) * 0.2), 15px);
+  flex: 0 0 auto;
+  fill: rgba(255, 255, 255, 0.86);
+}
+
+/* The running total, sitting on the gate the squad came through. */
+.cell-tally {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  padding: 0 4px;
+  border-radius: 6px;
+  background: rgba(8, 14, 26, 0.72);
+  color: #fff;
+  font-size: min(calc(var(--cell-w, 68px) * 0.16), 11px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+
+.cell-tally:empty {
+  display: none;
+}
+
+/* --------------------------------------------------------------- states */
+
+.cell:disabled {
+  cursor: default;
+}
+
+/* The lanes the next step can actually enter. */
+.cell.is-reachable {
+  box-shadow:
+    0 2px 0 var(--op-shade),
+    0 0 0 2.5px var(--text);
+  filter: brightness(1.08);
+}
+
+.cell.is-reachable:active {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 2.5px var(--text);
+}
+
+/* Ahead of the squad but out of reach this step. Dimmed, never hidden — the
+   whole board has to stay readable or planning becomes guessing. */
+.cell.is-blocked {
+  opacity: 0.44;
+}
+
+.cell.is-taken {
+  box-shadow:
+    0 2px 0 var(--op-shade),
+    0 0 0 2.5px var(--accent);
+}
+
+.cell.is-spent {
+  opacity: 0.26;
+}
+
+.cell.is-hinted {
+  box-shadow:
+    0 2px 0 var(--op-shade),
+    0 0 0 3px #f5c518,
+    0 0 16px rgba(245, 197, 24, 0.55);
+}
+
+/* ------------------------------------------------------------- startline */
+
+.startline {
+  border-radius: 10px;
+  border: 2px dashed var(--glass-edge);
+}
+
+/* ------------------------------------------------------------------ squad */
+
+.squad {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  min-width: calc(var(--cell-w, 68px) * 0.72);
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: min(calc(var(--cell-w, 68px) * 0.26), 20px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  box-shadow: 0 3px 10px var(--shadow);
+  transition: transform 0.26s cubic-bezier(0.3, 0.9, 0.35, 1);
+  pointer-events: none;
+}
+
+/* Applied for the single frame a new board is placed in, so the squad does not
+   fly across the screen from wherever the last level left it. */
+.squad.is-placing {
+  transition: none;
+}
+
+.squad.is-dead {
+  background: var(--danger);
+  color: #fff;
+}
+
+.squad.is-won {
+  background: #35b56a;
+  color: #fff;
+}
+
+/* ---------------------------------------------------------------- sheets */
+
+.win-title,
+.lose-title {
+  text-align: center;
+}
+
+.result-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  margin: 2px 0 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-line b {
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.result-line span {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
