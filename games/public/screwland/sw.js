@@ -10,10 +10,11 @@
  *   - hashed build assets are cache-first, because their contents can never
  *     change under a given URL.
  *
- * Bump CACHE_VERSION to evict everything from older builds.
+ * Bump CACHE_VERSION to evict this game's older builds.
  */
 
-const CACHE_VERSION = 'screwland-v2';
+const CACHE_PREFIX = 'screwland-';
+const CACHE_VERSION = `${CACHE_PREFIX}v2`;
 const SHELL = ['./', './index.html', './manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
@@ -31,7 +32,14 @@ self.addEventListener('activate', (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((key) => key !== CACHE_VERSION).map((key) => caches.delete(key))),
+        Promise.all(
+          keys
+            // Cache Storage is shared across the whole origin, so an unfiltered
+            // sweep here would wipe the other games' offline caches the first
+            // time this worker activates.
+            .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_VERSION)
+            .map((key) => caches.delete(key)),
+        ),
       )
       .then(() => self.clients.claim()),
   );

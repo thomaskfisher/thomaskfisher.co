@@ -1,21 +1,34 @@
 /**
- * Bus Jam service worker.
+ * Launcher service worker.
  *
- * Plain JS on purpose — it is copied verbatim by the build rather than bundled,
- * so there are no hashed filenames to keep in step with a precache manifest.
- * Caching happens at runtime instead:
+ * Scope is the origin root, so this controls the game grid at `/`. Each game
+ * registers its own worker under `/<game>/`, and the narrower scope wins for
+ * those pages, so the two never fight over a game.
  *
- *   - navigations are network-first, so a deploy is picked up straight away
- *     but the game still opens on a plane;
- *   - hashed build assets are cache-first, because their contents can never
- *     change under a given URL.
+ * It deliberately handles nothing but the launcher shell and the card icons.
+ * A root-scoped worker sees navigations to games that have never registered a
+ * worker of their own, and falling those back to the cached shell would answer
+ * "open Bus Jam" with the grid again — an offline loop with no way out. Letting
+ * them through means an unvisited game fails as the browser's offline page,
+ * which at least says what is actually wrong.
  *
- * Bump CACHE_VERSION to evict this game's older builds.
+ * Plain JS on purpose — it is copied verbatim by the build rather than bundled.
+ * The launcher has no JS chunk and its CSS is inline, so the shell below is
+ * genuinely everything the page loads.
+ *
+ * Bump CACHE_VERSION to evict the launcher's older builds.
  */
 
-const CACHE_PREFIX = 'busjam-';
-const CACHE_VERSION = `${CACHE_PREFIX}v2`;
-const SHELL = ['./', './index.html', './manifest.webmanifest'];
+const CACHE_PREFIX = 'launcher-';
+const CACHE_VERSION = `${CACHE_PREFIX}v1`;
+const SHELL = [
+  './',
+  './index.html',
+  './icons/colorsort-192.png',
+  './icons/screwland-192.png',
+  './icons/busjam-192.png',
+  './icons/survival-192.png',
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -35,37 +48,12 @@ self.addEventListener('activate', (event) => {
         Promise.all(
           keys
             // Cache Storage is shared across the whole origin, so an unfiltered
-            // sweep here would wipe the other games' offline caches the first
-            // time this worker activates.
+            // sweep here would wipe all four games' offline caches.
             .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_VERSION)
             .map((key) => caches.delete(key)),
         ),
       )
       .then(() => self.clients.claim()),
-  );
-});
-
-/**
- * The page reports what it loaded once it is up.
- *
- * On a first visit the hashed JS and CSS are fetched before this worker
- * activates, so it never sees them and cannot cache them — which would leave
- * the game broken offline until the second visit. This closes that gap without
- * needing a build-time precache manifest.
- */
-self.addEventListener('message', (event) => {
-  const data = event.data;
-  if (!data || data.type !== 'precache' || !Array.isArray(data.urls)) return;
-
-  event.waitUntil(
-    caches.open(CACHE_VERSION).then(async (cache) => {
-      const missing = [];
-      for (const url of data.urls) {
-        if (!(await cache.match(url))) missing.push(url);
-      }
-      // One failure must not discard the rest, so cache them individually.
-      await Promise.all(missing.map((url) => cache.add(url).catch(() => undefined)));
-    }),
   );
 });
 
@@ -78,11 +66,19 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request));
+    // Network-first, so a deploy is picked up straight away but the grid still
+    // opens on a plane. Anything that is not the grid is left alone.
+    if (url.pathname === '/' || url.pathname === '/index.html') {
+      event.respondWith(networkFirst(request));
+    }
     return;
   }
 
-  event.respondWith(cacheFirst(request));
+  // The card icons never change under a given URL, and they are shared with
+  // each game's manifest, so they are worth holding cache-first.
+  if (url.pathname.startsWith('/icons/')) {
+    event.respondWith(cacheFirst(request));
+  }
 });
 
 async function networkFirst(request) {

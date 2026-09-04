@@ -186,5 +186,19 @@
     <footer>
       Add one to your home screen (Share &rarr; Add to Home Screen) and it opens like an app.
     </footer>
+
+    <script>
+      // Inline and dependency-free on purpose: the launcher emits no JS chunk,
+      // so the worker's shell list stays a fixed set of unhashed URLs.
+      // Skipped on the Vite dev server (see server.port in vite.config.ts),
+      // where a stale cache makes local edits look like they never applied.
+      if ('serviceWorker' in navigator && location.port !== '5273') {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {
+            // Offline play is a bonus, not a requirement. Never block the grid on it.
+          });
+        });
+      }
+    </script>
   </body>
 </html>
