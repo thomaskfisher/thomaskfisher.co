@@ -13,6 +13,26 @@
           "source": "/resume",
           "destination": "/assets/portfolio/Thomas Fisher Resume Feb 2026.pdf",
           "type": 301
+        },
+        {
+          "source": "/wedding",
+          "destination": "https://wedding.thomaskfisher.com",
+          "type": 301
+        },
+        {
+          "source": "/wedding.html",
+          "destination": "https://wedding.thomaskfisher.com",
+          "type": 301
+        },
+        {
+          "source": "/rsvp",
+          "destination": "https://wedding.thomaskfisher.com/rsvp",
+          "type": 301
+        },
+        {
+          "source": "/rsvp.html",
+          "destination": "https://wedding.thomaskfisher.com/rsvp",
+          "type": 301
         }
       ],
       "rewrites": [
@@ -57,6 +77,29 @@
               "value": "public, max-age=31536000, immutable"
             }
           ]
+        }
+      ]
+    },
+    {
+      "target": "wedding",
+      "public": "wedding/public",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "cleanUrls": true,
+      "redirects": [
+        {
+          "source": "/rsvp/",
+          "destination": "/rsvp",
+          "type": 301
+        }
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
         }
       ]
     }
