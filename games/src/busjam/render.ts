@@ -227,16 +227,6 @@ function personBody(color: number, showGlyphs: boolean): string {
   );
 }
 
-/**
- * How many upcoming buses the player gets to see.
- *
- * Three is enough to plan the bench around — you can tell whether parking a
- * colour will pay off shortly or strand a seat for the rest of the level —
- * without handing over the whole colour order, which would turn the level into
- * a transcription exercise rather than a puzzle.
- */
-const PREVIEW_COUNT = 3;
-
 /** How many "and more after that" dots to draw before giving up on the row. */
 const PREVIEW_DOTS = 3;
 
@@ -262,7 +252,7 @@ export class StopRenderer {
       ...state.sinks.sinks.map((sink, i) => this.buildBus(sink, i, sinkCapacity)),
     );
 
-    this.renderQueue(state.sinks.queue);
+    this.renderQueue(state.sinks.queue, generated.shape.previewCount);
 
     const slots: HTMLElement[] = [];
     for (let i = 0; i < bufferCapacity; i++) {
@@ -330,7 +320,7 @@ export class StopRenderer {
    * colour arrives later. Without this strip that gamble is blind, which reads
    * as bad luck rather than as a bad decision.
    */
-  private renderQueue(queue: readonly number[]): void {
+  private renderQueue(queue: readonly number[], previewCount: number): void {
     if (queue.length === 0) {
       this.queueEl.replaceChildren();
       this.queueEl.hidden = true;
@@ -338,7 +328,7 @@ export class StopRenderer {
     }
     this.queueEl.hidden = false;
 
-    const shown = queue.slice(0, PREVIEW_COUNT);
+    const shown = queue.slice(0, Math.max(0, previewCount));
     const children: HTMLElement[] = shown.map((color, i) => {
       const chip = document.createElement('div');
       chip.className = 'queue-bus';

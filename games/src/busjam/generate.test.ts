@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { accept, createSinkState, isDrained } from '../shared/buffer-sink';
-import { SINK_CAPACITY, generateLevel } from './generate';
+import { generateLevel } from './generate';
 import {
   type Passenger,
   allBoarded,
@@ -69,15 +69,17 @@ describe('colour bookkeeping', () => {
       }
 
       for (const [color, count] of perColor) {
-        expect(count % SINK_CAPACITY, `level ${level}: colour ${color} cannot fill buses`).toBe(0);
+        expect(count % shape.busCapacity, `level ${level}: colour ${color} cannot fill buses`).toBe(
+          0,
+        );
       }
 
       // One bus per three passengers, and the queue is exactly those buses.
-      expect(queue.length).toBe(board.passengers.length / SINK_CAPACITY);
+      expect(queue.length).toBe(board.passengers.length / shape.busCapacity);
       const queuePerColor = new Map<number, number>();
       for (const color of queue) queuePerColor.set(color, (queuePerColor.get(color) ?? 0) + 1);
       for (const [color, count] of perColor) {
-        expect(queuePerColor.get(color) ?? 0).toBe(count / SINK_CAPACITY);
+        expect(queuePerColor.get(color) ?? 0).toBe(count / shape.busCapacity);
       }
 
       expect(board.colors).toBe(shape.colors);
@@ -127,24 +129,24 @@ describe('difficulty', () => {
     expect(mean(200)).toBeGreaterThan(mean(2) + 0.2);
   }, 180_000);
 
-  it('opens the first levels wide enough that they cannot be lost', () => {
-    // The opening levels are a tutorial: two buses at the stop means something
-    // on the board almost always matches, and the bench never fills.
-    const { shape } = generateLevel(SEED, 1);
-    expect(shape.openBuses).toBe(2);
+  it('puts a single bus at the stop from level 1', () => {
+    // Deliberately not a tutorial. Two buses meant something on the board
+    // almost always matched, so the bench never filled and the level could not
+    // be lost — which is no longer how any level in this game opens.
+    for (const level of [1, 2, 3, 20, 90]) {
+      expect(generateLevel(SEED, level).shape.openBuses).toBe(1);
+    }
   }, 60_000);
 });
 
 describe('determinism', () => {
-  it('is a pure function of seed, level, and offset', () => {
+  it('is a pure function of seed and level', () => {
     const a = generateLevel(SEED, 33);
     const b = generateLevel(SEED, 33);
     expect(JSON.stringify(b.board)).toBe(JSON.stringify(a.board));
     expect(b.queue).toEqual(a.queue);
 
-    const shifted = generateLevel(SEED, 33, -4);
     const other = generateLevel('different-seed', 33);
-    expect(JSON.stringify(shifted.board)).not.toBe(JSON.stringify(a.board));
     expect(JSON.stringify(other.board)).not.toBe(JSON.stringify(a.board));
   }, 60_000);
 });

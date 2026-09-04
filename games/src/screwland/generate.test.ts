@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SINK_CAPACITY, generateLevel } from './generate';
+import { generateLevel } from './generate';
 import {
   accessibleScrewIds,
   allRemoved,
@@ -58,7 +58,7 @@ describe('generated levels are always playable', () => {
 describe('colour bookkeeping', () => {
   it('gives every colour a count that fills boxes exactly', () => {
     for (const level of [1, 12, 40, 90, 200]) {
-      const { structure } = generateLevel(SEED, level);
+      const { structure, shape } = generateLevel(SEED, level);
 
       const counts = new Map<number, number>();
       for (const screw of structure.screws) {
@@ -66,7 +66,9 @@ describe('colour bookkeeping', () => {
       }
 
       for (const [color, count] of counts) {
-        expect(count % SINK_CAPACITY, `level ${level}, colour ${color} leaves a remainder`).toBe(0);
+        expect(count % shape.boxCapacity, `level ${level}, colour ${color} leaves a remainder`).toBe(
+          0,
+        );
       }
     }
   }, 60_000);
@@ -109,37 +111,50 @@ describe('determinism', () => {
 });
 
 describe('difficulty curve', () => {
-  it('starts gentle', () => {
-    for (let level = 1; level <= 4; level++) {
-      const { shape } = generateLevel(SEED, level);
-      expect(shape.colors).toBeLessThanOrEqual(4);
-      expect(shape.trayCapacity).toBe(5);
-      expect(shape.screwCount).toBeLessThanOrEqual(18);
-      expect(shape.openBoxes).toBeGreaterThanOrEqual(3);
+  /**
+   * Replaces a test that asserted level 1 handed out four open boxes and four
+   * colours — a board that could not be lost. Three boxes is now the most
+   * generous setting in the game and it does not survive past the opening
+   * levels.
+   */
+  it('opens hard rather than gentle', () => {
+    let total = 0;
+    for (let level = 1; level <= 6; level++) {
+      const { shape, difficulty } = generateLevel(SEED, level);
+      expect(shape.openBoxes, `level ${level} opens too many boxes`).toBeLessThanOrEqual(3);
+      expect(shape.colors, `level ${level} deals too few colours`).toBeGreaterThanOrEqual(4);
+      expect(difficulty, `level ${level} is a walkover`).toBeGreaterThan(0.12);
+      total += difficulty;
     }
-  }, 60_000);
+    // The mean is the real assertion. Per-level pressure carries +-0.06 of
+    // jitter by design, so a single opening level is a noisy thing to pin —
+    // pinning one is how this test ended up asserting a threshold that held for
+    // some profile seeds and not others.
+    expect(total / 6, 'the opening levels are a walkover on average').toBeGreaterThan(0.25);
+  }, 120_000);
 
   /**
-   * With four boxes open the player can nearly always find a match on the
-   * board, the tray never fills, and a level that cannot be lost is not a
-   * puzzle. Closing boxes is the lever that fixes that, so it has to actually
-   * move as levels get harder.
+   * Two open boxes is the game; three is a breather.
+   *
+   * This lever used to run 4 -> 3 -> 2 across the curve, and the top of that
+   * range was the problem: with three or four colours accepted at once the tray
+   * cannot fill, so the level cannot be lost, and a level that cannot be lost is
+   * not a puzzle. Four is gone entirely and three now appears only on breather
+   * levels, which is a deliberate narrowing — the difficulty that used to come
+   * from closing boxes now comes from box capacity, tray size and the queue
+   * preview, none of which make a board unloseable.
    */
-  it('closes boxes as levels get harder', () => {
-    const meanOpen = (from: number, to: number): number => {
-      let sum = 0;
-      for (let level = from; level <= to; level++) sum += generateLevel(SEED, level).shape.openBoxes;
-      return sum / (to - from + 1);
-    };
+  it('opens two boxes on ordinary levels and three only as a breather', () => {
+    const shapes = Array.from({ length: 60 }, (_, i) => generateLevel(SEED, i + 1).shape);
 
-    expect(meanOpen(1, 8)).toBeGreaterThan(3.2);
-    expect(meanOpen(60, 80)).toBeLessThan(2.9);
-    expect(meanOpen(200, 220)).toBeLessThan(2.6);
+    expect(shapes.every((shape) => shape.openBoxes <= 3)).toBe(true);
+    const twos = shapes.filter((shape) => shape.openBoxes === 2).length;
+    expect(twos, 'two boxes should be the standing setting').toBeGreaterThan(50);
 
-    // Two open boxes has to be a board the player actually meets, not a shape
-    // the difficulty band always rejects for scoring too high.
-    const deep = Array.from({ length: 21 }, (_, i) => generateLevel(SEED, 200 + i).shape.openBoxes);
-    expect(deep.filter((n) => n === 2).length).toBeGreaterThan(8);
+    // Every three-box board is a breather (levels 9k+4). See shared/difficulty.ts.
+    shapes.forEach((shape, i) => {
+      if (shape.openBoxes === 3) expect((i + 1) % 9, `level ${i + 1}`).toBe(4);
+    });
   }, 300_000);
 
   /** Colours per open box is the ratio that decides whether a board is fair. */
@@ -147,8 +162,18 @@ describe('difficulty curve', () => {
     for (const level of [1, 25, 75, 150, 300, 600]) {
       const { shape, config } = generateLevel(SEED, level);
       expect(config.openSinks).toBe(shape.openBoxes);
+      expect(config.sinkCapacity).toBe(shape.boxCapacity);
       expect(shape.openBoxes).toBeGreaterThanOrEqual(2);
-      expect(shape.colors).toBeLessThanOrEqual(shape.openBoxes + 2);
+      // The measured budget from tools/probe.ts — see `colorBudget` in the
+      // generator — with a floor of four under it. The floor wins where the two
+      // disagree, which happens only at the top of the curve: the budget says
+      // three there and the probe says four colours is solvable in 11 deals in
+      // 20, and a three-colour board looks like an easy one whatever it
+      // measures.
+      expect(shape.colors).toBeLessThanOrEqual(
+        Math.max(4, shape.openBoxes + shape.trayCapacity + 2 - shape.boxCapacity),
+      );
+      expect(shape.colors, 'a three-colour board reads as easy').toBeGreaterThanOrEqual(4);
     }
   }, 120_000);
 
@@ -159,23 +184,42 @@ describe('difficulty curve', () => {
       return sum / (to - from + 1);
     };
 
-    const early = windowMean(1, 12);
-    const mid = windowMean(45, 60);
-    const late = windowMean(130, 145);
+    // Windows sit inside the ramp, which is levels 1-50 now, not 1-500.
+    const early = windowMean(1, 10);
+    const mid = windowMean(14, 26);
+    const late = windowMean(30, 50);
 
     expect(mid).toBeGreaterThan(early);
     expect(late).toBeGreaterThan(mid);
-    expect(early).toBeLessThan(0.25);
-    expect(late).toBeGreaterThan(0.35);
+    // Both ends are guarded. The opening is meant to sit a quarter of the way
+    // up rather than on the floor — the old curve put this window at 0.11 —
+    // and a top window collapsing means the target band went unreachable.
+    expect(early, 'the opening window is a walkover').toBeGreaterThan(0.2);
+    expect(late, 'the curve does not reach its ceiling').toBeGreaterThan(0.75);
+  }, 300_000);
+
+  /**
+   * Past level 50 the curve stops climbing on purpose: levels keep coming
+   * forever and are all pitched at the ceiling, so what varies is the board
+   * rather than the pressure.
+   */
+  it('plateaus past the peak instead of creeping on', () => {
+    const windowMean = (from: number, to: number): number => {
+      let sum = 0;
+      for (let level = from; level <= to; level++) sum += generateLevel(SEED, level).difficulty;
+      return sum / (to - from + 1);
+    };
+
+    expect(Math.abs(windowMean(50, 62) - windowMean(160, 172))).toBeLessThan(0.1);
   }, 300_000);
 
   it('keeps the board within what fits a phone screen', () => {
     for (const level of [200, 400, 800]) {
       const { shape, structure } = generateLevel(SEED, level);
-      expect(shape.colors).toBeLessThanOrEqual(7);
+      expect(shape.colors).toBeLessThanOrEqual(8);
       expect(structure.gridWidth).toBeLessThanOrEqual(9);
       expect(structure.gridHeight).toBeLessThanOrEqual(11);
-      expect(structure.screws.length).toBeLessThanOrEqual(42);
+      expect(structure.screws.length).toBeLessThanOrEqual(45);
     }
   }, 120_000);
 

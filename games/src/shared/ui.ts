@@ -44,16 +44,26 @@ export interface Sheet {
   close: () => void;
 }
 
-export function openSheet(build: (sheet: Sheet) => void, options: { dismissible?: boolean } = {}): Sheet {
+export function openSheet(
+  build: (sheet: Sheet) => void,
+  options: { dismissible?: boolean; onClose?: () => void } = {},
+): Sheet {
   const { dismissible = true } = options;
 
   const overlay = el('div', { class: 'overlay' });
   const content = el('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true' });
   overlay.append(content);
 
+  // Guarded because every dismissal path routes through here — the Done button,
+  // the backdrop and Escape — and `onClose` resumes the clock. Resuming twice
+  // would be harmless; resuming a clock the caller already stopped would not.
+  let closed = false;
   const close = (): void => {
+    if (closed) return;
+    closed = true;
     overlay.remove();
     document.removeEventListener('keydown', onKey);
+    options.onClose?.();
   };
 
   const onKey = (event: KeyboardEvent): void => {

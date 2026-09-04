@@ -78,3 +78,5 @@ node_modules/
 .Trashes
 ehthumbs.db
 Thumbs.db
+# Calibration harness output (regenerate with the scripts in games/tools/)
+games/tools/*.txt

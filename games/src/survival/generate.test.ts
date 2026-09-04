@@ -49,7 +49,7 @@ describe('generated levels', () => {
    */
   it('are well formed, winnable, and win when the solver is followed', () => {
     for (const level of SWEEP) {
-      const generated = generateLevel(SEED, level, 0);
+      const generated = generateLevel(SEED, level);
       const { board } = generated;
 
       expect(isWellFormed(board), `level ${level} malformed`).toBe(true);
@@ -69,7 +69,7 @@ describe('generated levels', () => {
 
   it('are never already won and never a single forced line', () => {
     for (const level of SWEEP) {
-      const { board } = generateLevel(SEED, level, 0);
+      const { board } = generateLevel(SEED, level);
       const finals = allRouteFinals(board);
       const winning = finals.filter((final) => final > board.horde).length;
 
@@ -84,7 +84,7 @@ describe('generated levels', () => {
     // The construction invariant. If a row can wipe out every lane the board is
     // unwinnable however generous the horde, and no amount of retrying helps.
     for (const level of SWEEP) {
-      const { board } = generateLevel(SEED, level, 0);
+      const { board } = generateLevel(SEED, level);
 
       let values = new Array<number>(board.lanes).fill(board.startCount);
       for (let row = 0; row < board.rows; row++) {
@@ -106,27 +106,39 @@ describe('generated levels', () => {
     }
   });
 
-  it('are a pure function of seed, level and offset', () => {
+  it('are a pure function of seed and level', () => {
     for (const level of [1, 17, 64, 210]) {
-      const a = generateLevel(SEED, level, 0);
-      const b = generateLevel(SEED, level, 0);
+      const a = generateLevel(SEED, level);
+      const b = generateLevel(SEED, level);
       expect(JSON.stringify(a.board)).toBe(JSON.stringify(b.board));
 
-      const other = generateLevel('a-different-profile', level, 0);
+      const other = generateLevel('a-different-profile', level);
       expect(JSON.stringify(other.board)).not.toBe(JSON.stringify(a.board));
-
-      const shifted = generateLevel(SEED, level, 6);
-      expect(shifted.board).toBeDefined();
     }
   });
 
   it('fit a portrait phone at every level', () => {
     for (const level of SWEEP) {
-      const { board } = generateLevel(SEED, level, 0);
-      expect(board.lanes, `level ${level} lanes`).toBeLessThanOrEqual(5);
-      expect(board.rows, `level ${level} rows`).toBeLessThanOrEqual(9);
-      expect(board.lanes).toBeGreaterThanOrEqual(3);
-      expect(board.rows).toBeGreaterThanOrEqual(5);
+      const { board } = generateLevel(SEED, level);
+      // Six lanes by eleven rows is the ceiling, up from five by nine. At a
+      // 390px width that is still a 58px lane, and `fitBoard` solves for the
+      // largest cell that fits rather than assuming one.
+      expect(board.lanes, `level ${level} lanes`).toBeLessThanOrEqual(6);
+      expect(board.rows, `level ${level} rows`).toBeLessThanOrEqual(11);
+      expect(board.lanes).toBeGreaterThanOrEqual(4);
+      expect(board.rows).toBeGreaterThanOrEqual(6);
+    }
+  });
+
+  /**
+   * One lane of sideways movement per row, on every board including level 1.
+   *
+   * Reach 2 across a narrow board meant every lane was always available, so
+   * there was no route to plan and the opening levels were pure arithmetic.
+   */
+  it('never let the squad cross more than one lane per row', () => {
+    for (const level of SWEEP) {
+      expect(generateLevel(SEED, level).board.reach, `level ${level}`).toBe(1);
     }
   });
 
@@ -138,7 +150,7 @@ describe('generated levels', () => {
    */
   it('grow the squad into something worth commanding', () => {
     for (const level of SWEEP) {
-      const generated = generateLevel(SEED, level, 0);
+      const generated = generateLevel(SEED, level);
       expect(generated.best, `level ${level} finishes too small`).toBeGreaterThanOrEqual(40);
       expect(generated.best, `level ${level} outgrew the display`).toBeLessThan(10_000_000);
       expect(generated.board.startCount).toBeLessThanOrEqual(24);
@@ -148,7 +160,7 @@ describe('generated levels', () => {
   it('get harder as the level number rises', () => {
     const decade = (from: number, to: number): number => {
       let total = 0;
-      for (let level = from; level <= to; level++) total += generateLevel(SEED, level, 0).difficulty;
+      for (let level = from; level <= to; level++) total += generateLevel(SEED, level).difficulty;
       return total / (to - from + 1);
     };
 
@@ -169,7 +181,7 @@ describe('generated levels', () => {
 
   it('generates fast enough to stay ahead of the player', () => {
     const started = Date.now();
-    for (let level = 1; level <= 120; level++) generateLevel(SEED, level, 0);
+    for (let level = 1; level <= 120; level++) generateLevel(SEED, level);
     const elapsed = Date.now() - started;
     // Generation runs on a worker one level ahead, so this is a wide bound on
     // purpose — it is here to catch an accidental blow-up, not to police ms.
@@ -206,14 +218,32 @@ describe('difficulty measurement', () => {
     expect(trapRate(walkover, createRng(1), 20)).toBe(0);
   });
 
+  /**
+   * Isolates the horde percentile from everything else on the board.
+   *
+   * The fixed shape is deliberately mild — few hostile cells, no barriers. On a
+   * board carrying the rest of the curve's pressure the naive trap rate is
+   * already 0.85, and a saturated signal cannot show that a lever moves it.
+   * That saturation is fine in the game (`scoreDifficulty` blends in structure
+   * for exactly this reason) but it makes a lever test measure nothing.
+   */
   it('rises as the share of winning routes falls', () => {
     const measure = (winTarget: number): number => {
-      const pressure = pressureForLevel(60, 0, createRng(hashSeed('band', winTarget)));
+      const pressure = pressureForLevel(60, createRng(hashSeed('band', winTarget)));
       let total = 0;
       let count = 0;
       for (let attempt = 0; attempt < 60; attempt++) {
         const rng = createRng(hashSeed('band', winTarget, attempt));
-        const shape = { ...shapeFor(pressure, rng), winTarget, lanes: 4, rows: 7, reach: 1 };
+        const shape = {
+          ...shapeFor(pressure, rng),
+          winTarget,
+          lanes: 4,
+          rows: 6,
+          reach: 1,
+          barrierRows: 0,
+          hostileRows: 0,
+          hostileShare: 0.08,
+        };
         const built = buildBoard(shape, rng);
         if (!built) continue;
         total += trapRate(built.board, createRng(hashSeed('band', 'roll', winTarget, attempt)), 40);
@@ -222,22 +252,25 @@ describe('difficulty measurement', () => {
       return total / Math.max(1, count);
     };
 
-    const generous = measure(0.5);
-    const middling = measure(0.2);
-    const mean = measure(0.05);
+    // Sampled across the range `shapeFor` actually produces, which is now
+    // 0.30 down to 0.03 — a level-1 board lets about a quarter of routes
+    // through, where it used to be more than half.
+    const generous = measure(0.3);
+    const middling = measure(0.15);
+    const mean = measure(0.04);
 
     expect(generous).toBeLessThan(middling);
     expect(middling).toBeLessThan(mean);
     // Wide enough to calibrate a band against, which is the thing that went
     // wrong in both earlier games.
-    expect(mean - generous).toBeGreaterThan(0.25);
+    expect(mean - generous).toBeGreaterThan(0.2);
   });
 });
 
 describe('mid-run recovery', () => {
   it('lets the hint finish a level from wherever the player left it', () => {
     for (const level of [7, 33, 88, 190]) {
-      const { board } = generateLevel(SEED, level, 0);
+      const { board } = generateLevel(SEED, level);
       const route: number[] = [];
 
       // Walk a few rows off the optimal line, then ask for the rest.

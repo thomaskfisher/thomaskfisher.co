@@ -110,15 +110,17 @@ export function shapeFor(pressure: LevelPressure, rng: Rng): LevelShape {
 
   // Board size is capped at what a portrait phone can show without scrolling.
   // Past that, difficulty has to come from the measured signal rather than from
-  // more board — the same ceiling the other two games ran into.
-  const lanes = clampInt(3 + p * 2, 3, 5);
-  const rows = clampInt(5 + p * 4, 5, 9);
+  // more board — the same ceiling the other three games ran into.
+  const lanes = clampInt(4 + p * 2, 4, 6);
+  const rows = clampInt(6 + p * 5, 6, 11);
 
-  // Reach 2 across 3 lanes is total freedom: every lane is always available, so
-  // there is no route to plan and the opening levels are a pure arithmetic
-  // warm-up. Dropping to 1 is what turns the board into a corridor you commit
-  // to. It happens early, because it is the difference between a toy and a game.
-  const reach = p < 0.18 ? 2 : 1;
+  // **Reach is 1 everywhere, including level 1.** Reach 2 meant every lane was
+  // always available, so there was no route to plan and the opening levels were
+  // a pure arithmetic warm-up: read the row, take the biggest number, repeat.
+  // One lane of movement per row is what makes the board a corridor you commit
+  // to five rows in advance, and that is the game. There is no version of this
+  // worth playing where you can cross the board in a single step.
+  const reach = 1;
 
   const startCount = clampInt(5 + p * 13 + rng.next() * 4, 4, 22);
 
@@ -128,23 +130,29 @@ export function shapeFor(pressure: LevelPressure, rng: Rng): LevelShape {
   // to build is gone in three, and the finale is a skirmish rather than a war.
   // They share one budget so the sum can never get there, and `margin` — which
   // costs no magnitude at all — carries the difficulty past where they stop.
-  const punishBudget = Math.floor(rows * 0.4);
-  const barrierRows = clampInt(p * 2.4, 0, Math.min(2, punishBudget));
-  const hostileRows = clampInt(p * 1.6, 0, Math.max(0, Math.min(2, punishBudget - barrierRows)));
+  const punishBudget = Math.floor(rows * 0.5);
+  const barrierRows = clampInt(0.4 + p * 2.6, 0, Math.min(3, punishBudget));
+  const hostileRows = clampInt(0.3 + p * 2.4, 0, Math.max(0, Math.min(3, punishBudget - barrierRows)));
 
   // Multipliers are what make order matter: x3 then +50 and +50 then x3 differ,
   // so a board with none of them rewards taking the biggest number in sight and
   // a board with too many rewards only ever taking the multiplier.
   const mulShare = clamp(0.28 + p * 0.34, 0, 0.62);
-  const hostileShare = clamp(0.07 + p * 0.3, 0, 0.42);
+  // Opens at 0.26 rather than 0.09. A row where one cell in eleven hurts is a
+  // row you can take without reading it.
+  const hostileShare = clamp(0.18 + p * 0.34, 0, 0.52);
 
   // Difficulty here is "how many ways are there to win", set directly rather
   // than inferred from a fraction of the best possible finish. Deriving it the
   // other way put deep levels at four winning routes out of fourteen hundred —
   // arithmetically a puzzle, in practice a lottery, and no amount of lookahead
-  // makes a needle findable. Five percent of a thousand routes is fifty ways
+  // makes a needle findable. Three percent of a thousand routes is thirty ways
   // through, which is a board worth tracing.
-  const winTarget = clamp(0.55 - p * 0.5, 0.045, 0.55);
+  //
+  // The opening value matters as much as the closing one: at 0.55, more than
+  // half of all routes won, so a level-1 board was cleared by walking upwards
+  // without reading it.
+  const winTarget = clamp(0.3 - p * 0.27, 0.03, 0.3);
 
   return {
     lanes,
@@ -269,7 +277,7 @@ function planRowKinds(shape: LevelShape, rng: Rng): RowKind[] {
 function hostileNode(rng: Rng, reference: number): Node {
   // Division needs room to divide: halving three soldiers is a death sentence
   // dressed as a small penalty, which reads as unfair rather than as hard.
-  if (reference >= 8 && rng.chance(0.4)) {
+  if (reference >= 8 && rng.chance(0.5)) {
     return { kind: 'gate', op: 'div', value: rng.chance(0.72) ? 2 : 3 };
   }
   const value = clampInt(reference * (0.18 + rng.next() * 0.42), 1, Math.max(1, reference - 1));
@@ -283,11 +291,18 @@ function friendlyNode(rng: Rng, reference: number, allowMultiply: boolean): Node
     const roll = rng.next();
     return { kind: 'gate', op: 'mul', value: roll < 0.56 ? 2 : roll < 0.88 ? 3 : 4 };
   }
-  // Deliberately wide. An add is priced against the *best* count arriving at
-  // this row, so it is worth far more to a lane carrying less than that — which
-  // is what makes the same row a different decision depending on where you are
-  // standing, and what stops "always take the multiplier" from being a strategy.
-  const value = clampInt(reference * (0.3 + rng.next() * 1.7), 1, Number.MAX_SAFE_INTEGER);
+  // Deliberately *narrow*. An add is priced against the best count arriving at
+  // this row, so it is still worth more to a lane carrying less than that —
+  // which is what makes the same row a different decision depending on where
+  // you are standing, and what stops "always take the multiplier" from being a
+  // strategy.
+  //
+  // The spread used to be 0.3x to 2.0x, and that width was the single biggest
+  // reason the game read as easy: on a row holding +15, +22 and +2,759, there
+  // is no decision to make. Every gate is now within a factor of about two and
+  // a half of every other, so telling them apart means carrying the arithmetic
+  // forward a row or two rather than scanning for the big number.
+  const value = clampInt(reference * (0.45 + rng.next() * 0.75), 1, Number.MAX_SAFE_INTEGER);
   return { kind: 'gate', op: 'add', value };
 }
 
@@ -467,14 +482,22 @@ export function trapRate(board: Board, rng: Rng, rollouts = 40): number {
   return lost / rollouts;
 }
 
+/**
+ * Combines the measured trap rate with the board's structure.
+ *
+ * `reach` used to contribute here; it is 1 on every board now, so it would be a
+ * constant and is gone. The remaining terms are rescaled to the ranges the
+ * shape function actually produces — a structural term normalised against a
+ * range nothing reaches is a term that never moves.
+ */
 export function scoreDifficulty(shape: LevelShape, trap: number): number {
   const trapScore = clamp(trap / 0.85, 0, 1);
   const structural = clamp(
-    (shape.reach === 1 ? 0.3 : 0.02) +
-      clamp((0.55 - shape.winTarget) / 0.5, 0, 1) * 0.34 +
-      (shape.barrierRows / 2) * 0.16 +
-      (shape.hostileRows / 2) * 0.1 +
-      ((shape.rows - 5) / 4) * 0.08,
+    clamp((0.3 - shape.winTarget) / 0.27, 0, 1) * 0.44 +
+      (shape.barrierRows / 3) * 0.2 +
+      (shape.hostileRows / 3) * 0.14 +
+      ((shape.rows - 6) / 5) * 0.12 +
+      ((shape.lanes - 4) / 2) * 0.1,
     0,
     1,
   );
@@ -484,23 +507,18 @@ export function scoreDifficulty(shape: LevelShape, trap: number): number {
 /* --------------------------------------------------------------- assembly */
 
 /**
- * Deterministic for a given (profileSeed, level, difficultyOffset), so a save
- * stores a list of lane choices rather than a board, and a reported bug
- * reproduces exactly.
+ * Deterministic for a given (profileSeed, level), so a save stores a list of
+ * lane choices rather than a board, and a reported bug reproduces exactly.
  */
-export function generateLevel(
-  profileSeed: string,
-  level: number,
-  difficultyOffset = 0,
-): GeneratedLevel {
+export function generateLevel(profileSeed: string, level: number): GeneratedLevel {
   const pressureRng = createRng(hashSeed(profileSeed, 'survival', 'pressure', level));
-  const pressure = pressureForLevel(level, difficultyOffset, pressureRng);
+  const pressure = pressureForLevel(level, pressureRng);
 
   let closest: GeneratedLevel | null = null;
   let closestDistance = Number.POSITIVE_INFINITY;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const rng = createRng(hashSeed(profileSeed, 'survival', level, difficultyOffset, attempt));
+    const rng = createRng(hashSeed(profileSeed, 'survival', level, attempt));
     const shape = shapeFor(pressure, rng);
 
     const built = buildBoard(shape, rng);

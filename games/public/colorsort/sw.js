@@ -13,7 +13,7 @@
  * Bump CACHE_VERSION to evict everything from older builds.
  */
 
-const CACHE_VERSION = 'colorsort-v1';
+const CACHE_VERSION = 'colorsort-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {

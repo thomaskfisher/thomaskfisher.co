@@ -15,9 +15,9 @@ import type { LevelRequest, LevelResponse } from '../shared/levelSource';
 type Response = LevelResponse<ReturnType<typeof generateLevel>>;
 
 self.addEventListener('message', (event: MessageEvent<LevelRequest>) => {
-  const { id, seed, level, difficultyOffset } = event.data;
+  const { id, seed, level } = event.data;
   try {
-    const generated = generateLevel(seed, level, difficultyOffset);
+    const generated = generateLevel(seed, level);
     const response: Response = { id, ok: true, level: generated };
     (self as DedicatedWorkerGlobalScope).postMessage(response);
   } catch (error) {

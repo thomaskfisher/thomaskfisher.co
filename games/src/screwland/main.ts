@@ -9,6 +9,8 @@ import { setSoundEnabled, sfx } from '../shared/audio';
 import { paint } from '../shared/palette';
 import { registerServiceWorker } from '../shared/pwa';
 import { openSettings } from '../shared/settings-sheet';
+import { createTimedPlay } from '../shared/timed-play';
+import { budgetFor } from '../shared/timer';
 import { applyTheme, el, icons, openSheet, prefersReducedMotion } from '../shared/ui';
 import { GAME_ID, type GameState, ScrewLandGame } from './game';
 import { structureBounds } from './model';
@@ -68,6 +70,32 @@ const structure = new StructureRenderer(structureEl, {
 
 const sinks = new SinkRenderer(boxesEl, queueEl, trayEl, { showGlyphs: false });
 
+/* ------------------------------------------------------------------- clock */
+
+const timed = createTimedPlay<GameState>({
+  anchor: settingsButton,
+  isTimed: () => game.settings.timed,
+  onTimedChange: (value) => game.updateSettings({ timed: value }),
+  budget: (state) =>
+    state.generated
+      ? budgetFor({
+          units: state.generated.shape.screwCount,
+          rewards: state.generated.shape.screwCount,
+          pressure: state.generated.difficulty,
+          generous: 3.4,
+          tight: 1.9,
+          floor: 20,
+        })
+      : null,
+  // Screws boxed, not screws touched. Dropping one in the tray is a decision,
+  // not an achievement, so it pays nothing.
+  progress: (state) =>
+    state.board.removed.filter((gone) => gone).length - state.sinks.buffer.length,
+  isPlaying: (state) => state.phase === 'playing',
+  levelKey: (state) => (state.generated ? `${state.level}` : null),
+  onExpire: () => game.loseToTime(),
+});
+
 /**
  * Sizes the board so the whole structure fits without scrolling. Grid extent
  * varies by level, so this has to be measured rather than fixed.
@@ -105,6 +133,7 @@ game.subscribe((state) => {
 
   structure.render(state);
   sinks.render(state);
+  timed.sync(state);
   fitBoard(state);
 
   undoButton.disabled = !state.canUndo || state.phase === 'loading';
@@ -121,7 +150,7 @@ game.subscribe((state) => {
 
   if (state.phase === 'lost' && lastPhase !== 'lost') {
     sfx.reject();
-    window.setTimeout(() => showLost(state.lossReason ?? 'noMoves'), 420);
+    window.setTimeout(() => showLost(state.lossReason ?? 'noMoves', state.outOfTime), 420);
   }
 
   lastPhase = state.phase;
@@ -221,20 +250,25 @@ function showWin(state: GameState): void {
  * over, or step back to just before the mistake. Every level is solvable, and
  * saying so is what keeps a loss feeling like a puzzle rather than a tax.
  */
-function showLost(reason: NonNullable<GameState['lossReason']>): void {
+function showLost(reason: NonNullable<GameState['lossReason']>, outOfTime: boolean): void {
   openSheet(
     (sheet) => {
-      sheet.content.append(el('h2', { class: 'lose-title' }, 'Out of room'));
+      sheet.content.append(
+        el('h2', { class: 'lose-title' }, outOfTime ? 'Out of time' : 'Out of room'),
+      );
       sheet.content.append(
         el(
           'p',
           {},
-          reason === 'trayFull'
-            ? 'That screw had no open box and the tray was full, so the level is over. ' +
-                'Every level here is solvable — a different order gets it out.'
-            : 'Nothing you can still reach fits an open box, and the tray is full, ' +
-                'so the level is over. Every level here is solvable — a different ' +
-                'order gets it out.',
+          outOfTime
+            ? 'The clock ran out — the board itself was fine. Try again, or turn the ' +
+                'clock off in the top bar and take as long as you like.'
+            : reason === 'trayFull'
+              ? 'That screw had no open box and the tray was full, so the level is over. ' +
+                  'Every level here is solvable — a different order gets it out.'
+              : 'Nothing you can still reach fits an open box, and the tray is full, ' +
+                  'so the level is over. Every level here is solvable — a different ' +
+                  'order gets it out.',
         ),
       );
 
@@ -265,6 +299,7 @@ hintButton.addEventListener('click', () => {
 });
 
 settingsButton.addEventListener('click', () => {
+  timed.pause('settings');
   openSettings({
     gameId: GAME_ID,
     gameName: 'Screw Land',
@@ -278,9 +313,11 @@ settingsButton.addEventListener('click', () => {
         sinks.setOptions({ showGlyphs: patch.colorBlindShapes });
       }
       game.updateSettings(patch);
+      if (patch.timed !== undefined) timed.chip.setEnabled(patch.timed);
     },
     onImport: (save) => game.replaceSave(save),
     onGoToLevel: (level) => game.goToLevel(level),
+    onClose: () => timed.resume('settings'),
   });
 });
 

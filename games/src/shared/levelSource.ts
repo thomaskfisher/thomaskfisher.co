@@ -15,7 +15,6 @@ export interface LevelRequest {
   id: number;
   seed: string;
   level: number;
-  difficultyOffset: number;
 }
 
 export interface LevelResponse<T> {
@@ -27,11 +26,10 @@ export interface LevelResponse<T> {
 
 export interface LevelSourceOptions<T> {
   seed: string;
-  difficultyOffset: number;
   /** Must use a literal `new URL(...)` so the bundler can find the worker. */
   createWorker: () => Worker;
   /** Same-thread generation, used when a worker is unavailable or fails. */
-  generate: (seed: string, level: number, difficultyOffset: number) => T;
+  generate: (seed: string, level: number) => T;
 }
 
 interface Pending<T> {
@@ -43,11 +41,9 @@ export class LevelSource<T> {
   private worker: Worker | null = null;
   private pending = new Map<number, Pending<T>>();
   private nextId = 1;
-  private prefetched: { key: string; promise: Promise<T> } | null = null;
-  private difficultyOffset: number;
+  private prefetched: { level: number; promise: Promise<T> } | null = null;
 
   constructor(private readonly options: LevelSourceOptions<T>) {
-    this.difficultyOffset = options.difficultyOffset;
     this.worker = this.spawn();
   }
 
@@ -80,32 +76,15 @@ export class LevelSource<T> {
     this.pending.clear();
   }
 
-  setDifficultyOffset(offset: number): void {
-    if (offset === this.difficultyOffset) return;
-    this.difficultyOffset = offset;
-    this.prefetched = null; // generated under a stale offset
-  }
-
-  private keyFor(level: number): string {
-    return `${level}:${this.difficultyOffset}`;
-  }
-
   private request(level: number): Promise<T> {
     const worker = this.worker;
     const onMainThread = (): Promise<T> =>
-      Promise.resolve().then(() =>
-        this.options.generate(this.options.seed, level, this.difficultyOffset),
-      );
+      Promise.resolve().then(() => this.options.generate(this.options.seed, level));
 
     if (!worker) return onMainThread();
 
     const id = this.nextId++;
-    const message: LevelRequest = {
-      id,
-      seed: this.options.seed,
-      level,
-      difficultyOffset: this.difficultyOffset,
-    };
+    const message: LevelRequest = { id, seed: this.options.seed, level };
 
     return new Promise<T>((resolve, reject) => {
       this.pending.set(id, { resolve, reject });
@@ -114,8 +93,7 @@ export class LevelSource<T> {
   }
 
   get(level: number): Promise<T> {
-    const key = this.keyFor(level);
-    if (this.prefetched?.key === key) {
+    if (this.prefetched?.level === level) {
       const { promise } = this.prefetched;
       this.prefetched = null;
       return promise;
@@ -125,9 +103,8 @@ export class LevelSource<T> {
 
   /** Called once a level is on screen, so the next is ready before it is wanted. */
   prefetch(level: number): void {
-    const key = this.keyFor(level);
-    if (this.prefetched?.key === key) return;
-    this.prefetched = { key, promise: this.request(level) };
+    if (this.prefetched?.level === level) return;
+    this.prefetched = { level, promise: this.request(level) };
     // A rejected prefetch must not surface as an unhandled rejection.
     this.prefetched.promise.catch(() => undefined);
   }

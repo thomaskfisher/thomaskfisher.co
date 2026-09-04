@@ -42,11 +42,6 @@ import {
 } from './model';
 import { search } from './solve';
 
-/** Seats on a bus. Three, in the original and here. */
-export const SINK_CAPACITY = 3;
-/** Buses at the stop in the opening levels. Later levels take one away. */
-export const MAX_OPEN_BUSES = 2;
-
 export interface LevelShape {
   gridWidth: number;
   gridHeight: number;
@@ -56,7 +51,11 @@ export interface LevelShape {
   colors: number;
   /** Buses accepting passengers at any one moment. The sharpest lever here. */
   openBuses: number;
+  /** Seats one bus wants. More means a colour is committed to for longer. */
+  busCapacity: number;
   benchCapacity: number;
+  /** Upcoming buses the player is shown. Fewer means planning blind. */
+  previewCount: number;
 }
 
 export interface GeneratedLevel {
@@ -77,13 +76,20 @@ const clamp = (n: number, lo: number, hi: number): number => Math.min(hi, Math.m
 
 /* ------------------------------------------------------------------ shape */
 
-export function shapeFor(pressure: LevelPressure, rng: Rng): LevelShape {
+export function shapeFor(pressure: LevelPressure): LevelShape {
   const p = pressure.pressure;
+
+  // A bus wanting four or five of a colour is a much longer commitment than one
+  // wanting three: it stays at the stop while everyone of the *other* colours
+  // reached in the meantime goes to the bench. This lever did not exist before
+  // — capacity was a module constant — and it is what makes a small board hard
+  // without making it bigger.
+  const busCapacity = p < 0.3 ? 3 : p < 0.68 ? 4 : 5;
 
   // Passenger count must be a multiple of the bus capacity so every bus fills
   // exactly and no colour is ever left stranded.
-  const buses = clamp(Math.round(3 + p * 9), 3, 12);
-  const passengerCount = buses * SINK_CAPACITY;
+  const buses = clamp(Math.round(3 + p * 7), 3, 10);
+  const passengerCount = buses * busCapacity;
 
   const gridWidth = clamp(4 + Math.round(p * 3), 4, 7);
 
@@ -91,35 +97,38 @@ export function shapeFor(pressure: LevelPressure, rng: Rng): LevelShape {
   // the grid is free space, so everyone is reachable and the layout stops
   // mattering; too tight and there is one legal move at a time, which is
   // transcription rather than a puzzle.
-  const density = 0.5 + p * 0.22;
+  const density = 0.58 + p * 0.24;
   const openCells = Math.ceil(passengerCount / density);
   const gridHeight = clamp(Math.ceil(openCells / gridWidth) + 1, 3, 11);
 
   // Walls narrow the routes out, which is what turns "who is in front" into
   // "who is in front of the only way through".
   const slack = Math.max(0, gridWidth * gridHeight - openCells);
-  const wallCount = Math.round(slack * clamp(0.3 + p * 0.45, 0, 0.8));
+  const wallCount = Math.round(slack * clamp(0.45 + p * 0.45, 0, 0.9));
 
-  // Two buses at the stop is a tutorial setting: with two colours accepted at
-  // once something on the board almost always matches, the bench never fills,
-  // and the level cannot be lost. Dropping to one is what turns "tap the people
-  // you can reach" into a decision, so it happens early and the transition is
-  // blurred so it does not read as a wall.
-  const openBuses = p < 0.16 ? 2 : p < 0.3 ? (rng.chance((p - 0.16) / 0.14) ? 1 : 2) : 1;
+  // **One bus, from level 1.** Two buses at the stop was a tutorial setting: two
+  // colours accepted at once meant something on the board almost always
+  // matched, the bench never filled, and the level literally could not be lost.
+  // A level that cannot be lost is a level with no decision in it.
+  const openBuses = 1;
 
   // The other half of the colour lever: what matters is the ratio of colours on
   // the board to seats open for them. Square root rather than linear, for the
   // same reason as Screw Land — a linear ramp leaves a long flat stretch early
   // where the measured trap rate is zero.
-  const colors = clamp(3 + Math.round(Math.sqrt(p) * 4), 3, Math.min(6, MAX_COLORS));
+  const colors = clamp(4 + Math.round(Math.sqrt(p) * 4), 4, Math.min(8, MAX_COLORS));
 
-  // A four-seat bench is the sharpest of the remaining levers, so it stays a
-  // minority even at the top of the curve. It is not held back from one-bus
-  // boards the way Screw Land holds its four-slot tray back from two-box ones,
-  // because by the time pressure is this high every board is a one-bus board —
-  // gating it that way left the lever permanently switched off. The difficulty
-  // band is what catches the combinations that overshoot.
-  const benchCapacity = p > 0.55 && rng.chance(((p - 0.55) / 0.45) * 0.3) ? 4 : 5;
+  // The bench is where the level is actually lost, so this is the sharpest
+  // remaining lever. It used to sit at five and drop to four on a rare roll
+  // above pressure 0.55, which on the old curve meant almost never. It now
+  // moves with pressure like everything else; the difficulty band catches the
+  // combinations that overshoot.
+  const benchCapacity = p < 0.3 ? 5 : p < 0.65 ? 4 : 3;
+
+  // How far ahead the bus queue is visible. Three upcoming buses is enough to
+  // bench a colour deliberately; one is enough to know only whether the person
+  // in front of you is about to pay off.
+  const previewCount = p < 0.35 ? 3 : p < 0.7 ? 2 : 1;
 
   return {
     gridWidth,
@@ -128,7 +137,9 @@ export function shapeFor(pressure: LevelPressure, rng: Rng): LevelShape {
     passengerCount,
     colors,
     openBuses,
+    busCapacity,
     benchCapacity,
+    previewCount,
   };
 }
 
@@ -228,7 +239,7 @@ interface ColorPlan {
  * into, and levels built from those measure as trivial.
  */
 function planColors(shape: LevelShape, config: SinkConfig, rng: Rng, benchBias: number): ColorPlan | null {
-  const buses = shape.passengerCount / SINK_CAPACITY;
+  const buses = shape.passengerCount / shape.busCapacity;
 
   const busColors: number[] = [];
   for (let c = 0; c < shape.colors && busColors.length < buses; c++) busColors.push(c);
@@ -237,7 +248,7 @@ function planColors(shape: LevelShape, config: SinkConfig, rng: Rng, benchBias: 
 
   const remaining = new Array<number>(shape.colors).fill(0);
   for (const color of busColors) {
-    remaining[color] = (remaining[color] as number) + SINK_CAPACITY;
+    remaining[color] = (remaining[color] as number) + shape.busCapacity;
   }
 
   let sinks = createSinkState(config, busColors);
@@ -394,14 +405,33 @@ function crowdDensity(board: Board): number {
   return openCells === 0 ? 0 : board.passengers.length / openCells;
 }
 
+/** Where `value` sits in [lo, hi], clamped. Every structural term is one of these. */
+const norm = (value: number, lo: number, hi: number): number =>
+  clamp((value - lo) / (hi - lo), 0, 1);
+
+/**
+ * Blends the measured trap rate with what the board is made of.
+ *
+ * Every term is normalised against the range `shapeFor` actually produces, and
+ * the weights sum to one. That sounds like housekeeping and is not: the version
+ * this replaces scored a bench of four at 0.24 and *anything else* at 0.06, so
+ * once the bench started reaching three — the hardest setting in the game — the
+ * hardest boards scored as the easiest. It also carried an open-buses term that
+ * had become exactly zero on every board, since every board now has one bus.
+ *
+ * A structural term that cannot move, or that moves the wrong way, quietly
+ * steers the difficulty band towards the wrong boards.
+ */
 function scoreDifficulty(shape: LevelShape, board: Board, trap: number): number {
   const trapScore = clamp(trap / 0.8, 0, 1);
   const structural = clamp(
-    (shape.colors / 6) * 0.3 +
-      (MAX_OPEN_BUSES - shape.openBuses) * 0.24 +
-      (shape.benchCapacity === 4 ? 0.24 : 0.06) +
-      (shape.passengerCount / 36) * 0.12 +
-      clamp((crowdDensity(board) - 0.45) / 0.35, 0, 1) * 0.1,
+    norm(shape.colors, 4, 8) * 0.26 +
+      norm(shape.busCapacity, 3, 5) * 0.18 +
+      // Inverted: a smaller bench is a harder board.
+      norm(5 - shape.benchCapacity, 0, 2) * 0.26 +
+      norm(shape.passengerCount, 15, 50) * 0.12 +
+      norm(3 - shape.previewCount, 0, 2) * 0.1 +
+      norm(crowdDensity(board), 0.45, 0.8) * 0.08,
     0,
     1,
   );
@@ -415,27 +445,23 @@ function scoreDifficulty(shape: LevelShape, board: Board, trap: number): number 
  * stores a boarding order rather than a board, and a reported bug reproduces
  * exactly.
  */
-export function generateLevel(
-  profileSeed: string,
-  level: number,
-  difficultyOffset = 0,
-): GeneratedLevel {
+export function generateLevel(profileSeed: string, level: number): GeneratedLevel {
   const pressureRng = createRng(hashSeed(profileSeed, 'busjam', 'pressure', level));
-  const pressure = pressureForLevel(level, difficultyOffset, pressureRng);
+  const pressure = pressureForLevel(level, pressureRng);
 
   let closest: GeneratedLevel | null = null;
   let closestDistance = Number.POSITIVE_INFINITY;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const rng = createRng(hashSeed(profileSeed, 'busjam', level, difficultyOffset, attempt));
-    const shape = shapeFor(pressure, rng);
+    const rng = createRng(hashSeed(profileSeed, 'busjam', level, attempt));
+    const shape = shapeFor(pressure);
 
     const open = buildGrid(shape, rng);
     if (!open) continue;
 
     const config: SinkConfig = {
       openSinks: shape.openBuses,
-      sinkCapacity: SINK_CAPACITY,
+      sinkCapacity: shape.busCapacity,
       bufferCapacity: shape.benchCapacity,
     };
 

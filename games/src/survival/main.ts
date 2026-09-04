@@ -8,6 +8,8 @@ import './survival.css';
 import { setSoundEnabled, sfx } from '../shared/audio';
 import { registerServiceWorker } from '../shared/pwa';
 import { openSettings } from '../shared/settings-sheet';
+import { createTimedPlay } from '../shared/timed-play';
+import { budgetFor } from '../shared/timer';
 import { applyTheme, el, icons, openSheet, prefersReducedMotion } from '../shared/ui';
 import { GAME_ID, type GameState, SurvivalGame } from './game';
 import { BoardRenderer, describeProgress, formatCount } from './render';
@@ -54,6 +56,38 @@ const renderer = new BoardRenderer(boardEl, {
   showGlyphs: false,
   reducedMotion,
   onTapCell: (row, lane) => game.tapCell(row, lane),
+});
+
+/* ------------------------------------------------------------------- clock */
+
+/**
+ * Survival is the game the clock was really asked for.
+ *
+ * Reading the whole board and planning a route to the top is a two-minute job
+ * if you let it be, and doing that turns a lane you commit to into a lane you
+ * solve on paper first. Seconds per *row* is the unit that stops it: enough to
+ * read the row in front of you and one or two above it, not enough to trace
+ * every route to the horde. Surviving a row buys the next one.
+ */
+const timed = createTimedPlay<GameState>({
+  anchor: settingsButton,
+  isTimed: () => game.settings.timed,
+  onTimedChange: (value) => game.updateSettings({ timed: value }),
+  budget: (state) =>
+    state.generated
+      ? budgetFor({
+          units: state.generated.board.rows,
+          rewards: state.generated.board.rows,
+          pressure: state.generated.difficulty,
+          generous: 8,
+          tight: 4.5,
+          floor: 18,
+        })
+      : null,
+  progress: (state) => state.route.length,
+  isPlaying: (state) => state.phase === 'playing',
+  levelKey: (state) => (state.generated ? `${state.level}` : null),
+  onExpire: () => game.loseToTime(),
 });
 
 /* Proportions of the lane, all in px or as multiples of the cell. */
@@ -139,6 +173,7 @@ game.subscribe((state) => {
   // be placed again once they have their final size. Cheap: these boards are at
   // most forty-five elements, and this runs on state change, not on a frame loop.
   renderer.render(state);
+  timed.sync(state);
   fitBoard(state);
   renderer.render(state);
 
@@ -221,15 +256,18 @@ function showWin(state: GameState): void {
 function showLost(state: GameState): void {
   const horde = state.generated?.board.horde ?? 0;
 
-  const headline =
-    state.lossCause === 'overrun'
+  const headline = state.outOfTime
+    ? 'Out of time'
+    : state.lossCause === 'overrun'
       ? 'Not enough of you'
       : state.lossCause === 'blocked'
         ? 'Stopped at the barrier'
         : 'Squad wiped out';
 
-  const explanation =
-    state.lossCause === 'overrun'
+  const explanation = state.outOfTime
+    ? 'The clock ran out — the squad was fine. Step back and keep going, or turn the clock ' +
+      'off in the top bar and take the lane at your own pace.'
+    : state.lossCause === 'overrun'
       ? `You reached the front with ${formatCount(state.count)} against ${formatCount(horde)}. ` +
         'A different route through the same gates gets there with more — every level here has one.'
       : state.lossCause === 'blocked'
@@ -270,6 +308,7 @@ hintButton.addEventListener('click', () => {
 });
 
 settingsButton.addEventListener('click', () => {
+  timed.pause('settings');
   openSettings({
     gameId: GAME_ID,
     gameName: 'Survival',
@@ -282,9 +321,11 @@ settingsButton.addEventListener('click', () => {
         renderer.setOptions({ showGlyphs: patch.colorBlindShapes });
       }
       game.updateSettings(patch);
+      if (patch.timed !== undefined) timed.chip.setEnabled(patch.timed);
     },
     onImport: (save) => game.replaceSave(save),
     onGoToLevel: (level) => game.goToLevel(level),
+    onClose: () => timed.resume('settings'),
   });
 });
 

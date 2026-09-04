@@ -9,9 +9,14 @@
  */
 
 import { type SinkState, accept, createSinkState } from '../shared/buffer-sink';
-import type { Outcome } from '../shared/difficulty';
 import { LevelSource } from '../shared/levelSource';
-import { type SaveData, completeLevel, createSaveWriter, loadSave } from '../shared/progress';
+import {
+  type SaveData,
+  completeLevel,
+  createSaveWriter,
+  defaultSave,
+  loadSave,
+} from '../shared/progress';
 import { type GeneratedLevel, generateLevel } from './generate';
 import {
   type BoardState,
@@ -53,6 +58,11 @@ export type Effect =
 
 export interface GameState {
   phase: GamePhase;
+  /**
+   * True when the level ended because the clock ran out rather than because of
+   * anything on the board. Only ever set while the optional timer is on.
+   */
+  outOfTime: boolean;
   /** Set only while `phase` is 'lost'. */
   lossReason: LossReason | null;
   level: number;
@@ -70,7 +80,17 @@ type Listener = (state: GameState) => void;
 const EMPTY_SINKS: SinkState = { sinks: [], queue: [], buffer: [] };
 
 export class BusJamGame {
-  private save!: SaveData<number>;
+  /**
+   * Seeded with a default rather than left undefined until `start()`.
+   *
+   * `subscribe` notifies its listener synchronously, so the first render
+   * happens before the save has loaded — and anything that reaches through
+   * `settings` from inside that listener would hit an undefined save and throw,
+   * leaving the game stuck on "Preparing…" forever with no board. The timer's
+   * on/off check does exactly that. A default here costs one discarded profile
+   * seed and removes the whole class of bug.
+   */
+  private save: SaveData<number> = defaultSave<number>(GAME_ID);
   private writer = createSaveWriter<number>(GAME_ID);
   private source!: LevelSource<GeneratedLevel>;
 
@@ -80,13 +100,10 @@ export class BusJamGame {
   private sinks: SinkState = EMPTY_SINKS;
   private moves: number[] = [];
   private phase: GamePhase = 'loading';
+  private outOfTime = false;
   private lossReason: LossReason | null = null;
   private effect: Effect = { kind: 'none' };
 
-  /** Per-level flags feeding the hidden difficulty adjustment. */
-  private usedUndo = false;
-  private usedHint = false;
-  private failedHere = false;
 
   /** A winning line to follow. See `requestHint`. */
   private hintPlan: number[] | null = null;
@@ -102,7 +119,6 @@ export class BusJamGame {
   private createSource(): LevelSource<GeneratedLevel> {
     return new LevelSource<GeneratedLevel>({
       seed: this.save.seed,
-      difficultyOffset: this.save.difficultyOffset,
       createWorker: () =>
         new Worker(new URL('./generate.worker.ts', import.meta.url), { type: 'module' }),
       generate: generateLevel,
@@ -124,6 +140,7 @@ export class BusJamGame {
   private snapshot(): GameState {
     return {
       phase: this.phase,
+      outOfTime: this.outOfTime,
       lossReason: this.lossReason,
       level: this.save?.level ?? 1,
       generated: this.generated,
@@ -146,9 +163,8 @@ export class BusJamGame {
 
   private async loadLevel(level: number, replay: number[] = []): Promise<void> {
     this.phase = 'loading';
+    this.outOfTime = false;
     this.notify({ kind: 'reset' });
-
-    this.source.setDifficultyOffset(this.save.difficultyOffset);
     const generated = await this.source.get(level);
 
     this.generated = generated;
@@ -157,9 +173,6 @@ export class BusJamGame {
     this.sinks = createSinkState(generated.config, generated.queue);
     this.moves = [];
     this.hintPlan = null;
-    this.usedUndo = false;
-    this.usedHint = false;
-    this.failedHere = false;
 
     // Restore a partly cleared level. A move that no longer applies is dropped
     // rather than throwing — a corrupt tail should not cost the level.
@@ -253,7 +266,6 @@ export class BusJamGame {
     // stay on the board — there is nowhere for them to go, and leaving them in
     // place is what makes undo able to walk the position back.
     if (result.placed === 'lost') {
-      this.failedHere = true;
       this.phase = 'lost';
       this.lossReason = 'benchFull';
       this.persist();
@@ -316,13 +328,13 @@ export class BusJamGame {
     if (this.moves.length === 0) return;
     this.moves.pop();
     this.hintPlan = null;
-    this.usedUndo = true;
     this.save = {
       ...this.save,
       stats: { ...this.save.stats, totalUndos: this.save.stats.totalUndos + 1 },
     };
 
     this.replayFromStart();
+    this.outOfTime = false;
     this.phase = this.evaluatePhase();
     this.persist();
     this.notify({ kind: 'reset' });
@@ -330,7 +342,6 @@ export class BusJamGame {
 
   restart(): void {
     if (!this.generated) return;
-    this.failedHere = true;
     this.save = {
       ...this.save,
       stats: { ...this.save.stats, totalRestarts: this.save.stats.totalRestarts + 1 },
@@ -338,6 +349,7 @@ export class BusJamGame {
     this.moves = [];
     this.hintPlan = null;
     this.replayFromStart();
+    this.outOfTime = false;
     this.phase = this.evaluatePhase();
     this.persist();
     this.notify({ kind: 'reset' });
@@ -366,7 +378,6 @@ export class BusJamGame {
     const next = this.hintPlan?.[0];
     if (next === undefined) return null;
 
-    this.usedHint = true;
     this.save = {
       ...this.save,
       stats: { ...this.save.stats, totalHints: this.save.stats.totalHints + 1 },
@@ -376,14 +387,10 @@ export class BusJamGame {
     return next;
   }
 
-  private outcome(): Outcome {
-    if (this.failedHere) return 'failed';
-    return this.usedUndo || this.usedHint ? 'assisted' : 'clean';
-  }
 
   async advance(): Promise<void> {
     if (this.phase !== 'won') return;
-    this.save = completeLevel(this.save, this.outcome());
+    this.save = completeLevel(this.save);
     this.writer.schedule(this.save);
     await this.loadLevel(this.save.level);
   }
@@ -409,4 +416,20 @@ export class BusJamGame {
     this.writer.schedule(this.save);
     await this.loadLevel(target);
   }
+
+  /**
+   * Ends the level because the clock ran out. See `shared/timer.ts`.
+   *
+   * Deliberately not persisted as anything special: the move list on disk is
+   * still a legal, partly-solved board, so reopening the app puts the player
+   * back where they were rather than on a fresh loss. Running out of time is a
+   * reason to stop, not a state to save.
+   */
+  loseToTime(): void {
+    if (this.phase !== 'playing') return;
+    this.outOfTime = true;
+    this.phase = 'lost';
+    this.notify();
+  }
+
 }

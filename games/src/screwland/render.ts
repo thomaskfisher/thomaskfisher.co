@@ -252,16 +252,6 @@ export class StructureRenderer {
   }
 }
 
-/**
- * How many upcoming boxes the player gets to see.
- *
- * Three is enough to plan the tray around — you can tell whether parking a
- * colour will pay off shortly or strand a slot for the rest of the level —
- * without handing over the whole colour order, which would turn the level into
- * a transcription exercise rather than a puzzle.
- */
-const PREVIEW_COUNT = 3;
-
 /** How many "and more after that" dots to draw before giving up on the row. */
 const PREVIEW_DOTS = 3;
 
@@ -287,7 +277,7 @@ export class SinkRenderer {
       ...state.sinks.sinks.map((sink, i) => this.buildBox(sink, i, sinkCapacity)),
     );
 
-    this.renderQueue(state.sinks.queue);
+    this.renderQueue(state.sinks.queue, generated.shape.previewCount);
 
     const slots: HTMLElement[] = [];
     for (let i = 0; i < bufferCapacity; i++) {
@@ -356,7 +346,7 @@ export class SinkRenderer {
    * than a bad decision — and the fewer boxes a level opens, the more of the
    * game is that gamble.
    */
-  private renderQueue(queue: readonly number[]): void {
+  private renderQueue(queue: readonly number[], previewCount: number): void {
     if (queue.length === 0) {
       this.queueEl.replaceChildren();
       this.queueEl.hidden = true;
@@ -364,7 +354,7 @@ export class SinkRenderer {
     }
     this.queueEl.hidden = false;
 
-    const shown = queue.slice(0, PREVIEW_COUNT);
+    const shown = queue.slice(0, Math.max(0, previewCount));
     const children: HTMLElement[] = shown.map((color, i) => {
       const chip = document.createElement('div');
       chip.className = 'queue-chip';

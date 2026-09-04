@@ -16,7 +16,7 @@ in-game currency. Everything is static; all state lives on the player's device.
 ```bash
 npm install
 npm run dev        # http://localhost:5273
-npm test           # solver, generator, layout
+npm test           # solver, generator, layout, curve, clock
 npm run build      # -> dist/
 npm run icons      # regenerate PWA icons (output is committed)
 ```
@@ -34,9 +34,15 @@ someone enjoying a puzzle on the couch, not running a search. See
 `colorsort/generate.ts`.
 
 **Generation is deterministic.** A board is a pure function of
-`(profileSeed, level, difficultyOffset)`, so a save stores a move list rather
-than a board, levels are reproducible from a bug report, and the whole save fits
-in well under a kilobyte.
+`(profileSeed, level)`, so a save stores a move list rather than a board, levels
+are reproducible from a bug report, and the whole save fits in well under a
+kilobyte.
+
+**Survival gives you one lane of movement per row, from level 1.** Reach 2 let
+the squad cross the whole board in a step, so there was no route to plan and the
+opening levels were a pure arithmetic warm-up. The gate values on a row are also
+deliberately close together — within a factor of about 2.5 — because a row
+holding +15, +22 and +2,759 has no decision in it.
 
 **Survival is a route, not a runner.** The original is a real-time lane game —
 your squad scrolls towards a wall of gates and you drag left and right to weave
@@ -95,10 +101,28 @@ objects, they can be generated forever. Structures are assembled bottom-up, so
 they always come apart physically — which leaves colour as the only thing the
 solver has to verify.
 
-**The difficulty curve hides a rubber band.** A monotonic ramp eventually walls
-the player. `shared/difficulty.ts` adds a saturating curve, per-level jitter,
-deliberate breather levels, and a hidden offset that eases off after a run of
-failures. None of it is ever shown in the UI.
+**Fifty levels that mean something, then an endless supply of them.**
+`shared/difficulty.ts` opens at roughly a quarter of full intensity, reaches
+full intensity by level 50, and stays there. Levels past 50 keep coming forever
+and are all pitched at the ceiling — what varies up there is the board, not the
+pressure.
+
+Level 1 is meant to be hard. There is no funnel to protect here, and the failure
+mode worth guarding against is a hundred levels of imperceptible increments, not
+a player bouncing off level 3.
+
+Two things an earlier version did are deliberately gone: the hidden rubber band
+that eased difficulty by up to forty effective levels after a losing streak
+(on a fifty-level curve that is the whole game), and most of the breather
+levels. **Level N means one thing, forever, on every device.**
+
+**The clock is optional and is not a difficulty setting.** `shared/timer.ts` is
+a time *budget*, not a countdown: every success — a bus away, a box filled, a
+tube finished, a row survived — pays time back, so a player who is solving it
+never runs out and a player who is staring at it does. The board is identical
+either way. It is off by default and one tap away in the top bar, because "I
+want to race" and "I want to sit and think" are both real moods and a setting
+buried in a sheet serves neither.
 
 ### Layout
 
@@ -106,13 +130,15 @@ failures. None of it is ever shown in the UI.
 index.html            launcher
 colorsort/index.html  one entry per game
 src/shared/           rng, storage, progress, difficulty, audio, ui, pwa,
-                      buffer-sink (Screw Land + Bus Jam), levelSource
+                      buffer-sink (Screw Land + Bus Jam), levelSource,
+                      timer + timed-play + timer-chip (the optional clock)
 src/colorsort/        model, solve, generate, layout, render, game, main
 src/screwland/        model, solve, generate, render, game, main
 src/busjam/           model, solve, generate, render, game, main
 src/survival/         model, solve, generate, render, game, main
 public/               icons, per-game manifest + service worker (copied verbatim)
 examples/             reference material for the originals — never deployed
+tools/                calibration harnesses — not built, not in `npm test`
 scripts/make-icons.mjs
 ```
 
@@ -176,6 +202,31 @@ them; they belong in later as optional modifiers, not as load-bearing rules.
   one or two attempts a level); it is the signal being defined in terms of the
   answer. The other levers still change what a board *feels* like, and it is
   worth knowing that is now all they do.
+- **Colours, sinks, buffer and capacity are one budget, not four levers.** The
+  obvious ask for Screw Land and Bus Jam is "more colours *and* fewer holding
+  slots", and the two draw on the same account: `tools/probe.ts` measures a
+  two-box Screw Land board with a four-screw box as solvable in 7 deals in 20 at
+  six colours and 2 in 20 at seven. Past the edge, levels do not come out hard —
+  they fail to come out, and the generator burns every attempt and throws.
+  Difficulty at the top has to come from the levers that *don't* draw on it: box
+  capacity, queue preview, plate occlusion.
+- **Generation cost is the hidden constraint on the shape function.** The same
+  Screw Land change took level 20 from 400ms to 34 *seconds*, because a
+  candidate that fails the solver costs the whole verify budget and the shape
+  had drifted into a region where two thirds of deals fail. `tools/timing.ts`
+  exists to catch this: the background worker has about one level's play to
+  finish in, and past that the main-thread fallback freezes the board. A lever
+  that costs six seconds of latency to move one notch is not worth the notch.
+- **Don't stack four thresholds at the same pressure.** Screw Land's boxes,
+  capacity, tray and preview all stepped between pressure 0.25 and 0.35, and
+  levels 2-8 lurched 0.34 → 0.82 → 0.61. Staggering them across the curve is the
+  difference between a ramp and a cliff.
+- **A symmetric difficulty band drifts low.** Generators take the first board
+  that lands inside the band, and the cheap boards are the ones found first — so
+  an equal window above and below the target is not neutral in practice. Level 1
+  was landing at 0.13 against a 0.26 target in three of the four games. The band
+  is now generous upwards and strict downwards, which costs a few attempts and
+  makes "harder than asked" the failure mode.
 - **shell.css owns some very ordinary class names.** `field`, `note` and
   `button` are all defined globally, and Survival's board wrapper was called
   `.field` — so it silently inherited a text input's border, which showed up as

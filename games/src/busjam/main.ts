@@ -9,6 +9,8 @@ import { setSoundEnabled, sfx } from '../shared/audio';
 import { paint } from '../shared/palette';
 import { registerServiceWorker } from '../shared/pwa';
 import { openSettings } from '../shared/settings-sheet';
+import { createTimedPlay } from '../shared/timed-play';
+import { budgetFor } from '../shared/timer';
 import { applyTheme, el, icons, openSheet, prefersReducedMotion } from '../shared/ui';
 import { BusJamGame, GAME_ID, type GameState } from './game';
 import { CrowdRenderer, StopRenderer, describeProgress } from './render';
@@ -73,6 +75,38 @@ const crowd = new CrowdRenderer(gridEl, {
 });
 
 const stop = new StopRenderer(busesEl, queueEl, benchEl, { showGlyphs: false });
+
+/* ------------------------------------------------------------------- clock */
+
+/**
+ * Seconds a passenger is nominally worth, from the bottom of the curve to the
+ * top. Boarding is the success that pays, and a seat is worth about four
+ * fifths of what one costs — so keeping up holds the clock steady and hunting
+ * for someone reachable does not.
+ */
+const timed = createTimedPlay<GameState>({
+  anchor: settingsButton,
+  isTimed: () => game.settings.timed,
+  onTimedChange: (value) => game.updateSettings({ timed: value }),
+  budget: (state) =>
+    state.generated
+      ? budgetFor({
+          units: state.generated.shape.passengerCount,
+          rewards: state.generated.shape.passengerCount,
+          pressure: state.generated.difficulty,
+          generous: 3.4,
+          tight: 1.9,
+          floor: 20,
+        })
+      : null,
+  // Seats filled, not taps made. Parking someone on the bench is a decision,
+  // not an achievement, so it pays nothing.
+  progress: (state) =>
+    state.board.boarded.filter((gone) => gone).length - state.sinks.buffer.length,
+  isPlaying: (state) => state.phase === 'playing',
+  levelKey: (state) => (state.generated ? `${state.level}` : null),
+  onExpire: () => game.loseToTime(),
+});
 
 /**
  * Sizes the board so the whole grid fits without scrolling. Grid extent varies
@@ -144,6 +178,7 @@ game.subscribe((state) => {
   crowd.render(state);
   stop.render(state);
   fitBoard(state);
+  timed.sync(state);
 
   undoButton.disabled = !state.canUndo || state.phase === 'loading';
   restartButton.disabled = state.phase === 'loading' || state.moveCount === 0;
@@ -159,7 +194,7 @@ game.subscribe((state) => {
 
   if (state.phase === 'lost' && lastPhase !== 'lost') {
     sfx.reject();
-    window.setTimeout(() => showLost(state.lossReason ?? 'noMoves'), 420);
+    window.setTimeout(() => showLost(state.lossReason ?? 'noMoves', state.outOfTime), 420);
   }
 
   lastPhase = state.phase;
@@ -289,20 +324,25 @@ function showWin(state: GameState): void {
  * over, or step back to just before the mistake. Every level is solvable, and
  * saying so is what keeps a loss feeling like a puzzle rather than a tax.
  */
-function showLost(reason: NonNullable<GameState['lossReason']>): void {
+function showLost(reason: NonNullable<GameState['lossReason']>, outOfTime: boolean): void {
   openSheet(
     (sheet) => {
-      sheet.content.append(el('h2', { class: 'lose-title' }, 'Bench is full'));
+      sheet.content.append(
+        el('h2', { class: 'lose-title' }, outOfTime ? 'Out of time' : 'Bench is full'),
+      );
       sheet.content.append(
         el(
           'p',
           {},
-          reason === 'benchFull'
-            ? 'No bus at the stop wanted that colour and the bench was full, so the ' +
-                'level is over. Every level here is solvable — a different order clears it.'
-            : 'Nobody you can still reach fits a bus at the stop, and the bench is ' +
-                'full, so the level is over. Every level here is solvable — a ' +
-                'different order clears it.',
+          outOfTime
+            ? 'The clock ran out — the board itself was fine. Try again, or turn the ' +
+                'clock off in the top bar and take as long as you like.'
+            : reason === 'benchFull'
+              ? 'No bus at the stop wanted that colour and the bench was full, so the ' +
+                  'level is over. Every level here is solvable — a different order clears it.'
+              : 'Nobody you can still reach fits a bus at the stop, and the bench is ' +
+                  'full, so the level is over. Every level here is solvable — a ' +
+                  'different order clears it.',
         ),
       );
 
@@ -333,6 +373,7 @@ hintButton.addEventListener('click', () => {
 });
 
 settingsButton.addEventListener('click', () => {
+  timed.pause('settings');
   openSettings({
     gameId: GAME_ID,
     gameName: 'Bus Jam',
@@ -346,9 +387,11 @@ settingsButton.addEventListener('click', () => {
         stop.setOptions({ showGlyphs: patch.colorBlindShapes });
       }
       game.updateSettings(patch);
+      if (patch.timed !== undefined) timed.chip.setEnabled(patch.timed);
     },
     onImport: (save) => game.replaceSave(save),
     onGoToLevel: (level) => game.goToLevel(level),
+    onClose: () => timed.resume('settings'),
   });
 });
 

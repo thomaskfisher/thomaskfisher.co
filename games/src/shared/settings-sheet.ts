@@ -20,6 +20,8 @@ export interface SettingsSheetOptions<M> {
   onSettingsChange: (patch: Partial<Settings>) => void;
   onImport: (save: SaveData<M>) => void | Promise<void>;
   onGoToLevel: (level: number) => void | Promise<void>;
+  /** Fired however the sheet is dismissed — Done, backdrop or Escape. */
+  onClose?: () => void;
 }
 
 export function openSettings<M>(options: SettingsSheetOptions<M>): void {
@@ -58,6 +60,17 @@ export function openSettings<M>(options: SettingsSheetOptions<M>): void {
     );
 
     sheet.content.append(
+      toggleRow(
+        'Timed play',
+        'Puts a clock on every level. Solving something adds time back. The board is ' +
+          'exactly the same either way — this only changes whether you get to sit with it. ' +
+          'Also on the clock in the top bar.',
+        settings.timed,
+        (timed) => options.onSettingsChange({ timed }),
+      ),
+    );
+
+    sheet.content.append(
       toggleRow('Sound', 'Soft pours and chimes.', settings.sound, (sound) => {
         setSoundEnabled(sound);
         options.onSettingsChange({ sound });
@@ -71,7 +84,7 @@ export function openSettings<M>(options: SettingsSheetOptions<M>): void {
     const done = el('button', { class: 'button button--full' }, 'Done');
     done.addEventListener('click', sheet.close);
     sheet.content.append(done);
-  });
+  }, { onClose: options.onClose });
 }
 
 function buildLevelJump<M>(options: SettingsSheetOptions<M>): HTMLElement {

@@ -7,17 +7,26 @@
  * which is what makes the paste-a-code backup in Settings practical.
  */
 
-import { type Outcome, nextDifficultyOffset, pushOutcome } from './difficulty';
 import { createPersister, decodeSaveCode, encodeSaveCode, load } from './storage';
 import { newProfileSeed } from './rng';
 
-export const SAVE_VERSION = 1;
+/**
+ * Bumped to 2 when the difficulty curve was rebuilt.
+ *
+ * Levels 1-50 now cover the ground the old curve spread over 300, so an
+ * existing save pointing at level 300 is not a hard save — it is a save that
+ * skips the entire game. `migrate` sends any v1 save back to level 1, which is
+ * the only reading of that number that means anything now.
+ */
+export const SAVE_VERSION = 2;
 
 export interface Settings {
   /** Overlay a distinct shape on every color, for color vision deficiency. */
   colorBlindShapes: boolean;
   theme: 'system' | 'light' | 'dark';
   sound: boolean;
+  /** Run the clock. Off by default; see `shared/timer.ts`. */
+  timed: boolean;
 }
 
 export interface SaveData<M> {
@@ -26,9 +35,6 @@ export interface SaveData<M> {
   seed: string;
   /** The level about to be played. */
   level: number;
-  /** Hidden rubber-band adjustment. Never shown in the UI. */
-  difficultyOffset: number;
-  recentOutcomes: Outcome[];
   /** Moves made so far on `level`, or null if the level is untouched. */
   inProgress: { level: number; moves: M[] } | null;
   settings: Settings;
@@ -44,6 +50,7 @@ export const DEFAULT_SETTINGS: Settings = {
   colorBlindShapes: false,
   theme: 'system',
   sound: true,
+  timed: false,
 };
 
 export function defaultSave<M>(game: string): SaveData<M> {
@@ -52,8 +59,6 @@ export function defaultSave<M>(game: string): SaveData<M> {
     game,
     seed: newProfileSeed(),
     level: 1,
-    difficultyOffset: 0,
-    recentOutcomes: [],
     inProgress: null,
     settings: { ...DEFAULT_SETTINGS },
     stats: { levelsCleared: 0, totalUndos: 0, totalHints: 0, totalRestarts: 0 },
@@ -64,13 +69,18 @@ export function defaultSave<M>(game: string): SaveData<M> {
  * Coerces whatever is on disk into the current shape. Anything unrecognised
  * falls back to a default rather than throwing — losing a setting is a nuisance,
  * losing a level number is the end of the game.
+ *
+ * The one exception is a pre-v2 save, whose level number refers to a curve that
+ * no longer exists. Settings and the profile seed are kept; the level goes back
+ * to 1. See `SAVE_VERSION`.
  */
 export function migrate<M>(raw: unknown, game: string): SaveData<M> {
   const base = defaultSave<M>(game);
   if (!raw || typeof raw !== 'object') return base;
 
-  const data = raw as Partial<SaveData<M>> & { settings?: Partial<Settings> };
-  const level = Number(data.level);
+  const data = raw as Partial<SaveData<M>> & { settings?: Partial<Settings>; v?: number };
+  const rebuilt = Number(data.v) < SAVE_VERSION;
+  const level = rebuilt ? 1 : Number(data.level);
   const inProgress =
     data.inProgress && Array.isArray(data.inProgress.moves)
       ? { level: Number(data.inProgress.level), moves: data.inProgress.moves }
@@ -81,15 +91,7 @@ export function migrate<M>(raw: unknown, game: string): SaveData<M> {
     game,
     seed: typeof data.seed === 'string' && data.seed ? data.seed : base.seed,
     level: Number.isFinite(level) && level >= 1 ? Math.floor(level) : 1,
-    difficultyOffset: Number.isFinite(data.difficultyOffset)
-      ? Math.max(-40, Math.min(40, Number(data.difficultyOffset)))
-      : 0,
-    recentOutcomes: Array.isArray(data.recentOutcomes)
-      ? (data.recentOutcomes.filter(
-          (o) => o === 'clean' || o === 'assisted' || o === 'failed',
-        ) as Outcome[])
-      : [],
-    inProgress: inProgress && Number.isFinite(inProgress.level) ? inProgress : null,
+    inProgress: rebuilt || !inProgress || !Number.isFinite(inProgress.level) ? null : inProgress,
     settings: { ...base.settings, ...(data.settings ?? {}) },
     stats: { ...base.stats, ...(data.stats ?? {}) },
   };
@@ -107,20 +109,18 @@ export function createSaveWriter<M>(game: string) {
 }
 
 /**
- * Records how a level ended and advances the profile.
+ * Records a clear and advances to the next level.
  *
- * `assisted` covers clearing with undos or a hint — worth distinguishing from a
- * clean clear, because a run of them means the difficulty is drifting past
- * where the player is comfortable even though they are technically winning.
+ * There is deliberately no notion here of *how* the level was cleared. An
+ * earlier version fed clean/assisted/failed into a hidden difficulty
+ * adjustment; that adjustment is gone, so the distinction has nothing left to
+ * drive. Level N is level N. See `shared/difficulty.ts`.
  */
-export function completeLevel<M>(save: SaveData<M>, outcome: Outcome): SaveData<M> {
-  const recentOutcomes = pushOutcome(save.recentOutcomes, outcome);
+export function completeLevel<M>(save: SaveData<M>): SaveData<M> {
   return {
     ...save,
     level: save.level + 1,
     inProgress: null,
-    recentOutcomes,
-    difficultyOffset: nextDifficultyOffset(save.difficultyOffset, recentOutcomes),
     stats: { ...save.stats, levelsCleared: save.stats.levelsCleared + 1 },
   };
 }

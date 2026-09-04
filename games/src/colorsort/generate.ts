@@ -67,21 +67,47 @@ function clamp(n: number, lo: number, hi: number): number {
  * deal with a single spare tube falls off a cliff: 55% at four colors, 31% at
  * five, 8% at six, 2% at eight, and essentially zero at nine. Past the cliff
  * the verifier rejects nearly every attempt and the lever silently stops firing.
+ *
+ * **Tube height is the lever this game was not using.** It used to be pinned at
+ * four, reaching five only past level 150 and only on a 15% roll — which is to
+ * say, never. It is the strongest single lever available: a fifth band adds a
+ * unit of every colour *and* a layer of burial, so the same colour count plays
+ * far deeper. It now moves with pressure like everything else, and carries the
+ * back half of the curve where colour count has run out of screen.
  */
 export function shapeFor(pressure: LevelPressure, rng: ReturnType<typeof createRng>): LevelShape {
-  const { pressure: p, effectiveLevel } = pressure;
+  const { pressure: p } = pressure;
 
-  // A fifth band shows up rarely, and only very late — it lengthens every tube
-  // and is a bigger jump in difficulty than it looks.
-  const height = effectiveLevel > 150 && p > 0.8 && rng.chance(0.15) ? 5 : 4;
+  // Four bands is now the *opening* height rather than the standing one, and
+  // six is where it tops out — past that a tube is taller than the phone and
+  // the bands get too thin to read apart at a glance.
+  const height = p < 0.22 ? 4 : p < 0.62 ? 5 : 6;
 
-  const tightChance = p > 0.45 ? Math.min(0.45, ((p - 0.45) / 0.55) * 0.5) : 0;
+  // A single spare tube is the sharpest lever in the game, and it used to be
+  // switched off until roughly level 35. It is now live from level 1 — about
+  // one opening board in six — and is the majority of boards at the top.
+  const tightChance = Math.min(0.55, p * 0.6);
   if (rng.chance(tightChance)) {
-    return { colors: clamp(3 + Math.round(p * 3), 3, 6), height, emptyTubes: 1 };
+    // Tight boards cap *both* levers, and the height cap is the one that is
+    // easy to get wrong. Measured solvability of a random deal with a single
+    // spare falls off a cliff in colours — 55% at four, 31% at five, 8% at six
+    // — and every extra band multiplies the deal, so a six-band six-colour
+    // tight board is solvable so rarely that the verifier rejects essentially
+    // all of them.
+    //
+    // That failure is silent and cost this lever its whole purpose: asking for
+    // 55% tight boards produced 4 in 61 levels, because the accepted attempt
+    // was almost always the wide fallback. A lever the verifier quietly filters
+    // out is worse than no lever, because the shape function claims it fired.
+    return {
+      colors: clamp(4 + Math.round(p), 4, 5),
+      height: Math.min(height, 5),
+      emptyTubes: 1,
+    };
   }
 
   return {
-    colors: clamp(3 + Math.round(p * 9), 3, Math.min(12, MAX_COLORS)),
+    colors: clamp(5 + Math.round(p * 7), 5, Math.min(12, MAX_COLORS)),
     height,
     emptyTubes: 2,
   };
@@ -166,19 +192,15 @@ function isDegenerate(board: Board): boolean {
  * inputs always produce the same board, which is what lets a save store a move
  * list instead of a board, and lets a reported bug be reproduced exactly.
  */
-export function generateLevel(
-  profileSeed: string,
-  level: number,
-  difficultyOffset = 0,
-): GeneratedLevel {
+export function generateLevel(profileSeed: string, level: number): GeneratedLevel {
   const pressureRng = createRng(hashSeed(profileSeed, 'colorsort', 'pressure', level));
-  const pressure = pressureForLevel(level, difficultyOffset, pressureRng);
+  const pressure = pressureForLevel(level, pressureRng);
 
   let closest: GeneratedLevel | null = null;
   let closestDistance = Number.POSITIVE_INFINITY;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const rng = createRng(hashSeed(profileSeed, 'colorsort', level, difficultyOffset, attempt));
+    const rng = createRng(hashSeed(profileSeed, 'colorsort', level, attempt));
     const shape = shapeFor(pressure, rng);
     const board = deal(shape, rng);
 

@@ -410,3 +410,79 @@ button {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   The optional clock.
+
+   Sits between the level label and the settings button, and doubles as the
+   on/off switch — see shared/timer-chip.ts for why the toggle lives here
+   rather than only in Settings.
+
+   The depleting bar is a plain width transition on a `--fill` custom property,
+   driven four times a second by the timer's own interval. That is deliberate:
+   these games render on state change and have no animation loop, so the clock
+   is not allowed to start one. Nothing here triggers layout.
+   -------------------------------------------------------------------------- */
+
+.timer-chip {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 52px;
+  height: 40px;
+  padding: 0 10px 5px;
+  border-radius: 12px;
+  color: var(--text);
+  background: var(--glass);
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.timer-chip.is-off {
+  color: var(--text-dim);
+  background: none;
+  font-weight: 600;
+}
+
+.timer-chip.is-urgent {
+  color: var(--danger);
+}
+
+.timer-face {
+  line-height: 1;
+}
+
+.timer-bar {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 6px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--glass-edge);
+  overflow: hidden;
+}
+
+.timer-bar::after {
+  content: '';
+  display: block;
+  height: 100%;
+  width: calc(var(--fill, 1) * 100%);
+  border-radius: 2px;
+  background: currentColor;
+  transition: width 0.25s linear;
+}
+
+.timer-chip.is-off .timer-bar {
+  display: none;
+}
+
+/* A clock that ticks down under someone who asked the system not to animate is
+   still information, not decoration — so the bar stays, it just stops sliding. */
+@media (prefers-reduced-motion: reduce) {
+  .timer-bar::after {
+    transition: none;
+  }
+}

@@ -7,11 +7,11 @@
  * drain a phone battery the way the games this replaces do.
  */
 
-import type { Outcome } from '../shared/difficulty';
 import {
   type SaveData,
   completeLevel,
   createSaveWriter,
+  defaultSave,
   loadSave,
 } from '../shared/progress';
 import { type GeneratedLevel, generateLevel } from './generate';
@@ -45,7 +45,19 @@ export type Effect =
 
 export interface GameState {
   phase: GamePhase;
+  /**
+   * True when the level ended because the clock ran out rather than because of
+   * anything on the board. Only ever set while the optional timer is on.
+   */
+  outOfTime: boolean;
   level: number;
+  /**
+   * The generated level behind `board`, for anything that needs to know how big
+   * a job this is rather than what it currently looks like — the clock sizes
+   * itself from `solutionLength`. The other three games have always exposed
+   * this; Color Sort did not need it until now.
+   */
+  generated: GeneratedLevel | null;
   board: Board;
   moveCount: number;
   selected: number | null;
@@ -56,7 +68,17 @@ export interface GameState {
 type Listener = (state: GameState) => void;
 
 export class ColorSortGame {
-  private save!: SaveData<Move>;
+  /**
+   * Seeded with a default rather than left undefined until `start()`.
+   *
+   * `subscribe` notifies its listener synchronously, so the first render
+   * happens before the save has loaded — and anything that reaches through
+   * `settings` from inside that listener would hit an undefined save and throw,
+   * leaving the game stuck on "Preparing…" forever with no board. The timer's
+   * on/off check does exactly that. A default here costs one discarded profile
+   * seed and removes the whole class of bug.
+   */
+  private save: SaveData<Move> = defaultSave<Move>(GAME_ID);
   private writer = createSaveWriter<Move>(GAME_ID);
   private source!: LevelSource<GeneratedLevel>;
   private generated: GeneratedLevel | null = null;
@@ -65,12 +87,9 @@ export class ColorSortGame {
   private moves: Move[] = [];
   private selected: number | null = null;
   private phase: GamePhase = 'loading';
+  private outOfTime = false;
   private effect: Effect = { kind: 'none' };
 
-  /** Per-level flags feeding the hidden difficulty adjustment. */
-  private usedUndo = false;
-  private usedHint = false;
-  private failedHere = false;
 
   /** A winning line to follow, keyed by the position it was computed from. */
   private hintPlan: { key: string; moves: Move[] } | null = null;
@@ -98,6 +117,8 @@ export class ColorSortGame {
   private snapshot(): GameState {
     return {
       phase: this.phase,
+      outOfTime: this.outOfTime,
+      generated: this.generated,
       level: this.save?.level ?? 1,
       board: this.board,
       moveCount: this.moves.length,
@@ -127,7 +148,6 @@ export class ColorSortGame {
   private createSource(): LevelSource<GeneratedLevel> {
     return new LevelSource<GeneratedLevel>({
       seed: this.save.seed,
-      difficultyOffset: this.save.difficultyOffset,
       createWorker: () =>
         new Worker(new URL('./generate.worker.ts', import.meta.url), { type: 'module' }),
       generate: generateLevel,
@@ -136,19 +156,15 @@ export class ColorSortGame {
 
   private async loadLevel(level: number, replay: Move[] = []): Promise<void> {
     this.phase = 'loading';
+    this.outOfTime = false;
     this.selected = null;
     this.notify({ kind: 'reset' });
-
-    this.source.setDifficultyOffset(this.save.difficultyOffset);
     const generated = await this.source.get(level);
 
     this.generated = generated;
     this.board = cloneBoard(generated.board);
     this.moves = [];
     this.hintPlan = null;
-    this.usedUndo = false;
-    this.usedHint = false;
-    this.failedHere = false;
 
     // Restore a partially played level. Any move that no longer applies is
     // dropped rather than throwing — a corrupt tail should not cost the level.
@@ -239,7 +255,6 @@ export class ColorSortGame {
     this.selected = null;
     this.advanceHintPlan({ from, to: index });
     this.phase = this.evaluatePhase();
-    if (this.phase === 'stuck') this.failedHere = true;
 
     this.persist();
     this.notify({ kind: 'pour', from, to: index, amount, color: color as Color });
@@ -250,7 +265,6 @@ export class ColorSortGame {
 
     this.moves.pop();
     this.hintPlan = null;
-    this.usedUndo = true;
     this.save = { ...this.save, stats: { ...this.save.stats, totalUndos: this.save.stats.totalUndos + 1 } };
 
     // Replay from the generated board. Undo and the save format are then the
@@ -259,6 +273,7 @@ export class ColorSortGame {
     for (const move of this.moves) applyMove(this.board, move);
 
     this.selected = null;
+    this.outOfTime = false;
     this.phase = this.evaluatePhase();
     this.persist();
     this.notify({ kind: 'reset' });
@@ -266,7 +281,6 @@ export class ColorSortGame {
 
   restart(): void {
     if (!this.generated) return;
-    this.failedHere = true;
     this.save = {
       ...this.save,
       stats: { ...this.save.stats, totalRestarts: this.save.stats.totalRestarts + 1 },
@@ -275,6 +289,7 @@ export class ColorSortGame {
     this.moves = [];
     this.hintPlan = null;
     this.selected = null;
+    this.outOfTime = false;
     this.phase = this.evaluatePhase();
     this.persist();
     this.notify({ kind: 'reset' });
@@ -302,7 +317,6 @@ export class ColorSortGame {
     const move = this.hintPlan?.moves[0];
     if (!move) return null;
 
-    this.usedHint = true;
     this.save = {
       ...this.save,
       stats: { ...this.save.stats, totalHints: this.save.stats.totalHints + 1 },
@@ -313,15 +327,11 @@ export class ColorSortGame {
     return move;
   }
 
-  private outcome(): Outcome {
-    if (this.failedHere) return 'failed';
-    return this.usedUndo || this.usedHint ? 'assisted' : 'clean';
-  }
 
   /** Advances to the next level. Only meaningful once the board is solved. */
   async advance(): Promise<void> {
     if (this.phase !== 'won') return;
-    this.save = completeLevel(this.save, this.outcome());
+    this.save = completeLevel(this.save);
     this.writer.schedule(this.save);
     await this.loadLevel(this.save.level);
   }
@@ -349,4 +359,20 @@ export class ColorSortGame {
     this.writer.schedule(this.save);
     await this.loadLevel(target);
   }
+
+  /**
+   * Ends the level because the clock ran out. See `shared/timer.ts`.
+   *
+   * Deliberately not persisted as anything special: the move list on disk is
+   * still a legal, partly-solved board, so reopening the app puts the player
+   * back where they were rather than on a fresh loss. Running out of time is a
+   * reason to stop, not a state to save.
+   */
+  loseToTime(): void {
+    if (this.phase !== 'playing') return;
+    this.outOfTime = true;
+    this.phase = 'stuck';
+    this.notify();
+  }
+
 }

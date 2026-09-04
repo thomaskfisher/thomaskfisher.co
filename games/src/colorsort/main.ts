@@ -7,6 +7,8 @@ import './colorsort.css';
 
 import { setSoundEnabled, sfx } from '../shared/audio';
 import { openSettings } from '../shared/settings-sheet';
+import { createTimedPlay } from '../shared/timed-play';
+import { budgetFor } from '../shared/timer';
 import { applyTheme, el, icons, openSheet, prefersReducedMotion } from '../shared/ui';
 import { ColorSortGame, GAME_ID, type GameState } from './game';
 import { applyLayout, chooseLayout } from './layout';
@@ -60,6 +62,35 @@ const renderer = new BoardRenderer(board, {
   },
 });
 
+/* ------------------------------------------------------------------- clock */
+
+/**
+ * Color Sort is timed per *pour*, not per finished tube — a level is thirty to
+ * eighty moves but only ever eight to twelve tubes, so paying out per tube
+ * would hand over a third of the clock in one lump three times and leave the
+ * long stretches between them unfunded.
+ */
+const timed = createTimedPlay<GameState>({
+  anchor: settingsButton,
+  isTimed: () => game.settings.timed,
+  onTimedChange: (value) => game.updateSettings({ timed: value }),
+  budget: (state) =>
+    state.generated
+      ? budgetFor({
+          units: state.generated.solutionLength,
+          rewards: state.generated.shape.colors,
+          pressure: state.generated.difficulty,
+          generous: 4.2,
+          tight: 2.4,
+          floor: 25,
+        })
+      : null,
+  progress: (state) => state.board.tubes.filter((tube) => isComplete(tube, state.board.height)).length,
+  isPlaying: (state) => state.phase === 'playing',
+  levelKey: (state) => (state.generated ? `${state.level}` : null),
+  onExpire: () => game.loseToTime(),
+});
+
 /** Sizes and arranges the tubes so the whole board fits the viewport. */
 function fitBoard(state: GameState): void {
   const count = state.board.tubes.length;
@@ -95,6 +126,7 @@ game.subscribe((state) => {
       : `${state.moveCount} move${state.moveCount === 1 ? '' : 's'}`;
 
   renderer.render(state);
+  timed.sync(state);
   fitBoard(state);
 
   undoButton.disabled = !state.canUndo || state.phase === 'loading';
@@ -110,7 +142,8 @@ game.subscribe((state) => {
   }
 
   if (state.phase === 'stuck' && lastPhase !== 'stuck') {
-    window.setTimeout(() => showStuck(), 260);
+    const { outOfTime } = state;
+    window.setTimeout(() => showStuck(outOfTime), 260);
   }
 
   lastPhase = state.phase;
@@ -165,15 +198,18 @@ function showWin(state: GameState): void {
   );
 }
 
-function showStuck(): void {
+function showStuck(outOfTime: boolean): void {
   openSheet((sheet) => {
-    sheet.content.append(el('h2', {}, 'No moves left'));
+    sheet.content.append(el('h2', {}, outOfTime ? 'Out of time' : 'No moves left'));
     sheet.content.append(
       el(
         'p',
         {},
-        'This board is out of legal pours. Undo as far back as you like — there is no penalty, ' +
-          'and every level here is solvable.',
+        outOfTime
+          ? 'The clock ran out — the board itself was fine. Undo, start over, or turn the ' +
+              'clock off in the top bar and take as long as you like.'
+          : 'This board is out of legal pours. Undo as far back as you like — there is no ' +
+              'penalty, and every level here is solvable.',
       ),
     );
 
@@ -202,6 +238,7 @@ hintButton.addEventListener('click', () => {
 });
 
 settingsButton.addEventListener('click', () => {
+  timed.pause('settings');
   openSettings({
     gameId: GAME_ID,
     gameName: 'Color Sort',
@@ -214,9 +251,11 @@ settingsButton.addEventListener('click', () => {
         renderer.setOptions({ showGlyphs: patch.colorBlindShapes });
       }
       game.updateSettings(patch);
+      if (patch.timed !== undefined) timed.chip.setEnabled(patch.timed);
     },
     onImport: (save) => game.replaceSave(save),
     onGoToLevel: (level) => game.goToLevel(level),
+    onClose: () => timed.resume('settings'),
   });
 });
 

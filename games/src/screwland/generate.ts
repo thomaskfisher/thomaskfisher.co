@@ -33,9 +33,10 @@ import {
 } from './model';
 import { search } from './solve';
 
-export const SINK_CAPACITY = 3;
-/** Box slots the tutorial levels hand out. Later levels take some away. */
-export const MAX_OPEN_BOXES = 4;
+/** Screws a box holds at the easiest setting. Levels take it higher. */
+export const BASE_BOX_CAPACITY = 3;
+/** The most boxes any level opens at once. */
+export const MAX_OPEN_BOXES = 3;
 
 export interface LevelShape {
   gridWidth: number;
@@ -45,7 +46,11 @@ export interface LevelShape {
   colors: number;
   /** Boxes accepting screws at any one moment. The sharpest lever here. */
   openBoxes: number;
+  /** Screws one box wants. More means a colour is committed to for longer. */
+  boxCapacity: number;
   trayCapacity: number;
+  /** Upcoming boxes the player is shown. Fewer means planning blind. */
+  previewCount: number;
 }
 
 export interface GeneratedLevel {
@@ -59,67 +64,138 @@ export interface GeneratedLevel {
   attempts: number;
 }
 
-const MAX_ATTEMPTS = 30;
-const VERIFY_BUDGET = 120_000;
+const MAX_ATTEMPTS = 32;
+/**
+ * Solver nodes allowed to prove one candidate solvable.
+ *
+ * Lowered from 120k, which is worth explaining because it looks like weakening
+ * the guarantee and is not. A rejected candidate costs the *whole* budget, and
+ * on the 45-screw structures the curve now reaches, 120k nodes was ~2s per
+ * attempt — level 20 took 23 seconds to generate, far past the level-long
+ * window the background worker has and a certain freeze on the main-thread
+ * fallback.
+ *
+ * Nothing unsolvable can slip through: this only ever makes the verifier give
+ * up sooner, and giving up rejects the board. What it changes is the *kind* of
+ * board that survives — one whose solution is findable inside 40k nodes rather
+ * than one that needs a quarter-million-state search to prove. For a game whose
+ * whole promise is that a person can find the line, that is the boards we want
+ * anyway.
+ */
+const VERIFY_BUDGET = 40_000;
 
 const clamp = (n: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, n));
 
 /* ------------------------------------------------------------------ shape */
 
-export function shapeFor(pressure: LevelPressure, rng: Rng): LevelShape {
+export function shapeFor(pressure: LevelPressure): LevelShape {
   const p = pressure.pressure;
+
+  // A box wanting four or five screws is a much longer commitment than one
+  // wanting three: the colour stays open, and every screw of the *other*
+  // colours found in the meantime goes to the tray. This lever did not exist
+  // before — capacity was a module constant — and it is the one that makes a
+  // small board hard without making it bigger.
+  const boxCapacity = p < 0.45 ? 3 : p < 0.75 ? 4 : 5;
 
   // Screw count must be a multiple of the box capacity so every box fills
   // exactly and no colour is ever left stranded.
-  const boxes = clamp(Math.round(4 + p * 10), 4, 14);
-  const screwCount = boxes * SINK_CAPACITY;
+  //
+  // The box count is capped low *because* capacity now goes to five: the two
+  // multiply, and the product is what generation costs. At twelve boxes of five
+  // the solver was verifying sixty-screw structures and level 20 took 34
+  // seconds to generate — well past the level-long budget the background worker
+  // actually has, and a guaranteed freeze on the main-thread fallback. Nine
+  // fives is 45, which measures at well under a second.
+  const boxes = clamp(Math.round(4 + p * 5), 4, 9);
+  const screwCount = boxes * boxCapacity;
 
   // Many small plates rather than few large ones. All of a plate's screws
   // become reachable the moment it is uncovered, so fat plates hand the player
   // a dozen simultaneous choices — and with that many options one always
   // matches an open box, the tray never fills, and the level cannot be lost.
-  const plateCount = clamp(Math.round(screwCount / 2.2), 3, 20);
+  const plateCount = clamp(Math.round(screwCount / 2.1), 3, 20);
 
-  // How many colours the player may unscrew at once. Four open boxes is a
-  // tutorial setting: with four of anything on offer something on the board
+  // How many colours the player may unscrew at once. Four open boxes was the
+  // old tutorial setting: with four of anything on offer something on the board
   // almost always matches, the tray never fills, and the level cannot be lost.
-  // Closing boxes is what turns "tap the screws you see" into a decision, so
-  // the count comes down early and keeps coming down.
-  const openBoxes =
-    p < 0.12
-      ? 4
-      : p < 0.34
-        ? 3
-        : rng.chance(clamp((p - 0.34) / 0.5, 0, 1) * 0.75)
-          ? 2
-          : 3;
-
-  // Colour count is the other half of the same lever: what matters is the ratio
-  // of colours on the board to boxes open for them. The square root gets us to
-  // five colours by about level 20 rather than level 45, where a linear ramp
-  // left a long flat stretch with a measured trap rate of zero.
+  // Four is gone entirely — three is now the *easiest* this ever gets, and most
+  // levels run on two.
   //
-  // The cap is what lets the two levers coexist. Two boxes against six colours
-  // measures as maximum difficulty, lands outside the target band, and gets
-  // thrown away — so pushing both levers at once quietly gives back the closed
-  // boxes. Two boxes against four colours stays inside the band and is the
-  // better puzzle anyway: it asks the player to plan rather than to guess.
-  const colors = clamp(
-    3 + Math.round(Math.sqrt(p) * 4),
-    3,
-    Math.min(7, openBoxes + 2, MAX_COLORS),
+  // This threshold and the three below are deliberately staggered rather than
+  // stacked. When boxes, capacity, tray and preview all stepped within the same
+  // stretch of the curve, levels 2 to 8 lurched from 0.34 to 0.82 and back to
+  // 0.61 — four levers firing at once is a cliff, not a ramp.
+  //
+  // The threshold sits below the *whole* of level 1's jitter range, not merely
+  // below its centre. Level 1 has a base pressure of 0.23 and jitters +-0.06,
+  // so a 0.2 threshold caught it on some profile seeds and not others — and the
+  // seeds it caught got a level 1 measuring 0.04, because three boxes against a
+  // five-slot tray means the tray cannot fill and the level cannot be lost.
+  //
+  // Three boxes and a five-slot tray now belong to breather levels, which sit
+  // 0.15 lower and are the only place a genuinely easy board is wanted.
+  const openBoxes = p < 0.12 ? 3 : 2;
+
+  // The tray is where the level is actually lost, so this is the sharpest of
+  // the remaining levers. It now moves with pressure rather than on a rare
+  // roll, but it stops at four rather than three: `tools/probe.ts` measures a
+  // three-slot tray against a five-screw box as solvable in under a tenth of
+  // deals, which is not a hard level so much as a level that mostly does not
+  // exist.
+  const trayCapacity = p < 0.15 ? 5 : 4;
+
+  // Colour count is not a free lever here, and this is the one place the design
+  // has to say so out loud.
+  //
+  // Colours, open boxes, tray slots and box capacity are **one budget**, not
+  // four dials. `tools/probe.ts` measures the solvable region directly, and it
+  // is unforgiving: at two open boxes and a four-screw box, seven colours is
+  // solvable in 2 deals in 20 and eight in none at all. Levels asking for that
+  // do not come out hard, they fail to come out — the generator burns every
+  // attempt and throws.
+  //
+  // So colour count rises early, while boxes and capacity are still cheap, and
+  // then yields to them. The cap below is fitted to the probe: each extra screw
+  // a box demands costs roughly one colour, and each tray slot buys one back.
+  // Difficulty past that point comes from capacity, preview and occlusion,
+  // which do not draw on this budget at all.
+  // The `+ 2` is fitted to the probe, and it is also a generation-cost control:
+  // one colour past this and the solvable share of deals falls from ~75% to
+  // ~35%, so two thirds of attempts burn the full verify budget and level 20
+  // takes ten seconds to build. A lever that costs six seconds of latency to
+  // move one notch is not worth the notch.
+  const colorBudget = openBoxes + trayCapacity + 2 - boxCapacity;
+
+  // The floor wins over the budget, and the order matters: `clamp(n, 4, 3)`
+  // returns 3, so writing this as a single clamp quietly produced three-colour
+  // boards at the top of the curve. The probe says that was needlessly timid
+  // anyway — two boxes with five-screw boxes and a four-slot tray is solvable
+  // in 11 deals in 20 at four colours. Four is the floor everywhere.
+  const colors = Math.max(
+    4,
+    Math.min(4 + Math.round(Math.sqrt(p) * 3), colorBudget, MAX_COLORS),
   );
 
-  // A four-slot tray is the sharpest of the remaining levers and stays a
-  // minority — and never lands on top of a two-box board, which is punishing
-  // enough on its own.
-  const trayCapacity =
-    openBoxes > 2 && p > 0.55 && rng.chance(((p - 0.55) / 0.45) * 0.35) ? 4 : 5;
+  // How far ahead the box queue is visible. Three upcoming boxes is enough to
+  // park a colour deliberately; one is enough to know only whether the screw in
+  // your hand is about to pay off.
+  const previewCount = p < 0.45 ? 3 : p < 0.75 ? 2 : 1;
 
   const gridWidth = clamp(6 + Math.round(p * 3), 6, 9);
   const gridHeight = clamp(7 + Math.round(p * 4), 7, 11);
 
-  return { gridWidth, gridHeight, plateCount, screwCount, colors, openBoxes, trayCapacity };
+  return {
+    gridWidth,
+    gridHeight,
+    plateCount,
+    screwCount,
+    colors,
+    openBoxes,
+    boxCapacity,
+    trayCapacity,
+    previewCount,
+  };
 }
 
 /* -------------------------------------------------------------- structure */
@@ -216,7 +292,7 @@ function placeScrews(plates: Plate[], shape: LevelShape, rng: Rng): Screw[] | nu
 }
 
 /**
- * Assigns colours in groups of `SINK_CAPACITY` so every box fills exactly, then
+ * Assigns colours in groups of `shape.boxCapacity` so every box fills exactly, then
  * shuffles which screw gets which. The box queue is that same multiset of
  * colours in a random order — the order is a large part of the difficulty.
  */
@@ -225,7 +301,7 @@ function assignColors(
   shape: LevelShape,
   rng: Rng,
 ): { screws: Screw[]; queue: number[] } {
-  const boxes = screws.length / SINK_CAPACITY;
+  const boxes = screws.length / shape.boxCapacity;
   const boxColors: number[] = [];
 
   // Every colour in play should appear at least once, then fill at random.
@@ -234,7 +310,7 @@ function assignColors(
 
   const pool: number[] = [];
   for (const color of boxColors) {
-    for (let i = 0; i < SINK_CAPACITY; i++) pool.push(color);
+    for (let i = 0; i < shape.boxCapacity; i++) pool.push(color);
   }
   rng.shuffle(pool);
 
@@ -300,13 +376,30 @@ function trapRate(
   return lost / rollouts;
 }
 
+/** Where `value` sits in [lo, hi], clamped. Every structural term is one of these. */
+const norm = (value: number, lo: number, hi: number): number =>
+  clamp((value - lo) / (hi - lo), 0, 1);
+
+/**
+ * Blends the measured trap rate with what the board is made of.
+ *
+ * Every term is normalised against the range `shapeFor` actually produces, and
+ * the weights sum to one — including the two levers that did not exist when
+ * this was first written. Box capacity and the queue preview are what carry the
+ * top of the curve here, since colours cannot (see `colorBudget`), so leaving
+ * them out of the score meant the band could not tell the hardest boards from
+ * the middling ones.
+ */
 function scoreDifficulty(shape: LevelShape, trap: number): number {
   const trapScore = clamp(trap / 0.8, 0, 1);
   const structural = clamp(
-    (shape.colors / 7) * 0.35 +
-      ((MAX_OPEN_BOXES - shape.openBoxes) / 2) * 0.2 +
-      (shape.trayCapacity === 4 ? 0.28 : 0.08) +
-      (shape.screwCount / 42) * 0.17,
+    norm(shape.colors, 4, 6) * 0.22 +
+      norm(shape.boxCapacity, 3, 5) * 0.22 +
+      // Inverted: a smaller tray and fewer open boxes are harder boards.
+      norm(5 - shape.trayCapacity, 0, 2) * 0.22 +
+      norm(MAX_OPEN_BOXES - shape.openBoxes, 0, 1) * 0.14 +
+      norm(shape.screwCount, 12, 45) * 0.12 +
+      norm(3 - shape.previewCount, 0, 2) * 0.08,
     0,
     1,
   );
@@ -316,69 +409,75 @@ function scoreDifficulty(shape: LevelShape, trap: number): number {
 /* --------------------------------------------------------------- assembly */
 
 /**
- * Deterministic for a given (profileSeed, level, difficultyOffset), so a save
- * stores a removal order rather than a board, and a reported bug reproduces
- * exactly.
+ * One assembly attempt: build the stack, colour it, and verify it.
+ *
+ * Returns null when the attempt is unusable — an impossible screw placement, a
+ * structure that cannot be taken apart, or a colour order the solver cannot
+ * clear. Exported so `tools/probe.ts` can measure the solvable region of the
+ * (colours, boxes, tray, capacity) space directly. That region is not obvious:
+ * those four are one budget, not four levers, and asking for a combination
+ * outside it burns every attempt and throws.
  */
-export function generateLevel(
-  profileSeed: string,
-  level: number,
-  difficultyOffset = 0,
-): GeneratedLevel {
+export function buildCandidate(
+  shape: LevelShape,
+  rng: Rng,
+  rollRng: Rng,
+): Omit<GeneratedLevel, 'level' | 'attempts'> | null {
+  const plates = buildPlates(shape, rng);
+  const placed = placeScrews(plates, shape, rng);
+  if (!placed) return null;
+
+  const coloured = assignColors(placed, shape, rng);
+  const structure: Structure = {
+    plates,
+    screws: coloured.screws,
+    gridWidth: shape.gridWidth,
+    gridHeight: shape.gridHeight,
+    colors: shape.colors,
+  };
+
+  if (!isWellFormed(structure) || !isDisassemblable(structure)) return null;
+
+  const config: SinkConfig = {
+    openSinks: shape.openBoxes,
+    sinkCapacity: shape.boxCapacity,
+    bufferCapacity: shape.trayCapacity,
+  };
+
+  const spec = { structure, queue: coloured.queue, config };
+  if (search(spec, { nodeBudget: VERIFY_BUDGET }).status !== 'solved') return null;
+
+  const difficulty = scoreDifficulty(shape, trapRate(structure, coloured.queue, config, rollRng));
+
+  return { structure, queue: coloured.queue, config, shape, difficulty };
+}
+
+/**
+ * Deterministic for a given (profileSeed, level), so a save stores a removal
+ * order rather than a board, and a reported bug reproduces exactly.
+ */
+export function generateLevel(profileSeed: string, level: number): GeneratedLevel {
   const pressureRng = createRng(hashSeed(profileSeed, 'screwland', 'pressure', level));
-  const pressure = pressureForLevel(level, difficultyOffset, pressureRng);
+  const pressure = pressureForLevel(level, pressureRng);
+  const shape = shapeFor(pressure);
 
   let closest: GeneratedLevel | null = null;
   let closestDistance = Number.POSITIVE_INFINITY;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const rng = createRng(hashSeed(profileSeed, 'screwland', level, difficultyOffset, attempt));
-    const shape = shapeFor(pressure, rng);
-
-    const plates = buildPlates(shape, rng);
-    const placed = placeScrews(plates, shape, rng);
-    if (!placed) continue;
-
-    const coloured = assignColors(placed, shape, rng);
-    const structure: Structure = {
-      plates,
-      screws: coloured.screws,
-      gridWidth: shape.gridWidth,
-      gridHeight: shape.gridHeight,
-      colors: shape.colors,
-    };
-
-    if (!isWellFormed(structure) || !isDisassemblable(structure)) continue;
-
-    const config: SinkConfig = {
-      openSinks: shape.openBoxes,
-      sinkCapacity: SINK_CAPACITY,
-      bufferCapacity: shape.trayCapacity,
-    };
-
-    const spec = { structure, queue: coloured.queue, config };
-    if (search(spec, { nodeBudget: VERIFY_BUDGET }).status !== 'solved') continue;
-
+    const rng = createRng(hashSeed(profileSeed, 'screwland', level, attempt));
     const rollRng = createRng(hashSeed(profileSeed, 'screwland', 'rollout', level, attempt));
-    const difficulty = scoreDifficulty(
-      shape,
-      trapRate(structure, coloured.queue, config, rollRng),
-    );
 
-    const candidate: GeneratedLevel = {
-      level,
-      structure,
-      queue: coloured.queue,
-      config,
-      shape,
-      difficulty,
-      attempts: attempt + 1,
-    };
+    const built = buildCandidate(shape, rng, rollRng);
+    if (!built) continue;
+
+    const candidate: GeneratedLevel = { ...built, level, attempts: attempt + 1 };
 
     const [lo, hi] = pressure.band;
-    if (difficulty >= lo && difficulty <= hi) return candidate;
+    if (candidate.difficulty >= lo && candidate.difficulty <= hi) return candidate;
 
-    const distance = difficulty < lo ? lo - difficulty : difficulty - hi;
+    const distance =
+      candidate.difficulty < lo ? lo - candidate.difficulty : candidate.difficulty - hi;
     if (distance < closestDistance) {
       closestDistance = distance;
       closest = candidate;
