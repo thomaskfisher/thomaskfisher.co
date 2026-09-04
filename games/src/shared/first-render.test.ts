@@ -4,6 +4,8 @@ import { ColorSortGame } from '../colorsort/game';
 import { ScrewLandGame } from '../screwland/game';
 import { BusJamGame } from '../busjam/game';
 import { SurvivalGame } from '../survival/game';
+import { FiveDiceGame } from '../fivedice/game';
+import { GridlockGame } from '../gridlock/game';
 
 /**
  * The first render happens before the save has loaded.
@@ -29,6 +31,8 @@ const games = [
   ['Screw Land', () => new ScrewLandGame()],
   ['Bus Jam', () => new BusJamGame()],
   ['Survival', () => new SurvivalGame()],
+  ['Five Dice', () => new FiveDiceGame()],
+  ['Gridlock', () => new GridlockGame()],
 ] as const;
 
 describe('before start() resolves', () => {

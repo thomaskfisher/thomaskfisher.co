@@ -29,6 +29,23 @@ export interface SettingsSheetOptions<M> {
   onHowToPlay?: () => void;
   /** Fired however the sheet is dismissed — Done, backdrop or Escape. */
   onClose?: () => void;
+
+  /*
+   * The rest of these exist for Five Dice, which is a dice game rather than a
+   * puzzle: it counts rounds instead of levels, has no clock, and has no colour
+   * carrying information. Defaulting them to the puzzle behaviour keeps the
+   * other four games' call sites unchanged, and offering a row that does nothing
+   * is worse than not offering it.
+   */
+
+  /** What a level is called here. 'Level' unless a game says otherwise. */
+  levelNoun?: string;
+  /** Replaces the Progress line, whose default talks about levels cleared. */
+  progressLine?: string;
+  /** Offer the clock. See `shared/timer.ts`. */
+  showTimer?: boolean;
+  /** Offer the shape-on-colour overlay. Pointless where no colour means anything. */
+  showShapes?: boolean;
 }
 
 export function openSettings<M>(options: SettingsSheetOptions<M>): void {
@@ -57,25 +74,29 @@ export function openSettings<M>(options: SettingsSheetOptions<M>): void {
       ),
     );
 
-    sheet.content.append(
-      toggleRow(
-        'Shapes on colors',
-        'Adds a distinct symbol to every color, so the puzzle never depends on telling colors apart.',
-        settings.colorBlindShapes,
-        (colorBlindShapes) => options.onSettingsChange({ colorBlindShapes }),
-      ),
-    );
+    if (options.showShapes !== false) {
+      sheet.content.append(
+        toggleRow(
+          'Shapes on colors',
+          'Adds a distinct symbol to every color, so the puzzle never depends on telling colors apart.',
+          settings.colorBlindShapes,
+          (colorBlindShapes) => options.onSettingsChange({ colorBlindShapes }),
+        ),
+      );
+    }
 
-    sheet.content.append(
-      toggleRow(
-        'Timed play',
-        'Puts a clock on every level. Solving something adds time back. The board is ' +
-          'exactly the same either way — this only changes whether you get to sit with it. ' +
-          'Also on the clock in the top bar.',
-        settings.timed,
-        (timed) => options.onSettingsChange({ timed }),
-      ),
-    );
+    if (options.showTimer !== false) {
+      sheet.content.append(
+        toggleRow(
+          'Timed play',
+          'Puts a clock on every level. Solving something adds time back. The board is ' +
+            'exactly the same either way — this only changes whether you get to sit with it. ' +
+            'Also on the clock in the top bar.',
+          settings.timed,
+          (timed) => options.onSettingsChange({ timed }),
+        ),
+      );
+    }
 
     sheet.content.append(
       toggleRow('Sound', 'Soft pours and chimes.', settings.sound, (sound) => {
@@ -88,7 +109,7 @@ export function openSettings<M>(options: SettingsSheetOptions<M>): void {
 
     sheet.content.append(buildLevelJump(options));
     sheet.content.append(buildBackup(options, save));
-    sheet.content.append(buildStats(save));
+    sheet.content.append(buildStats(save, options.progressLine));
 
     const done = el('button', { class: 'button button--full' }, 'Done');
     done.addEventListener('click', sheet.close);
@@ -113,12 +134,13 @@ function buildHowToPlayRow(open: () => void): HTMLElement {
 }
 
 function buildLevelJump<M>(options: SettingsSheetOptions<M>): HTMLElement {
+  const noun = options.levelNoun ?? 'Level';
   const row = el('div', { class: 'sheet-row' });
   row.append(
     el(
       'div',
       { class: 'sheet-row-label' },
-      `Level<small>Currently on ${options.currentLevel}. Jump anywhere — nothing is locked.</small>`,
+      `${noun}<small>Currently on ${options.currentLevel}. Jump anywhere — nothing is locked.</small>`,
     ),
   );
 
@@ -129,7 +151,7 @@ function buildLevelJump<M>(options: SettingsSheetOptions<M>): HTMLElement {
     inputmode: 'numeric',
     style: 'width:88px;text-align:center',
     value: String(options.currentLevel),
-    'aria-label': 'Go to level',
+    'aria-label': `Go to ${noun.toLowerCase()}`,
   }) as HTMLInputElement;
 
   input.addEventListener('change', () => {
@@ -147,7 +169,8 @@ function buildBackup<M>(options: SettingsSheetOptions<M>, save: SaveData<M>): HT
     el(
       'div',
       { class: 'sheet-row-label' },
-      'Back up your progress<small>Your level lives only on this phone. Copy this code somewhere safe, ' +
+      'Back up your progress<small>Everything you have played lives only on this phone. Copy this ' +
+        'code somewhere safe, ' +
         'or paste one in to restore progress on another device.</small>',
     ),
   );
@@ -186,7 +209,7 @@ function buildBackup<M>(options: SettingsSheetOptions<M>, save: SaveData<M>): HT
     try {
       const restored = importSave<M>(code, options.gameId);
       note.className = 'note note--ok';
-      note.textContent = `Restored — level ${restored.level}.`;
+      note.textContent = `Restored — ${(options.levelNoun ?? 'Level').toLowerCase()} ${restored.level}.`;
       void options.onImport(restored);
     } catch (error) {
       note.className = 'note note--error';
@@ -198,13 +221,14 @@ function buildBackup<M>(options: SettingsSheetOptions<M>, save: SaveData<M>): HT
   return section;
 }
 
-function buildStats<M>(save: SaveData<M>): HTMLElement {
+function buildStats<M>(save: SaveData<M>, line?: string): HTMLElement {
   const { levelsCleared, totalUndos, totalHints } = save.stats;
+  const summary =
+    line ?? `${levelsCleared} levels cleared · ${totalUndos} undos · ${totalHints} hints`;
   return el(
     'div',
     { class: 'sheet-row' },
-    `<div class="sheet-row-label">Progress<small>${levelsCleared} levels cleared · ` +
-      `${totalUndos} undos · ${totalHints} hints</small></div>`,
+    `<div class="sheet-row-label">Progress<small>${summary}</small></div>`,
   );
 }
 

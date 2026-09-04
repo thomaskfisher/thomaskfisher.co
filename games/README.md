@@ -10,28 +10,41 @@ in-game currency. Everything is static; all state lives on the player's device.
 | Screw Land | Playable |
 | Bus Jam | Playable |
 | Survival | Playable |
+| Five Dice | Playable |
+| Gridlock | Playable |
 
 ## Working on it
 
 ```bash
 npm install
 npm run dev        # http://localhost:5273
-npm test           # solver, generator, layout, curve, clock
+npm test           # solver, generator, layout, curve, clock, dice fairness
 npm run build      # -> dist/
 npm run icons      # regenerate PWA icons (output is committed)
 ```
 
 ## How it works
 
+**Five of the six are puzzles. Five Dice is not, and it bends the house rules
+on purpose.** Everything below about verified levels, measured difficulty and
+unlimited undo describes Color Sort, Screw Land, Bus Jam, Survival and
+Gridlock. Yahtzee
+is a game of chance: there is no board to verify, no difficulty to curve, and
+rewinding a throw would be reading the answer. What it keeps is everything that
+made this collection worth building — no ads, no servers, no currency, nothing
+locked, and a free unlimited hint — and what it puts in place of the rest is set
+out under *Five Dice* below.
+
 **Every level is verified before it is shown.** Levels are dealt at random from
 a seed, then solved. A board the solver cannot finish is discarded, so unlike
 the games this replaces, a level is never a dead end. The same solver drives the
 hint button, which is free and unlimited.
 
-**Difficulty is measured, not assumed.** The signal is *trap rate*: the fraction
-of naive playthroughs that dead-end. It models the player we are building for —
-someone enjoying a puzzle on the couch, not running a search. See
-`colorsort/generate.ts`.
+**Difficulty is measured, not assumed.** In four of the five puzzles the signal
+is *trap rate*: the fraction of naive playthroughs that dead-end. It models the
+player we are building for — someone enjoying a puzzle on the couch, not running
+a search. See `colorsort/generate.ts`. Gridlock is the exception and gets
+something better; see below.
 
 **Generation is deterministic.** A board is a pure function of
 `(profileSeed, level)`, so a save stores a move list rather than a board, levels
@@ -72,24 +85,107 @@ share of them get through. "How many ways are there to win" becomes the literal
 difficulty dial, it means the same thing on a board full of multipliers and a
 board full of barriers, and at least one winner is guaranteed by construction.
 
-**Every game explains itself once, then gets out of the way.** Three of the
-four have a rule you cannot infer by tapping: Screw Land loses the level when
-the tray overflows, Bus Jam only lets you tap someone with a clear walk to the
-top edge, and Survival's reach limit is invisible until a tap is refused. A new
-player discovers those by losing, which reads as the game being unfair rather
-than as a rule. `shared/how-to-play.ts` is a short illustrated sheet per game —
+**Every game explains itself once, then gets out of the way.** Five of the six
+have a rule you cannot infer by tapping: Screw Land loses the level when the
+tray overflows, Bus Jam only lets you tap someone with a clear walk to the top
+edge, Survival's reach limit is invisible until a tap is refused, Five Dice
+takes two taps to write a box, and Gridlock counts a slide of any length as one
+move — which is the unit the "best 14" in its top bar is quoted in. A new player discovers those by losing, which
+reads as the game being unfair rather than as a rule. `shared/how-to-play.ts` is a short illustrated sheet per game —
 diagrams rather than prose, because the rules are all spatial — shown once on a
 save that has never cleared a level, and available forever from the `?` in the
 top bar or from Settings. The closing promises (verified solvable, free undo and
-hints, nothing locked) are written once in the shared module rather than four
-times, because they are the same promise in all four games.
+hints, nothing locked) are written once in the shared module rather than five
+times, because they are the same promise in all five puzzles. Five Dice
+overrides them, because all three would be false there — see below.
 
 `shouldAutoShow` is deliberately not just `!seenHowToPlay`: adding the flag to
 the save format makes every existing player read as never having seen it, and
 interrupting someone on level 60 to explain the tap target is worse than not
 explaining it at all.
 
-**Two of the four games share an engine.** Screw Land has a five-slot tray and
+**Five Dice keeps a different promise, because it cannot keep the usual one.**
+There is nothing to verify: every round can be finished, since writing a zero in
+a box is always legal. So the promise it makes instead is that **the dice are
+fair and were fixed before you touched them**, and both halves of that are
+tested rather than asserted. `dice.test.ts` is where the generator invariant
+sweep would be in any other game here — chi-square on the faces overall and per
+slot, per throw and per turn; independence between neighbouring dice; and the
+rate of the rare hands against the arithmetic, because a per-face check passes
+happily while the five dice lean on each other.
+
+**Every face is a pure function of `(seed, turn, throw, slot)`.** Indexing by
+slot and throw number rather than by a running counter is what makes it honest
+rather than merely seeded: throwing one die and throwing three both give slot 0
+the same face, so choosing differently cannot change what a throw was going to
+give you. That also keeps the save a move list, exactly as in the other games.
+
+**Which is why Five Dice has no undo, and no restart.** Both would be exploits
+rather than kindnesses. Determinism means a rewind is an oracle — throw all
+five, read the faces, rewind, and throw back only the ones that disappointed you
+— and a replayed round is the whole deck face up. Undo exists in the puzzles so
+that a wrong move is not a punishment; here it would simply delete the game.
+What undo was actually protecting against is the misfire, the stray tap that
+writes a zero in Five of a kind twenty minutes into a good card, and that is
+handled directly: **a box takes two taps**, the first of which only shows what
+it would pay. Abandoning a card lives in the top bar behind a confirmation, is
+never counted in the record, and costs nothing, because rounds are not a ladder.
+
+**Its hint plays the odds, not the answer.** `advise.ts` may not touch `dieFace`
+and does not: it reasons about the distribution of a fair die exactly as a
+player must, and `advise.test.ts` holds it to that by asserting that the same
+position gets the same advice from two different rounds. Within a turn the
+arithmetic is exact — 252 distinct hands, every way of holding, two throws of
+lookahead — and a box is priced at what a whole turn spent chasing it would
+earn, which is what stops the hint handing over Five of a kind for a five-point
+hand. It does not plan across turns, so it is a strong player rather than a
+perfect one: `tools/dice.ts` measures it at a mean of 233 a card, against
+roughly 254 for perfect play and 200-220 for a good human.
+
+There is also no hint ping-pong to guard against here, and it is worth knowing
+why. The other games cache a winning line because re-solving from an adjacent
+position can return a different one whose opening move undoes the last. Advice
+here is a pure function of the position, so two answers to the same question are
+the same answer; the cache in `game.ts` saves recomputation and nothing else.
+
+**Gridlock is the one puzzle that cannot be lost, and that changes everything
+about how it is built.** Every slide is reversible — a car leaves the bays it
+came from empty, so sliding it back is always legal — which makes its state
+space an *undirected* graph with no dead ends. Trap rate, the signal the other
+four are calibrated on, therefore has nothing to measure: there is nothing to
+trap on. What it gets instead is worth more. The graph is small enough to
+enumerate completely, so difficulty is **the exact length of a shortest
+solution**. "This park needs nineteen slides" means no eighteen-slide sequence
+exists, which is a far stronger claim than the other games can make, and the
+generator picks the starting position *at* the depth the curve asks for rather
+than dealing until something scores near it.
+
+**Gridlock's levels are built backwards from a finished one.** The generator
+starts from a park that is already solved — the target parked against the exit
+wall — so the component reached from it contains a win by definition, and
+reversibility means every position in that component can get back to it. Any
+starting position drawn from the component is therefore solvable *by
+construction*, and the solver measures rather than filters.
+
+**And it searches the layout, not the deal.** This is the part that was measured
+rather than assumed, and the measurement changed the design. `tools/gridlock.ts`
+surveyed what random parks actually produce: a median component depth of *two or
+three slides*, with anything past eighteen turning up about once in a hundred
+layouts. Dealing parks and keeping the hard ones was never going to work. But
+depth is a property of the layout — which vehicles exist and which row or column
+each is locked to — so the generator hill-climbs it: replace one vehicle, keep
+the change if the component got deeper, reseed when a climb stops improving.
+That reaches the target depth in 97% of runs at ten slides and 88% at sixteen.
+
+The same survey paid for itself twice more. Deep layouts have *small* components,
+three to seven thousand positions — a park with a hundred thousand reachable
+positions is a wide-open one where the target is three slides from the exit — so
+the state cap is 8,000 and throws away only layouts that were going to be
+discarded anyway. And a hard park has vertical cars standing across the exit row,
+so the seed layout plants two or three of them rather than making the climb
+rediscover that every time.
+
+**Two of the five puzzles share an engine.** Screw Land has a five-slot tray and
 boxes taking three matching screws; Bus Jam has a five-slot bench and buses
 taking three matching passengers. Same thing — `shared/buffer-sink.ts`. Bus Jam
 adds grid pathfinding on top.
@@ -154,6 +250,12 @@ src/colorsort/        model, solve, generate, layout, render, game, main, rules
 src/screwland/        model, solve, generate, render, game, main, rules
 src/busjam/           model, solve, generate, render, game, main, rules
 src/survival/         model, solve, generate, render, game, main, rules
+src/fivedice/         model, advise (the hint), render, game, main, rules —
+                      no generate and no solve: there is no level to build or
+                      verify, only fair dice
+src/gridlock/         model, solve, generate, render, game, main, rules, plus
+                      ascii — a six-by-six park as six lines of six characters,
+                      imported only by the tests and tools
 public/               icons, per-game manifest, a two-line sw.js per game,
                       game-sw (the shared worker body) and warm (downloads every
                       game from any page) — copied verbatim, never bundled
@@ -177,6 +279,34 @@ firebase hosting:channel:deploy preview --only games
 # Ship
 firebase deploy --only hosting:games
 ```
+
+### Cut from Five Dice v1
+
+The bonus for a second five-of-a-kind, and the joker rules for where one may be
+written. Both are rare, and each adds a whole dimension to every decision on the
+card. So a full house here is exactly three of one face and two of another, and
+five alike is not a run — the strict reading, and the one most implementations
+quietly do not use.
+
+The name is the other departure. Yahtzee is Hasbro's trademark; the game is not.
+The categories keep the names anyone would look for — full house, small
+straight, chance — and the fifty-point row is Five of a kind. If the title
+should be otherwise it is one string in four files.
+
+### Cut from Gridlock v1
+
+Immovable one-cell blocks, a second exit, and any of the modifiers the various
+mobile versions layer on. Blocks are the one genuinely tempting omission — they
+add constraint rather than noise and the generator would handle them for free —
+but they are another rule to explain, and the core wants calibrating first. A
+second exit mostly makes boards easier.
+
+Four-cell vehicles *are* in, at about one park in ten at the top of the curve.
+On a six-wide board they have three positions and spend the level being
+something to route around, which is the point.
+
+The name is a departure for the usual reason: Rush Hour is ThinkFun's trademark
+and Unblock Me is Kiragames'. The game is not.
 
 ### Cut from Survival v1
 
@@ -206,7 +336,7 @@ them; they belong in later as optional modifiers, not as load-bearing rules.
   checked, not just the intent.
 - **Hints must follow one cached plan.** Re-solving after every move can return
   a different winning line whose opening move undoes the previous one, and the
-  hint button ping-pongs forever. All three games cache a plan and consume it.
+  hint button ping-pongs forever. Every game here caches a plan and consumes it.
 - **Punishing rows compound downwards.** Survival prices barriers and negative
   gates as a fraction of the count reaching them, exactly as multipliers are a
   multiple of it. Spending more than about two rows in five on them makes the
@@ -268,10 +398,78 @@ them; they belong in later as optional modifiers, not as load-bearing rules.
   wider than the phone therefore widened its own container, `fitBoard` measured
   the widened box, and the board grew again — walking off the right edge of the
   screen. `.app` now pins its column to `minmax(0, 1fr)`, which makes that
-  measurement trustworthy for all three games.
+  measurement trustworthy for every game here.
+
+- **A reversible puzzle needs a different difficulty signal, and gets a better
+  one.** Trap rate assumes a directed state space with dead ends in it. Gridlock
+  has neither, so the rollout measured nothing — but the same property that
+  kills the signal (every move undoable, so the graph is undirected) is what
+  makes an exhaustive sweep affordable and turns difficulty into an exact fact.
+  Check whether a new game can be lost *before* reaching for the shared model.
+- **Hill-climbing wanted diversity, not small steps.** The obvious improvement to
+  Gridlock's layout search was a nudge — shift one vehicle a row or a column,
+  the classic local move. Measured, it made the generator *worse*: levels landing
+  inside their band fell from 23 in 23 to 20, and the slowest level nearly
+  doubled. Small moves rarely change a component's depth at all, so the climb
+  spent its budget on them and reseeded less often. The lever that actually
+  worked was a short stall limit and more restarts.
+- **A stalled search must restart, not settle.** Gridlock's first climb took the
+  deepest layout it had found when it ran out of budget. On a park that had
+  jammed — four hundred reachable positions, almost every mutation colliding —
+  that meant shipping a six-slide board against a target of twenty. Level 150,
+  trivial, dressed as a hard one. Nothing failed and no test caught it; only the
+  curve dump showed it.
+- **A probe that has only ever passed is not evidence, and sometimes the honest
+  answer is that there was nothing to measure.** The board-over-sheet probe found
+  zero leaked points in Gridlock — and zero again with `isolation` switched off
+  at runtime. The negative control was the useful half: it showed the isolation
+  was not doing the work, because this game's z-indexes are small fixed constants
+  topping out at 6 against the sheet's 20, rather than Screw Land's `layer * 10`.
+  It stays as insurance, and the comment in the CSS says which it is.
+- **A hardcoded copy of a CSS value drifts.** Gridlock's fit subtracted a guessed
+  8px for the board's padding, which left the gap in the exit wall hanging four
+  pixels off the right of the screen — invisible at desktop width and obvious on
+  a phone. Reading `getComputedStyle` for the padding costs one call on resize
+  and cannot go stale.
+- **Check the arithmetic before blaming the generator.** Five Dice's fairness
+  sweep failed on large straights at nearly twice the expected rate, which looks
+  exactly like a hash mixing its inputs badly — and five hashing variants were
+  measured before the actual bug turned up in the test itself: a large straight
+  is `2 x 5! = 240` ordered outcomes out of 7776, not 120. The dice had been
+  fine the whole time.
+- **A CSS class beats an SVG presentation attribute, and it bites both ways.**
+  The known half is that `fill="var(--accent)"` does nothing. The other half:
+  `.ha-label` in shell.css sets `text-anchor: middle`, so `text-anchor="start"`
+  on a rules diagram's label is silently ignored and every label centres on the
+  box's left edge with half of it outside the tile. Those diagrams now lay their
+  text out in centred zones, which cannot quietly stop working.
+- **Percentage padding resolves against the containing block's width, not the
+  element's.** `padding: 14%` on a die was 52px a side, which pushed each die's
+  min-content width past 100px and ran the tray off the screen while crushing
+  the pips to nothing — with the width property still reading 60. Size padding
+  from the element's own custom property.
+- **A fixed-size board still has to be fitted.** Five Dice is always seven rows
+  by two columns and five dice, so there is no level-to-level variation to solve
+  for — but phones vary by three hundred pixels of height, and a scorecard that
+  needs scrolling is one you cannot plan from. The row height is solved for the
+  space available, and what the cap leaves over collects above the dice, where
+  it reads as the gap between the card and the tray.
 
 ## Notes for later
 
+- **Five Dice's record rides in `stats`.** It is the one game whose outcome is a
+  number rather than cleared-or-not, so `bestScore` and `scoreTotal` are optional
+  fields on the shared save. They live there rather than in a store of their own
+  so that the save code in Settings — the entire backup story for a server-free
+  game — carries a player's record with it. A finished card is banked and
+  `inProgress` cleared in the same breath, so closing the app on the result sheet
+  keeps the score and reopening cannot count it twice.
+- **The shared chrome now takes a few opt-outs.** `showTimer`, `showShapes`,
+  `levelNoun` and `progressLine` on the settings sheet, and `promises` on the
+  rules sheet. All default to the puzzle behaviour, so the other four call sites
+  are unchanged. Offering a row that does nothing is worse than not offering it,
+  and printing "every level is solved before you see it" in a dice game would be
+  worse still.
 - **Saves are per-device.** iOS can evict local storage under disk pressure or
   when Safari data is cleared, and nothing follows the player to a new phone.
   Settings → *Copy save code* is the backup; it is the reason a server is not
@@ -279,12 +477,12 @@ them; they belong in later as optional modifiers, not as load-bearing rules.
 - **Opening any page downloads every game.** `public/warm.js` runs on the
   launcher and on each game, reads the launcher's cards to find out which games
   exist, then registers every game's worker and tells it to fill its own cache.
-  Before it, flying with all four meant deliberately visiting all four, and the
+  Before it, flying with all of them meant deliberately visiting all of them, and the
   one that was forgotten failed on the plane. **A new game joins by having a
   launcher card** — there is no second list, and `offline-warm.test.ts` fails if
   a game in `vite.config.ts` has no card or no worker.
 - **Each game's `sw.js` is a stub** binding a slug and a cache version;
-  the body is `public/game-sw.js`, shared by all four. Imported scripts count
+  the body is `public/game-sw.js`, shared by every game. Imported scripts count
   towards the update byte-check, so editing the body still reaches installed
   workers. Bump that game's `CACHE_VERSION` when its cached contents go stale,
   or returning players can stay pinned to an old build.

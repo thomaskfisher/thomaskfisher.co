@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!-- viewport-fit=cover lets the app paint behind the notch; the safe-area
+         insets in shell.css keep the controls clear of it. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"
+    />
+    <meta
+      name="description"
+      content="Slide the cars out of the way and drive the red one out. No ads, no timers, no accounts."
+    />
+    <meta name="robots" content="noindex" />
+
+    <title>Gridlock</title>
+
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <meta name="theme-color" content="#101a2e" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#eef2f9" media="(prefers-color-scheme: light)" />
+
+    <!-- iOS ignores parts of the manifest; these are what actually give a
+         home-screen launch with no browser chrome. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Gridlock" />
+    <link rel="apple-touch-icon" href="../icons/gridlock-180.png" />
+    <link rel="icon" href="../icons/gridlock-192.png" />
+
+    <style>
+      /* Paint the background before any CSS module loads, so a cold start on a
+         phone never flashes white. */
+      html {
+        background: #101a2e;
+      }
+      @media (prefers-color-scheme: light) {
+        html {
+          background: #eef2f9;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app" id="app"></div>
+    <noscript>
+      <p style="padding: 24px; font-family: system-ui; color: #eef3fb">
+        Gridlock needs JavaScript to run. Everything stays on your device — there is no server.
+      </p>
+    </noscript>
+    <script type="module" src="../src/gridlock/main.ts"></script>
+    <!-- Downloads the other games in the background, so opening any one page
+         is enough to have all of them offline. Not bundled: it is shared
+         verbatim with the launcher and every other game. -->
+    <script src="/warm.js" defer></script>
+  </body>
+</html>

@@ -28,6 +28,8 @@ export default defineConfig({
         screwland: 'screwland/index.html',
         busjam: 'busjam/index.html',
         survival: 'survival/index.html',
+        fivedice: 'fivedice/index.html',
+        gridlock: 'gridlock/index.html',
       },
     },
   },

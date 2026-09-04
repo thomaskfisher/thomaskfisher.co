@@ -35,6 +35,16 @@ export interface GameRules {
   /** One sentence: what finishing a level actually means. */
   goal: string;
   steps: RuleStep[];
+  /**
+   * Replaces the closing house promises.
+   *
+   * They are shared because they are the same promise in four of the games, and
+   * a player who reads them in Color Sort should read the same words in Bus Jam.
+   * Five Dice is the exception: it has no solver to verify a level, no undo, and
+   * a hint that plays the odds rather than a winning line, so repeating the
+   * default here would be a lie in three places out of three.
+   */
+  promises?: string[];
 }
 
 /**
@@ -120,7 +130,7 @@ function build(
   content.append(list);
 
   const promises = el('ul', { class: 'howto-promises' });
-  for (const line of HOUSE_PROMISES) promises.append(el('li', {}, line));
+  for (const line of rules.promises ?? HOUSE_PROMISES) promises.append(el('li', {}, line));
   content.append(promises);
 
   const done = el(

@@ -1,0 +1,319 @@
+/* ==========================================================================
+   Gridlock.
+
+   Portrait, one-handed, and the whole park visible at once. The board is
+   always six by six, so unlike the other four there is no level-to-level
+   variation to solve for — but phones vary by three hundred pixels of height
+   and a park that needs scrolling is one you cannot plan from, so the cell
+   size is still solved for the space available rather than picked and hoped.
+   ========================================================================== */
+
+.app--gridlock {
+  grid-template-rows: auto 1fr auto;
+}
+
+.board {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: 4px 10px 8px;
+}
+
+/* --------------------------------------------------------------- the park */
+
+/*
+ * `isolation` here is insurance rather than a fix, and it is worth being
+ * accurate about which.
+ *
+ * Screw Land stacked plates with `layer * 10`, a number computed from game
+ * state that climbed past the settings sheet's z-index of 20 and painted over
+ * it. Nothing in this game does that: the four z-indexes below are small fixed
+ * constants — a car, a dragged car, a selected one, a destination marker — and
+ * the highest is 6. A probe with the sheet open found zero board elements on
+ * top of it, and found zero again with isolation switched off at runtime, which
+ * is the honest result: there is currently nothing here for it to contain.
+ *
+ * It stays because the property being protected is "no z-index in this game is
+ * derived from the board", and a stacking context is what keeps that cheap to
+ * be wrong about later.
+ */
+.park {
+  position: relative;
+  isolation: isolate;
+  width: calc(var(--cell) * 6);
+  height: calc(var(--cell) * 6);
+  /* The gap in the wall is drawn outside the park and absolutely positioned,
+     so it contributes nothing to the park's own box. Without this margin the
+     park centres on its own and the exit hangs off the right of the screen.
+     Kept in step with EXIT_GUTTER in main.ts. */
+  margin-right: 30px;
+  border-radius: 10px;
+  background: var(--surface);
+  /* No ring around the park. A continuous kerb on all four sides is exactly
+     the wrong thing to draw here — the whole level is aimed at one side being
+     open, and a ring that runs straight past the gap says the opposite. The
+     opening is marked instead by the two kerb stubs that frame it. */
+  box-shadow: 0 6px 18px rgba(4, 10, 22, 0.3);
+  touch-action: none;
+}
+
+.park[data-empty] {
+  visibility: hidden;
+}
+
+/* The painted bays. Purely a floor marking — nothing reads them. */
+.bays {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template: repeat(6, 1fr) / repeat(6, 1fr);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.bay {
+  border-right: 1px dashed color-mix(in srgb, var(--text-dim) 26%, transparent);
+  border-bottom: 1px dashed color-mix(in srgb, var(--text-dim) 26%, transparent);
+}
+
+.bay:nth-child(6n) {
+  border-right: none;
+}
+
+.bay:nth-child(n + 31) {
+  border-bottom: none;
+}
+
+/* ------------------------------------------------------------------ exit */
+
+/*
+ * The way out.
+ *
+ * Drawn as a *break* rather than as a marking: a red kerb runs down the
+ * right-hand edge and simply stops on either side of the exit row, with an
+ * arrow beyond it. The first version filled the gap with a red gradient block,
+ * which on a phone read as one more obstacle parked outside the wall — the
+ * opposite of what it is.
+ *
+ * The hole is positioned from `--cell` and `--exit-row`, both set by the
+ * renderer, so the CSS holds no second copy of where the exit is.
+ */
+.park::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 100%;
+  margin-left: 2px;
+  width: 4px;
+  border-radius: 2px;
+  opacity: 0.85;
+  background: linear-gradient(
+    180deg,
+    #e6394a 0 calc(var(--cell) * var(--exit-row) + 3px),
+    transparent calc(var(--cell) * var(--exit-row) + 3px)
+      calc(var(--cell) * (var(--exit-row) + 1) - 3px),
+    #e6394a calc(var(--cell) * (var(--exit-row) + 1) - 3px)
+  );
+}
+
+/* The chevron through the gap. Positioned on the exit row by the renderer. */
+.exit {
+  position: absolute;
+  left: 100%;
+  width: 26px;
+}
+
+.exit::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  width: 9px;
+  height: 9px;
+  border-top: 2.5px solid #e6394a;
+  border-right: 2.5px solid #e6394a;
+  border-radius: 1px;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+/* ------------------------------------------------------------------- cars */
+
+.car {
+  position: absolute;
+  border-radius: 9px;
+  background: linear-gradient(160deg, var(--car) 0%, var(--car-shade) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 2px 0 var(--car-shade),
+    0 3px 7px rgba(4, 10, 22, 0.35);
+  cursor: grab;
+  touch-action: none;
+  z-index: 2;
+  /* No transition on transform: the drag sets it every pointermove, and an
+     easing curve there turns a direct manipulation into a lagging one. */
+  transition:
+    left 0.16s cubic-bezier(0.3, 0.9, 0.35, 1),
+    top 0.16s cubic-bezier(0.3, 0.9, 0.35, 1);
+}
+
+.car:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The windscreen. Two of them, so which way the car faces is readable at a
+   glance without reading the shape of the box it sits in. */
+.car-glass {
+  position: absolute;
+  inset: 20%;
+  border-radius: 5px;
+  background: color-mix(in srgb, #0b1220 34%, transparent);
+}
+
+.car--h .car-glass {
+  inset: 22% 16%;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, #0b1220 36%, transparent) 0 42%, transparent 42%),
+    linear-gradient(90deg, transparent 0 58%, color-mix(in srgb, #0b1220 36%, transparent) 58%);
+}
+
+.car--v .car-glass {
+  inset: 16% 22%;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #0b1220 36%, transparent) 0 42%, transparent 42%),
+    linear-gradient(180deg, transparent 0 58%, color-mix(in srgb, #0b1220 36%, transparent) 58%);
+}
+
+/* The target. Red is not enough on its own — colour means nothing anywhere
+   else in this game, and it should not start meaning something here — so the
+   one car that matters also carries a chevron pointing at the exit. */
+.car--target {
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 2px 0 var(--car-shade),
+    0 4px 10px rgba(180, 30, 45, 0.4);
+}
+
+.car-mark {
+  position: absolute;
+  top: 50%;
+  right: 12%;
+  width: 8px;
+  height: 8px;
+  border-top: 2.5px solid rgba(255, 255, 255, 0.92);
+  border-right: 2.5px solid rgba(255, 255, 255, 0.92);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.car.is-dragging {
+  cursor: grabbing;
+  z-index: 6;
+  transition: none;
+  filter: brightness(1.09);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 3px 0 var(--car-shade),
+    0 10px 20px rgba(4, 10, 22, 0.45);
+}
+
+.car.is-selected {
+  z-index: 5;
+  filter: brightness(1.06);
+}
+
+.car.is-hinted {
+  z-index: 5;
+  box-shadow:
+    inset 0 0 0 2px var(--accent),
+    0 2px 0 var(--car-shade),
+    0 0 16px var(--accent-soft);
+}
+
+/* Vehicles standing between the target and the exit. Deliberately subtle: it
+   is a nudge towards what the level is about, not an instruction. */
+.car.is-blocking::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9px;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.32);
+}
+
+/* --------------------------------------------------------------- targets */
+
+/*
+ * Where a selected car can go.
+ *
+ * Dragging is the gesture this game wants, but a car that answers only to
+ * being hauled reads as broken to anyone who taps it first. So a tap selects,
+ * and these say both "this one is selected" and "here is exactly how far it
+ * goes" — which is the answer to the standing question of what a player needs
+ * to see for a constraint to be a decision rather than a guess.
+ */
+.slot {
+  position: absolute;
+  padding: 0;
+  border: none;
+  background: none;
+  z-index: 4;
+  cursor: pointer;
+}
+
+.slot::after {
+  content: '';
+  position: absolute;
+  inset: 30%;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.42;
+  transition: opacity 0.12s ease;
+}
+
+.slot:hover::after,
+.slot:focus-visible::after {
+  opacity: 0.75;
+}
+
+.park.is-won .slot {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- results */
+
+.win-title,
+.lose-title {
+  margin: 0 0 2px;
+  font-size: 1.35rem;
+}
+
+.result-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 2px 0 14px;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+}
+
+.result-line b {
+  font-size: 1.5rem;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .car {
+    transition: none;
+  }
+}
+
+/* The bay the hint is pointing at. Distinct from the other reachable bays,
+   which are all equally legal — this one is the suggestion. */
+.slot.is-hinted::after {
+  inset: 18%;
+  opacity: 1;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}

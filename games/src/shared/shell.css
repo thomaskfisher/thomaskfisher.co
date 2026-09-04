@@ -650,6 +650,14 @@ button {
   stroke: none;
 }
 
+/* A solid mark in ink — dice pips and the like. `ha-fill` is too faint to read
+   at this size and `ha-fill-strong` is still a wash rather than a dot. */
+.howto-art .ha-solid {
+  fill: currentColor;
+  fill-opacity: 0.8;
+  stroke: none;
+}
+
 .howto-art .ha-strike {
   fill: none;
   stroke: currentColor;

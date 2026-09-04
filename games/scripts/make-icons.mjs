@@ -406,9 +406,109 @@ function drawSurvival(size, { maskable }) {
   return encodePng(size, size, canvas.data);
 }
 
+/**
+ * Two dice, the larger showing five.
+ *
+ * A whole hand of five would be five specks at 48px. One die reads as dice
+ * immediately, and the second one behind it says there is more than one — which
+ * is the difference between this icon and a generic app tile.
+ */
+function drawFiveDice(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.19 : size * 0.11;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const area = size - inset * 2;
+  const pip = (die, fx, fy, color) => {
+    const r = die.w * 0.105;
+    fillRoundedRect(canvas, die.x + die.w * fx - r, die.y + die.w * fy - r, r * 2, r * 2, r, color);
+  };
+
+  // The one behind, top right: smaller, dimmer, and clipped by the front die.
+  const back = { x: inset + area * 0.44, y: inset + area * 0.02, w: area * 0.44 };
+  fillRoundedRect(canvas, back.x, back.y, back.w, back.w, back.w * 0.2, hex('#2b3f66'));
+  for (const [fx, fy] of [
+    [0.26, 0.26],
+    [0.5, 0.5],
+    [0.74, 0.74],
+  ]) {
+    pip(back, fx, fy, hex('#8fa6c9'));
+  }
+
+  // The front die: accent blue, white pips, showing five.
+  const front = { x: inset + area * 0.02, y: inset + area * 0.28, w: area * 0.7 };
+  fillRoundedRect(canvas, front.x, front.y, front.w, front.w, front.w * 0.2, hex('#4da3ff'));
+  for (const [fx, fy] of [
+    [0.26, 0.26],
+    [0.74, 0.26],
+    [0.5, 0.5],
+    [0.26, 0.74],
+    [0.74, 0.74],
+  ]) {
+    pip(front, fx, fy, hex('#ffffff'));
+  }
+
+  return encodePng(size, size, canvas.data);
+}
+
 /* --------------------------------------------------------------- generate */
 
 mkdirSync(OUT_DIR, { recursive: true });
+
+/**
+ * A red car boxed in by two others, with the gap it is aiming for on the right.
+ * Reads at 48px as "get that one out", which is the whole game.
+ */
+function drawGridlock(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.19 : size * 0.11;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const area = size - inset * 2;
+  // A four-by-four park rather than the game's six-by-six: at 48px, six bays
+  // put every car below two pixels and the whole thing turns to grey mush.
+  const cell = area / 4;
+
+  fillRoundedRect(canvas, inset, inset, area, area, area * 0.07, hex('#1b2a45'));
+
+  // Bay markings, kept faint — they are texture, not information.
+  for (let line = 1; line < 4; line++) {
+    fillRoundedRect(canvas, inset + line * cell - area * 0.004, inset, area * 0.008, area, 0, hex('#33507f'));
+    fillRoundedRect(canvas, inset, inset + line * cell - area * 0.004, area, area * 0.008, 0, hex('#33507f'));
+  }
+
+  const car = (column, row, length, vertical, color) => {
+    const pad = cell * 0.13;
+    fillRoundedRect(
+      canvas,
+      inset + column * cell + pad,
+      inset + row * cell + pad,
+      (vertical ? 1 : length) * cell - pad * 2,
+      (vertical ? length : 1) * cell - pad * 2,
+      cell * 0.2,
+      hex(color),
+    );
+  };
+
+  // The red car in the exit row, and the two verticals standing in its way.
+  car(0, 1, 2, false, '#e6394a');
+  car(2, 0, 2, true, '#4da3ff');
+  car(3, 1, 2, true, '#f5c518');
+
+  // The gap in the wall: a break in the right-hand edge on the exit row.
+  const wall = area * 0.05;
+  const wallX = inset + area - wall * 0.4;
+  fillRoundedRect(canvas, wallX, inset, wall, cell, 0, hex('#e6394a'), 0.25);
+  fillRoundedRect(canvas, wallX, inset + cell * 2, wall, area - cell * 2, 0, hex('#e6394a'), 0.25);
+
+  return encodePng(size, size, canvas.data);
+}
 
 const targets = [
   ['colorsort-180.png', 180, { maskable: false }, drawColorSort],
@@ -427,6 +527,14 @@ const targets = [
   ['survival-192.png', 192, { maskable: false }, drawSurvival],
   ['survival-512.png', 512, { maskable: false }, drawSurvival],
   ['survival-maskable-512.png', 512, { maskable: true }, drawSurvival],
+  ['fivedice-180.png', 180, { maskable: false }, drawFiveDice],
+  ['fivedice-192.png', 192, { maskable: false }, drawFiveDice],
+  ['fivedice-512.png', 512, { maskable: false }, drawFiveDice],
+  ['fivedice-maskable-512.png', 512, { maskable: true }, drawFiveDice],
+  ['gridlock-180.png', 180, { maskable: false }, drawGridlock],
+  ['gridlock-192.png', 192, { maskable: false }, drawGridlock],
+  ['gridlock-512.png', 512, { maskable: false }, drawGridlock],
+  ['gridlock-maskable-512.png', 512, { maskable: true }, drawGridlock],
 ];
 
 for (const [name, size, options, draw] of targets) {
