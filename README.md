@@ -20,6 +20,11 @@ firebase deploy                            # all three
 Deploying one no longer redeploys the others. Note that `firebase deploy` on its
 own now covers every target.
 
+`/ship` does the whole release in one command: it works out which targets the
+changed files actually touch, builds and tests the games if they are among them,
+deploys only those targets, then commits and pushes to `master`. Deploy runs
+first on purpose, so a failed build never becomes a commit.
+
 ### The wedding site
 
 `wedding/public/index.html` is the wedding page and `wedding/public/rsvp.html`

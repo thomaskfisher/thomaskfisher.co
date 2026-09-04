@@ -72,10 +72,20 @@ already built.
 Per game you write: `model.ts`, `solve.ts`, `generate.ts`, `render.ts`,
 `game.ts`, `main.ts`, `generate.worker.ts`, `<game>.css`, plus
 `<game>/index.html`, `public/<game>/manifest.webmanifest`, `public/<game>/sw.js`.
+The worker is a two-line stub — copy another game's and change the slug; the
+body is shared in `public/game-sw.js`. `<game>/index.html` needs
+`<script src="/warm.js" defer>` alongside its module script.
 
 Wiring points, all easy to forget: a `vite.config.ts` entry, a launcher card in
 `games/index.html`, a `draw<Game>` function in `scripts/make-icons.mjs`, and the
 status table in `games/README.md`.
+
+**The launcher card is what makes the game work offline.** `public/warm.js`
+reads the cards to find out which games exist, then has each game's worker
+download itself, so one visit to any page arms all of them. A game with no card
+is never warmed, and nobody finds out until they are on a plane.
+`src/shared/offline-warm.test.ts` fails if a game in `vite.config.ts` is missing
+its card or its worker stub — let it, rather than working around it.
 
 ## What to actually ask
 
@@ -234,6 +244,16 @@ overflow at the largest level size; both themes; and — on a Firebase preview
 channel, because **service workers need HTTPS and a LAN address silently
 registers nothing** — Add to Home Screen, then airplane mode, then play a full
 level offline.
+
+**Testing offline in one browser session proves nothing.** A worker that is
+already running has its handlers in memory and its responses in the HTTP cache,
+so the game plays offline whether or not the Cache Storage path works at all.
+The failure lives in the cold start: close the browser, kill the server, reopen.
+That is the sequence that caught `cache.match` honouring `Vary` — a cache that
+was complete, matched by URL from the console, and still served not one asset to
+the page. `cdp.mjs` kills Chrome without letting it flush, so a two-run test
+needs `Browser.close` and a wait on exit, or the second run starts with no
+registrations and blames the wrong thing.
 
 **Reaching a deep level.** Use the `seedSave` action rather than playing there.
 Two traps it already handles: the localStorage key is `tf-games:save:<game>`

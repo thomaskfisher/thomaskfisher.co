@@ -47,5 +47,9 @@
       </p>
     </noscript>
     <script type="module" src="../src/colorsort/main.ts"></script>
+    <!-- Downloads the other games in the background, so opening any one page
+         is enough to have all of them offline. Not bundled: it is shared
+         verbatim with the launcher and every other game. -->
+    <script src="/warm.js" defer></script>
   </body>
 </html>

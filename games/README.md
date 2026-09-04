@@ -154,7 +154,9 @@ src/colorsort/        model, solve, generate, layout, render, game, main, rules
 src/screwland/        model, solve, generate, render, game, main, rules
 src/busjam/           model, solve, generate, render, game, main, rules
 src/survival/         model, solve, generate, render, game, main, rules
-public/               icons, per-game manifest + service worker (copied verbatim)
+public/               icons, per-game manifest, a two-line sw.js per game,
+                      game-sw (the shared worker body) and warm (downloads every
+                      game from any page) — copied verbatim, never bundled
 examples/             reference material for the originals — never deployed
 tools/                calibration harnesses — not built, not in `npm test`
 scripts/make-icons.mjs
@@ -274,7 +276,28 @@ them; they belong in later as optional modifiers, not as load-bearing rules.
   when Safari data is cleared, and nothing follows the player to a new phone.
   Settings → *Copy save code* is the backup; it is the reason a server is not
   needed.
-- **Bump `CACHE_VERSION`** in `public/<game>/sw.js` when the cached shell
-  changes, or returning players can stay pinned to an old build.
+- **Opening any page downloads every game.** `public/warm.js` runs on the
+  launcher and on each game, reads the launcher's cards to find out which games
+  exist, then registers every game's worker and tells it to fill its own cache.
+  Before it, flying with all four meant deliberately visiting all four, and the
+  one that was forgotten failed on the plane. **A new game joins by having a
+  launcher card** — there is no second list, and `offline-warm.test.ts` fails if
+  a game in `vite.config.ts` has no card or no worker.
+- **Each game's `sw.js` is a stub** binding a slug and a cache version;
+  the body is `public/game-sw.js`, shared by all four. Imported scripts count
+  towards the update byte-check, so editing the body still reaches installed
+  workers. Bump that game's `CACHE_VERSION` when its cached contents go stale,
+  or returning players can stay pinned to an old build.
+- **Cache lookups pass `ignoreVary`.** Every URL a worker holds is either
+  hashed or the shell, so the URL alone decides the response. Honouring `Vary`
+  gains nothing and silently breaks offline play: a host that sends
+  `Vary: Origin` makes a stored response unmatchable by the requests that need
+  it, because Vite tags its module and stylesheet links `crossorigin` while the
+  worker's own fetch carried no `Origin`. The cache looks complete and correct
+  and serves nothing. It only shows up offline, on a cold start.
+- **Warming crawls, it does not read a manifest.** Each worker starts from its
+  own `index.html` and follows what it names, including into the entry chunk —
+  the level generator worker is a bare string there and appears in no tag. That
+  is what keeps these workers unbundled and free of hashed filenames.
 - **The games site has no catch-all rewrite**, on purpose. A mistyped asset path
   returns a real 404 instead of silently serving HTML with a 200.

@@ -5,7 +5,8 @@
  * registers its own worker under `/<game>/`, and the narrower scope wins for
  * those pages, so the two never fight over a game.
  *
- * It deliberately handles nothing but the launcher shell and the card icons.
+ * It deliberately handles nothing but the launcher shell, `/warm.js` and the
+ * card icons.
  * A root-scoped worker sees navigations to games that have never registered a
  * worker of their own, and falling those back to the cached shell would answer
  * "open Bus Jam" with the grid again — an offline loop with no way out. Letting
@@ -24,11 +25,16 @@ const CACHE_VERSION = `${CACHE_PREFIX}v2`;
 const SHELL = [
   './',
   './index.html',
+  './warm.js',
   './icons/colorsort-192.png',
   './icons/screwland-192.png',
   './icons/busjam-192.png',
   './icons/survival-192.png',
 ];
+
+// The shell and the icons are decided by URL alone, and a host that sends
+// `Vary` would otherwise make a stored response unmatchable offline.
+const MATCH = { ignoreVary: true };
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -75,8 +81,10 @@ self.addEventListener('fetch', (event) => {
   }
 
   // The card icons never change under a given URL, and they are shared with
-  // each game's manifest, so they are worth holding cache-first.
-  if (url.pathname.startsWith('/icons/')) {
+  // each game's manifest, so they are worth holding cache-first. `/warm.js` is
+  // held so the grid loads identically offline, where it correctly does
+  // nothing — not because warming can work without a network.
+  if (url.pathname.startsWith('/icons/') || url.pathname === '/warm.js') {
     event.respondWith(cacheFirst(request));
   }
 });
@@ -88,7 +96,8 @@ async function networkFirst(request) {
     if (response && response.ok) cache.put(request, response.clone());
     return response;
   } catch {
-    const cached = (await cache.match(request)) || (await cache.match('./index.html'));
+    const cached =
+      (await cache.match(request, MATCH)) || (await cache.match('./index.html', MATCH));
     if (cached) return cached;
     throw new Error('Offline and nothing cached');
   }
@@ -96,7 +105,7 @@ async function networkFirst(request) {
 
 async function cacheFirst(request) {
   const cache = await caches.open(CACHE_VERSION);
-  const cached = await cache.match(request);
+  const cached = await cache.match(request, MATCH);
   if (cached) return cached;
 
   const response = await fetch(request);
