@@ -72,6 +72,23 @@ share of them get through. "How many ways are there to win" becomes the literal
 difficulty dial, it means the same thing on a board full of multipliers and a
 board full of barriers, and at least one winner is guaranteed by construction.
 
+**Every game explains itself once, then gets out of the way.** Three of the
+four have a rule you cannot infer by tapping: Screw Land loses the level when
+the tray overflows, Bus Jam only lets you tap someone with a clear walk to the
+top edge, and Survival's reach limit is invisible until a tap is refused. A new
+player discovers those by losing, which reads as the game being unfair rather
+than as a rule. `shared/how-to-play.ts` is a short illustrated sheet per game —
+diagrams rather than prose, because the rules are all spatial — shown once on a
+save that has never cleared a level, and available forever from the `?` in the
+top bar or from Settings. The closing promises (verified solvable, free undo and
+hints, nothing locked) are written once in the shared module rather than four
+times, because they are the same promise in all four games.
+
+`shouldAutoShow` is deliberately not just `!seenHowToPlay`: adding the flag to
+the save format makes every existing player read as never having seen it, and
+interrupting someone on level 60 to explain the tap target is worse than not
+explaining it at all.
+
 **Two of the four games share an engine.** Screw Land has a five-slot tray and
 boxes taking three matching screws; Bus Jam has a five-slot bench and buses
 taking three matching passengers. Same thing — `shared/buffer-sink.ts`. Bus Jam
@@ -131,11 +148,12 @@ index.html            launcher
 colorsort/index.html  one entry per game
 src/shared/           rng, storage, progress, difficulty, audio, ui, pwa,
                       buffer-sink (Screw Land + Bus Jam), levelSource,
-                      timer + timed-play + timer-chip (the optional clock)
-src/colorsort/        model, solve, generate, layout, render, game, main
-src/screwland/        model, solve, generate, render, game, main
-src/busjam/           model, solve, generate, render, game, main
-src/survival/         model, solve, generate, render, game, main
+                      timer + timed-play + timer-chip (the optional clock),
+                      how-to-play (the rules sheet + its drawing helpers)
+src/colorsort/        model, solve, generate, layout, render, game, main, rules
+src/screwland/        model, solve, generate, render, game, main, rules
+src/busjam/           model, solve, generate, render, game, main, rules
+src/survival/         model, solve, generate, render, game, main, rules
 public/               icons, per-game manifest + service worker (copied verbatim)
 examples/             reference material for the originals — never deployed
 tools/                calibration harnesses — not built, not in `npm test`
@@ -227,6 +245,17 @@ them; they belong in later as optional modifiers, not as load-bearing rules.
   was landing at 0.13 against a 0.26 target in three of the four games. The band
   is now generous upwards and strict downwards, which costs a few attempts and
   makes "harder than asked" the failure mode.
+- **`var()` does not work in an SVG presentation attribute.** An attribute is
+  not a CSS declaration, so `fill="var(--accent)"` is ignored and the shape
+  renders black — in both themes. Every colour in the rules diagrams that has to
+  follow the theme is therefore a class, defined under `.howto-art` in
+  shell.css. The same rule bites the other way round: a CSS class beats a
+  presentation attribute, so `class="ha-fill-strong" fill-opacity="0.6"` keeps
+  the class's 0.3 and the override silently does nothing.
+- **A sheet focuses its first button, and that scrolls.** `openSheet` focuses
+  the first control so the keyboard works, which for How to play — whose only
+  button is its last element — opened the sheet scrolled to its own footer. The
+  fix is `focus({ preventScroll: true })`, and it is right for every sheet.
 - **shell.css owns some very ordinary class names.** `field`, `note` and
   `button` are all defined globally, and Survival's board wrapper was called
   `.field` — so it silently inherited a text input's border, which showed up as

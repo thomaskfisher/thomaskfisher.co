@@ -80,7 +80,10 @@ export function openSheet(
   const sheet: Sheet = { content, close };
   build(sheet);
   document.body.append(overlay);
-  content.querySelector<HTMLElement>('button, [tabindex]')?.focus();
+  // `preventScroll` because the first focusable control in a sheet is often the
+  // last one on screen — How to play ends with its only button — and focusing it
+  // normally scrolls the sheet to the bottom, so it opens on its own footer.
+  content.querySelector<HTMLElement>('button, [tabindex]')?.focus({ preventScroll: true });
 
   return sheet;
 }

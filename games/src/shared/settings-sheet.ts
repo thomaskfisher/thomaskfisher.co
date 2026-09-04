@@ -20,6 +20,13 @@ export interface SettingsSheetOptions<M> {
   onSettingsChange: (patch: Partial<Settings>) => void;
   onImport: (save: SaveData<M>) => void | Promise<void>;
   onGoToLevel: (level: number) => void | Promise<void>;
+  /**
+   * Opens the rules sheet on top of this one. The `?` in the top bar is the
+   * primary way in; this row exists because Settings is where a lot of people
+   * look for help first, and the sheet stacks, so backing out of it lands them
+   * where they were rather than back on the board.
+   */
+  onHowToPlay?: () => void;
   /** Fired however the sheet is dismissed — Done, backdrop or Escape. */
   onClose?: () => void;
 }
@@ -77,6 +84,8 @@ export function openSettings<M>(options: SettingsSheetOptions<M>): void {
       }),
     );
 
+    if (options.onHowToPlay) sheet.content.append(buildHowToPlayRow(options.onHowToPlay));
+
     sheet.content.append(buildLevelJump(options));
     sheet.content.append(buildBackup(options, save));
     sheet.content.append(buildStats(save));
@@ -85,6 +94,22 @@ export function openSettings<M>(options: SettingsSheetOptions<M>): void {
     done.addEventListener('click', sheet.close);
     sheet.content.append(done);
   }, { onClose: options.onClose });
+}
+
+function buildHowToPlayRow(open: () => void): HTMLElement {
+  const row = el('div', { class: 'sheet-row' });
+  row.append(
+    el(
+      'div',
+      { class: 'sheet-row-label' },
+      'How to play<small>The rules, in pictures. Also on the ? in the top bar.</small>',
+    ),
+  );
+
+  const button = el('button', { class: 'button button--ghost' }, 'Show');
+  button.addEventListener('click', open);
+  row.append(button);
+  return row;
 }
 
 function buildLevelJump<M>(options: SettingsSheetOptions<M>): HTMLElement {

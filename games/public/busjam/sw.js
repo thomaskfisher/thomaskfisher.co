@@ -14,7 +14,7 @@
  */
 
 const CACHE_PREFIX = 'busjam-';
-const CACHE_VERSION = `${CACHE_PREFIX}v2`;
+const CACHE_VERSION = `${CACHE_PREFIX}v3`;
 const SHELL = ['./', './index.html', './manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {

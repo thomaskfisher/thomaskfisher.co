@@ -6,11 +6,13 @@ import '../shared/shell.css';
 import './colorsort.css';
 
 import { setSoundEnabled, sfx } from '../shared/audio';
+import { createHowToPlay, shouldAutoShow } from '../shared/how-to-play';
 import { openSettings } from '../shared/settings-sheet';
 import { createTimedPlay } from '../shared/timed-play';
 import { budgetFor } from '../shared/timer';
 import { applyTheme, el, icons, openSheet, prefersReducedMotion } from '../shared/ui';
 import { ColorSortGame, GAME_ID, type GameState } from './game';
+import { RULES } from './rules';
 import { applyLayout, chooseLayout } from './layout';
 import { isComplete } from './model';
 import { BoardRenderer } from './render';
@@ -32,7 +34,26 @@ const settingsButton = el(
 const topbar = el('header', { class: 'topbar' });
 const levelBlock = el('div', { class: 'topbar-level' });
 levelBlock.append(levelLabel, subLabel);
-topbar.append(levelBlock, settingsButton);
+/**
+ * The rules sheet.
+ *
+ * Built before the top bar because the `?` lives in it, and wired to `game` and
+ * `timed` through closures that only ever run on a tap — both are declared
+ * further down this file.
+ */
+const howTo = createHowToPlay({
+  rules: RULES,
+  onOpen: () => timed.pause('howto'),
+  onClose: () => timed.resume('howto'),
+  onSeen: () => game.markHowToPlaySeen(),
+});
+
+// The `?`, the clock and Settings share the right-hand end of the bar. The
+// clock inserts itself before `settingsButton` (see shared/timed-play.ts), so
+// it lands inside this group rather than beside it.
+const topbarActions = el('div', { class: 'topbar-actions' });
+topbarActions.append(howTo.button, settingsButton);
+topbar.append(levelBlock, topbarActions);
 
 const board = el('main', { class: 'board', 'aria-label': 'Puzzle board' });
 
@@ -253,6 +274,7 @@ settingsButton.addEventListener('click', () => {
       game.updateSettings(patch);
       if (patch.timed !== undefined) timed.chip.setEnabled(patch.timed);
     },
+    onHowToPlay: () => howTo.open(),
     onImport: (save) => game.replaceSave(save),
     onGoToLevel: (level) => game.goToLevel(level),
     onClose: () => timed.resume('settings'),
@@ -286,6 +308,10 @@ void (async () => {
     renderer.render(currentState);
     fitBoard(currentState);
   }
+
+  // Offered once, on a save that has never cleared a level. See
+  // `shouldAutoShow` for why it is not simply "has not seen it".
+  if (shouldAutoShow(game.currentSave)) howTo.open(true);
 })();
 
 registerServiceWorker();

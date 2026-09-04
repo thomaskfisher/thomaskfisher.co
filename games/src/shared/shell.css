@@ -486,3 +486,178 @@ button {
     transition: none;
   }
 }
+
+/* --------------------------------------------------------------------------
+   How to play.
+
+   The right-hand end of the top bar is now three things — the `?`, the clock
+   and Settings — so they get their own flex group. Without it `space-between`
+   spreads them across the whole bar and the level label loses its corner.
+   -------------------------------------------------------------------------- */
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.howto-goal {
+  margin-bottom: 6px;
+  color: var(--text);
+  font-size: 0.92rem;
+}
+
+.howto-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.howto-step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 0;
+  border-top: 1px solid var(--glass);
+}
+
+/* A fixed art column keeps the titles on one left edge down the list, which is
+   what makes the sheet skimmable when someone comes back to check one rule. */
+.howto-art {
+  flex: 0 0 92px;
+  height: 64px;
+  border-radius: 12px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.howto-art svg {
+  display: block;
+  width: 92px;
+  height: 64px;
+}
+
+.howto-step-text b {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.howto-step-text span {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+.howto-promises {
+  margin: 16px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--glass);
+  list-style: none;
+}
+
+.howto-promises li {
+  position: relative;
+  margin-bottom: 8px;
+  padding-left: 16px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+.howto-promises li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 7px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* Diagram paint. These have to be classes rather than `fill="var(--accent)"`:
+   a presentation attribute is not a CSS declaration, so `var()` inside one is
+   ignored and the shape renders black. */
+.howto-art .ha-ink {
+  fill: none;
+  stroke: currentColor;
+  stroke-opacity: 0.75;
+}
+
+.howto-art .ha-dim {
+  fill: none;
+  stroke: currentColor;
+  stroke-opacity: 0.34;
+}
+
+.howto-art .ha-fill {
+  fill: currentColor;
+  fill-opacity: 0.14;
+  stroke: none;
+}
+
+.howto-art .ha-fill-strong {
+  fill: currentColor;
+  fill-opacity: 0.3;
+  stroke: none;
+}
+
+.howto-art .ha-accent {
+  fill: none;
+  stroke: var(--accent);
+}
+
+.howto-art .ha-faint {
+  stroke-opacity: 0.35;
+}
+
+.howto-art .ha-accent-fill {
+  fill: var(--accent);
+  stroke: none;
+}
+
+.howto-art .ha-danger-fill {
+  fill: var(--danger);
+  stroke: none;
+}
+
+.howto-art .ha-on-accent {
+  fill: none;
+  stroke: #fff;
+}
+
+.howto-art .ha-label {
+  fill: currentColor;
+  stroke: none;
+  font-family: ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.howto-art .ha-label--sm {
+  font-size: 9px;
+}
+
+/* Greys a shape out. Painted in the tile's own background rather than in ink,
+   so what is left underneath reads as faded rather than as shaded. */
+.howto-art .ha-veil {
+  fill: var(--bg);
+  fill-opacity: 0.72;
+  stroke: none;
+}
+
+.howto-art .ha-strike {
+  fill: none;
+  stroke: currentColor;
+  stroke-opacity: 0.55;
+}
+
+/* Text sitting on an accent-filled chip. White in both themes, because the
+   chip underneath it is accent-coloured in both. */
+.howto-art .ha-label--invert {
+  fill: #fff;
+}

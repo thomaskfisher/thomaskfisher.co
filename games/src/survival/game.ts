@@ -304,6 +304,17 @@ export class SurvivalGame {
     await this.loadLevel(save.level, save.inProgress?.moves ?? []);
   }
 
+  /**
+   * Notes that the rules sheet has been offered, so it is never forced on the
+   * same player twice. Not routed through `updateSettings`: it is not a
+   * preference, and it must not fire a redraw of the board behind the sheet.
+   */
+  markHowToPlaySeen(): void {
+    if (this.save.seenHowToPlay) return;
+    this.save = { ...this.save, seenHowToPlay: true };
+    this.writer.schedule(this.save);
+  }
+
   updateSettings(patch: Partial<SaveData<number>['settings']>): void {
     this.save = { ...this.save, settings: { ...this.save.settings, ...patch } };
     this.writer.schedule(this.save);

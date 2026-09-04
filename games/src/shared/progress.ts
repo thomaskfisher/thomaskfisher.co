@@ -37,6 +37,12 @@ export interface SaveData<M> {
   level: number;
   /** Moves made so far on `level`, or null if the level is untouched. */
   inProgress: { level: number; moves: M[] } | null;
+  /**
+   * The rules sheet has been opened at least once. Not a setting — there is
+   * nothing to choose here, it is just a note that the explanation has been
+   * offered, so it is never forced on the same player twice.
+   */
+  seenHowToPlay: boolean;
   settings: Settings;
   stats: {
     levelsCleared: number;
@@ -60,6 +66,7 @@ export function defaultSave<M>(game: string): SaveData<M> {
     seed: newProfileSeed(),
     level: 1,
     inProgress: null,
+    seenHowToPlay: false,
     settings: { ...DEFAULT_SETTINGS },
     stats: { levelsCleared: 0, totalUndos: 0, totalHints: 0, totalRestarts: 0 },
   };
@@ -92,6 +99,7 @@ export function migrate<M>(raw: unknown, game: string): SaveData<M> {
     seed: typeof data.seed === 'string' && data.seed ? data.seed : base.seed,
     level: Number.isFinite(level) && level >= 1 ? Math.floor(level) : 1,
     inProgress: rebuilt || !inProgress || !Number.isFinite(inProgress.level) ? null : inProgress,
+    seenHowToPlay: data.seenHowToPlay === true,
     settings: { ...base.settings, ...(data.settings ?? {}) },
     stats: { ...base.stats, ...(data.stats ?? {}) },
   };
