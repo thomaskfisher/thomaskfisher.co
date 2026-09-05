@@ -510,6 +510,70 @@ function drawGridlock(size, { maskable }) {
   return encodePng(size, size, canvas.data);
 }
 
+
+/**
+ * A jammed lot with one bay above it.
+ *
+ * At 48px the buses are three pixels of colour each, so the mark has to read
+ * from the *arrangement* rather than from any one shape: a tight interlocking
+ * block of colours with one pulled clear above it says "get that one out"
+ * without a single legible detail.
+ */
+function drawDepot(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.19 : size * 0.11;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const area = size - inset * 2;
+
+  // The bay across the top third, with the bus that has just pulled into it.
+  const bayH = area * 0.2;
+  fillRoundedRect(canvas, inset + area * 0.3, inset, area * 0.4, bayH, area * 0.05, hex('#33507f'));
+  fillRoundedRect(
+    canvas,
+    inset + area * 0.34,
+    inset + bayH * 0.22,
+    area * 0.32,
+    bayH * 0.56,
+    area * 0.035,
+    hex('#e6394a'),
+  );
+
+  // The lot below it: a four-by-four grid of buses, each two cells long, laid
+  // out so no two neighbours share a colour and the block reads as interlocked.
+  const lotY = inset + area * 0.3;
+  const lotH = area * 0.7;
+  fillRoundedRect(canvas, inset, lotY, area, lotH, area * 0.06, hex('#1b2a45'));
+
+  const cell = area / 4;
+  const pad = cell * 0.14;
+  const bus = (column, row, length, vertical, color) => {
+    fillRoundedRect(
+      canvas,
+      inset + column * cell + pad,
+      lotY + row * (lotH / 4) + pad,
+      (vertical ? 1 : length) * cell - pad * 2,
+      (vertical ? length : 1) * (lotH / 4) - pad * 2,
+      cell * 0.18,
+      hex(color),
+    );
+  };
+
+  bus(0, 0, 2, false, '#f5c518');
+  bus(2, 0, 2, true, '#35b56a');
+  bus(3, 0, 2, true, '#9b5de5');
+  bus(0, 1, 2, true, '#2b7fe8');
+  bus(1, 1, 2, true, '#f56cae');
+  bus(2, 2, 2, false, '#24c8d8');
+  bus(0, 3, 2, false, '#f47b20');
+  bus(2, 3, 2, false, '#e6394a');
+
+  return encodePng(size, size, canvas.data);
+}
+
 const targets = [
   ['colorsort-180.png', 180, { maskable: false }, drawColorSort],
   ['colorsort-192.png', 192, { maskable: false }, drawColorSort],
@@ -535,6 +599,10 @@ const targets = [
   ['gridlock-192.png', 192, { maskable: false }, drawGridlock],
   ['gridlock-512.png', 512, { maskable: false }, drawGridlock],
   ['gridlock-maskable-512.png', 512, { maskable: true }, drawGridlock],
+  ['depot-180.png', 180, { maskable: false }, drawDepot],
+  ['depot-192.png', 192, { maskable: false }, drawDepot],
+  ['depot-512.png', 512, { maskable: false }, drawDepot],
+  ['depot-maskable-512.png', 512, { maskable: true }, drawDepot],
 ];
 
 for (const [name, size, options, draw] of targets) {

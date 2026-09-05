@@ -1,0 +1,374 @@
+/* ==========================================================================
+   Depot.
+
+   Portrait, one-handed, and everything the player has to reason about visible
+   at once: the queue they are trying to clear, the bays they can spend, and
+   the lot they have to dig through. Stacked in that order top to bottom, which
+   is also the order a decision is made in — read the front of the line, look
+   at what is free, then find a bus.
+
+   The lot is the only part with a variable size (six by six up to seven by
+   eight), so it is the only part sized in JS. Everything else is fixed height,
+   which is what makes the fit calculation in main.ts a subtraction rather than
+   a measure-draw-measure round trip.
+   ========================================================================== */
+
+.app--depot {
+  grid-template-rows: auto 1fr auto;
+}
+
+.board {
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  justify-items: center;
+  gap: 8px;
+  min-height: 0;
+  padding: 4px 10px 8px;
+}
+
+/* ---------------------------------------------------------------- queue */
+
+/*
+ * The whole queue is public. Constrained choice is where this game's
+ * difficulty comes from, and a constraint the player cannot see is a coin
+ * flip rather than a decision — so the line is drawn in full up to the point
+ * where nobody is planning any further, and summarised after that.
+ */
+.queue {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  max-width: 420px;
+  min-height: 22px;
+  padding: 7px 8px;
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.pip {
+  position: relative;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--pip);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.22);
+}
+
+/* The one person who actually matters: nobody behind them can board until
+   they do. Marked rather than merely first, because "first" is invisible on a
+   wrapped row of identical dots. */
+.pip.is-front {
+  width: 19px;
+  height: 19px;
+  margin-right: 5px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Inset well inside the pip. At `1px` the glyph filled the dot and left only a
+   ring of colour showing, which turns the shape overlay from an *addition* to
+   colour into a replacement for it — the opposite of the point. */
+.pip .glyph {
+  position: absolute;
+  inset: 3px;
+  width: auto;
+  height: auto;
+  fill: rgba(255, 255, 255, 0.95);
+  stroke: none;
+}
+
+.pip.is-front .glyph {
+  inset: 4px;
+}
+
+.pip-more {
+  align-self: center;
+  padding: 0 6px;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ----------------------------------------------------------------- kerb */
+
+.kerb {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.bay {
+  display: grid;
+  place-items: center;
+  gap: 5px;
+  flex: 1 1 0;
+  max-width: 104px;
+  min-height: 62px;
+  padding: 8px 6px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bus) 22%, var(--surface));
+  border: 2px solid var(--bus);
+}
+
+.bay.is-empty {
+  background: var(--surface);
+  border: 2px dashed color-mix(in srgb, var(--text-dim) 45%, transparent);
+}
+
+/* The bus itself, drawn small: a body and a windscreen band, same silhouette
+   as the ones in the lot so the two read as the same object. */
+.bay-bus {
+  position: relative;
+  width: 46px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--bus);
+  box-shadow: inset 0 -3px 0 var(--bus-shade);
+}
+
+.bay.is-empty .bay-bus {
+  visibility: hidden;
+}
+
+.bay-bus .glyph {
+  position: absolute;
+  inset: 3px 0;
+  width: auto;
+  height: auto;
+  margin: auto;
+  fill: rgba(255, 255, 255, 0.9);
+  stroke: none;
+}
+
+.bay-seats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px;
+  max-width: 92px;
+}
+
+.seat {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--text-dim) 60%, transparent);
+}
+
+.seat.is-taken {
+  background: var(--bus);
+  border-color: var(--bus);
+}
+
+/* ------------------------------------------------------------------ lot */
+
+/*
+ * Its own stacking context.
+ *
+ * Nothing here derives a z-index from game state — the values below are three
+ * fixed constants — but the property worth protecting is that nothing ever
+ * will, and `isolation` is what keeps that cheap to be wrong about later.
+ * Screw Land drew plates over the settings sheet for want of this line.
+ */
+/*
+ * Centred in whatever the queue and the kerb leave, rather than parked under
+ * them. The lot is the only thing here that gets tapped, and the fit pass caps
+ * the cell size — so on a tall phone the board would otherwise finish two
+ * hundred pixels above the thumb with dead space underneath it.
+ */
+.lot {
+  position: relative;
+  align-self: center;
+  isolation: isolate;
+  width: calc(var(--cell) * var(--cols));
+  height: calc(var(--cell) * var(--rows));
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 6px 18px var(--shadow);
+  touch-action: manipulation;
+}
+
+.lot[data-empty] {
+  visibility: hidden;
+}
+
+.lot-bed {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template: repeat(var(--rows), 1fr) / repeat(var(--cols), 1fr);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.bed-cell {
+  border-right: 1px dashed color-mix(in srgb, var(--text-dim) 22%, transparent);
+  border-bottom: 1px dashed color-mix(in srgb, var(--text-dim) 22%, transparent);
+}
+
+/* ---------------------------------------------------------------- buses */
+
+.bus {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: var(--bus);
+  box-shadow:
+    inset 0 -3px 0 var(--bus-shade),
+    0 2px 4px rgba(4, 10, 22, 0.28);
+  cursor: pointer;
+  /* Every child sits in the same grid cell, stacked. */
+  grid-template-areas: 'face';
+  transition: filter 120ms ease, opacity 120ms ease;
+}
+
+/* `[hidden]` is a user-agent style and loses to the `display: grid` above, so
+   a departed bus would stay on screen while claiming to be hidden. */
+.bus[hidden] {
+  display: none !important;
+}
+
+.bus > * {
+  grid-area: face;
+}
+
+.bus-body {
+  width: 100%;
+  height: 100%;
+  border-radius: 7px;
+  /* The windscreen band: what makes a rounded rectangle read as a vehicle, and
+     the cheapest way to see at a glance which end is the front. */
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.26) 0 26%,
+    transparent 26% 100%
+  );
+}
+
+.bus--v .bus-body {
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.26) 0 26%,
+    transparent 26% 100%
+  );
+}
+
+/* The arrow is the rule: it is the only way out this bus has. */
+.bus-arrow {
+  width: 60%;
+  height: 60%;
+  max-width: 26px;
+  max-height: 26px;
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.9);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Seats, printed on the flank. Small on purpose — it is a number you check
+   when you are choosing between two buses, not one you read every turn. */
+.bus-seats {
+  align-self: end;
+  justify-self: end;
+  padding: 0 4px 1px 0;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.bus-glyph .glyph {
+  width: 15px;
+  height: 15px;
+  fill: rgba(255, 255, 255, 0.85);
+  stroke: none;
+}
+
+.bus-glyph {
+  align-self: start;
+  justify-self: start;
+  padding: 3px 0 0 3px;
+}
+
+/* A bus whose colour is not known until it is out of the lot. Drawn as a
+   neutral slab so it never reads as a fifteenth palette entry — and lightened
+   in the light theme, where the dark version was a black hole on a white
+   board and pulled the eye to the one bus with the least to say. */
+.bus.is-unknown {
+  --unknown: #2c3550;
+  --unknown-shade: #171d2e;
+  background: var(--unknown);
+  box-shadow:
+    inset 0 -3px 0 var(--unknown-shade),
+    0 2px 4px rgba(4, 10, 22, 0.28);
+}
+
+:root[data-theme='light'] .bus.is-unknown {
+  --unknown: #78859e;
+  --unknown-shade: #56617a;
+}
+
+/* The `?` sits where the colour-blind glyph would, so it never fights the
+   arrow for the middle of the bus — and the seat count keeps its corner. */
+.bus.is-unknown .bus-glyph {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 4px 0 0 5px;
+}
+
+.bus.is-unknown .bus-body {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.1) 0 26%,
+    transparent 26% 100%
+  );
+}
+
+/*
+ * Blocked buses are dimmed rather than hidden.
+ *
+ * They are still information — a bus you cannot reach yet is the reason you are
+ * digging — so they stay legible. What the dimming says is only "not this
+ * turn", which is the difference between a refused tap being a rule and being
+ * a bug.
+ */
+.bus:not(.is-drivable) {
+  filter: brightness(0.72) saturate(0.85);
+}
+
+.bus.is-drivable:active {
+  z-index: 4;
+  filter: brightness(1.1);
+}
+
+.bus.is-hinted {
+  z-index: 5;
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  filter: none;
+}
+
+/* The drive-out. Not part of the board: see `showDeparture` in render.ts. */
+.bus--ghost {
+  z-index: 3;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bus {
+    transition: none;
+  }
+}

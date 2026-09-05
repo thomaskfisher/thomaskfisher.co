@@ -34,6 +34,28 @@ earned the bonus on 17% of cards for a mean of 230.9, 1.4 on 22% for 232.8, 1.8
 also 22% for 232.5, and 2.4 fell back to 226.8 by chasing it into cards that
 could never pay.
 
+## depot.ts
+
+Calibration for Depot, and the evidence behind its shape function. Section 1 is
+the level-by-level curve and is the one to re-run after a change. Sections 2 and
+3 are skipped by default: they are the surveys the design came out of, and two
+of their findings were the opposite of the intuition they were testing.
+
+Trap rate spans 0.17 to 0.96 with a ~100% build rate throughout, so the
+"colours and holding slots are one budget" cap the dealing games need does not
+apply here — the queue is recorded from a play rather than dealt, and a
+six-colour two-bay board builds 39 times in 40. And **more buses is harder**,
+not easier: six trap 0.19 of naive runs, eighteen trap 0.91, because the lot is
+not where a level is lost. The kerb is.
+
+Two bays is the other finding worth keeping: it reads 0.84-0.96 across every
+colour count, which makes it a ceiling rather than a dial. Reaching for it early
+flattens every lever underneath it.
+
+```bash
+npx vitest run --config tools/vitest.depot.config.ts --root .
+```
+
 ## gridlock.ts
 
 Calibration for Gridlock, and the evidence behind `EASIEST_MOVES` and

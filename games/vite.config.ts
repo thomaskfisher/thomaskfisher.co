@@ -30,6 +30,7 @@ export default defineConfig({
         survival: 'survival/index.html',
         fivedice: 'fivedice/index.html',
         gridlock: 'gridlock/index.html',
+        depot: 'depot/index.html',
       },
     },
   },

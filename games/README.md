@@ -12,6 +12,7 @@ in-game currency. Everything is static; all state lives on the player's device.
 | Survival | Playable |
 | Five Dice | Playable |
 | Gridlock | Playable |
+| Depot | Playable |
 
 ## Working on it
 
@@ -25,10 +26,10 @@ npm run icons      # regenerate PWA icons (output is committed)
 
 ## How it works
 
-**Five of the six are puzzles. Five Dice is not, and it bends the house rules
+**Six of the seven are puzzles. Five Dice is not, and it bends the house rules
 on purpose.** Everything below about verified levels, measured difficulty and
-unlimited undo describes Color Sort, Screw Land, Bus Jam, Survival and
-Gridlock. Yahtzee
+unlimited undo describes Color Sort, Screw Land, Bus Jam, Survival, Gridlock
+and Depot. Yahtzee
 is a game of chance: there is no board to verify, no difficulty to curve, and
 rewinding a throw would be reading the answer. What it keeps is everything that
 made this collection worth building — no ads, no servers, no currency, nothing
@@ -40,7 +41,7 @@ a seed, then solved. A board the solver cannot finish is discarded, so unlike
 the games this replaces, a level is never a dead end. The same solver drives the
 hint button, which is free and unlimited.
 
-**Difficulty is measured, not assumed.** In four of the five puzzles the signal
+**Difficulty is measured, not assumed.** In five of the six puzzles the signal
 is *trap rate*: the fraction of naive playthroughs that dead-end. It models the
 player we are building for — someone enjoying a puzzle on the couch, not running
 a search. See `colorsort/generate.ts`. Gridlock is the exception and gets
@@ -85,7 +86,7 @@ share of them get through. "How many ways are there to win" becomes the literal
 difficulty dial, it means the same thing on a board full of multipliers and a
 board full of barriers, and at least one winner is guaranteed by construction.
 
-**Every game explains itself once, then gets out of the way.** Five of the six
+**Every game explains itself once, then gets out of the way.** Six of the seven
 have a rule you cannot infer by tapping: Screw Land loses the level when the
 tray overflows, Bus Jam only lets you tap someone with a clear walk to the top
 edge, Survival's reach limit is invisible until a tap is refused, Five Dice
@@ -183,7 +184,7 @@ discarded anyway. And a hard park has vertical cars standing across the exit row
 so the seed layout plants two or three of them rather than making the climb
 rediscover that every time.
 
-**Two of the five puzzles share an engine.** Screw Land has a five-slot tray and
+**Two of the six puzzles share an engine.** Screw Land has a five-slot tray and
 boxes taking three matching screws; Bus Jam has a five-slot bench and buses
 taking three matching passengers. Same thing — `shared/buffer-sink.ts`. Bus Jam
 adds grid pathfinding on top.
@@ -203,6 +204,34 @@ People are seated deepest-first, so crowds pack from the back like a real queue.
 How far forward of the deepest free cell someone may sit is itself a difficulty
 lever: wide at low pressure gives the scattered tutorial boards, zero at high
 pressure gives the packed columns.
+
+**Depot is Bus Jam turned inside out, and Gridlock's blocking underneath it.**
+In Bus Jam the crowd is the board and the buses arrive on a fixed queue; in
+Depot the buses are the board and the *crowd* arrives on a fixed queue. The
+scarce holding area moved with it — a bench that held people became a kerb that
+holds buses. What is new is the lot: buses are parked bumper to bumper, each
+facing one way, and a tap drives one straight out along its arrow only if every
+cell between its nose and the edge is empty. Which is Parking Jam, and it is
+where the "which one do I dig out first" half comes from.
+
+**Depot's lot cannot deadlock, and that is what makes it tractable.** Buses are
+parked one at a time, each into a spot that still has a clear drive-out in the
+grid as it stands, so reversing the parking order empties the lot. That survives
+the player pulling in any order at all: taking a bus off the grid never blocks
+another, so for any set still parked, the latest-placed member had a clear path
+against a *superset* of what is now in its way. At least one bus is therefore
+always drivable. Losing is only ever a colour problem — every bay full and
+nobody at the front of the queue able to board — which is what lets the solver
+ignore the geometry entirely, exactly as Bus Jam's does.
+
+**And its queue is written down from a play rather than dealt.** The generator
+walks the guaranteed pull order and, between pulls, emits a short run of
+passengers for a colour some bus at the kerb is still waiting on — running them
+through the game's own boarding rule rather than a model of it. So the queue it
+records is one its own play finished, and the play it recorded is one the game
+will accept. Seats per colour then equal passengers per colour exactly, which is
+the invariant everything else rests on: one seat short and a bus holds a bay for
+the rest of the level, one over and the queue can never drain.
 
 **Screw Land is 2D on purpose.** The original is a 3D object you rotate, but the
 3D is skin: the puzzle is that plates overlap, so a screw under another plate is
@@ -254,6 +283,7 @@ src/fivedice/         model, advise (the hint), render, game, main, rules —
 src/gridlock/         model, solve, generate, render, game, main, rules, plus
                       ascii — a six-by-six park as six lines of six characters,
                       imported only by the tests and tools
+src/depot/            model, solve, generate, render, game, main, rules
 public/               icons, per-game manifest, a two-line sw.js per game,
                       game-sw (the shared worker body) and warm (downloads every
                       game from any page) — copied verbatim, never bundled
@@ -290,6 +320,25 @@ The name is the other departure. Yahtzee is Hasbro's trademark; the game is not.
 The categories keep the names anyone would look for — full house, small
 straight, chance — and the fifty-point row is Five of a kind. If the title
 should be otherwise it is one string in four files.
+
+### Cut from Depot v1
+
+The VIP bay and the locked bays — the `+` slots you open mid-level, which in the
+original are a currency hook wearing a puzzle's clothes. A fixed bay count is a
+cleaner lever and it is the one the difficulty curve is calibrated on.
+
+The `?` buses and the varying seat counts **are** in, both deliberately. A bus
+that holds six commits a bay for a long time in a way one that holds three does
+not, and that is difficulty from constrained choice rather than from more stuff.
+
+The hidden buses come with a caveat worth stating, because it is a judgement
+call rather than a fact: **a `?` bus stays revealed once it has been seen**,
+through undo and restart, for the rest of the level. Re-hiding it would make
+undo a punishment, which is the one thing undo exists here not to be — but it
+also means a careful player can spend a move to scout and take it back, so the
+mechanic costs them a tap rather than a gamble. The trap rate models the player
+who does not do that, which is why hidden buses still measure as difficulty.
+They start at level 18 and never exceed one bus in seven.
 
 ### Cut from Gridlock v1
 
@@ -391,6 +440,34 @@ them; they belong in later as optional modifiers, not as load-bearing rules.
   `.field` — so it silently inherited a text input's border, which showed up as
   a mystery rounded rectangle around the whole board. Check the shared sheet
   before naming a container something generic.
+- **A `cloneNode` carries the original's state classes with it.** Depot animates
+  a bus driving off the lot as a *ghost* — a clone, because the state change
+  that triggers the redraw has already taken the real bus off the board — and
+  the clone inherited `is-hinted`. For the 460ms it lived, two elements matched
+  `.bus.is-hinted`: the lit bus, and a bus that had already left. Invisible to
+  a player and fatal to the browser playthrough, which clicks whatever is lit
+  and found two. The ghost now sets its own `className` outright rather than
+  inheriting one. **Anything cloned out of the board is not part of the board
+  and should stop looking like it immediately.**
+- **Clearing a highlight has to happen before the early return, not after.**
+  The same bug's second half: `paintLot` skipped the rest of the loop body for a
+  bus that had left, and the `is-hinted` removal was in the part it skipped. A
+  departed bus is only `hidden`, not gone, so it kept matching the selector
+  forever. Caught by asserting exactly one lit element after every hint, and the
+  assertion was then *proved* by re-breaking it at runtime — a stray lit ghost
+  appended from the console took the count from 1 to 2 and back. A probe that
+  has only ever passed is not evidence.
+- **More stuff really is harder in Depot, which is the opposite of the rule
+  everywhere else here.** The first difficulty score included a term for how few
+  buses were drivable at once, on the intuition that a tight lot is a hard lot.
+  `tools/depot.ts` measured six buses trapping 0.19 of naive runs and eighteen
+  trapping 0.91: the lot is not where a level is lost, the kerb is, and every
+  extra bus is another chance to commit a bay to the wrong colour. The term was
+  not weak, it was *backwards*. Probe the sign of a lever, not only its size.
+- **A lever that saturates is a ceiling, not a dial.** Two bays measured 0.84 to
+  0.96 across every colour count from three to six — it flattens everything
+  underneath it. It is worth having at the top of the curve and nowhere else,
+  and reaching for it at level 26 skipped a third of the game.
 - **Never size a board from an element that the board can resize.** `.app` is a
   grid, and a grid item defaults to sizing its column to its content. A board
   wider than the phone therefore widened its own container, `fitBoard` measured

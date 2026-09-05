@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import { RULES as BUSJAM } from '../busjam/rules';
 import { RULES as COLORSORT } from '../colorsort/rules';
+import { RULES as DEPOT } from '../depot/rules';
 import { RULES as SCREWLAND } from '../screwland/rules';
 import { RULES as SURVIVAL } from '../survival/rules';
 import { shouldAutoShow } from './how-to-play';
 import { defaultSave, migrate } from './progress';
 
-const RULES = [COLORSORT, SCREWLAND, BUSJAM, SURVIVAL];
+const RULES = [COLORSORT, SCREWLAND, BUSJAM, SURVIVAL, DEPOT];
 
 /**
  * The diagrams are strings of SVG assembled by hand, which means a stray

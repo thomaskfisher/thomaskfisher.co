@@ -1,0 +1,33 @@
+{
+  "name": "Depot",
+  "short_name": "Depot",
+  "description": "Bring every bus the queue is waiting for.",
+  "id": "/depot/",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#101a2e",
+  "theme_color": "#101a2e",
+  "categories": ["games", "puzzle"],
+  "icons": [
+    {
+      "src": "../icons/depot-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/depot-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../icons/depot-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

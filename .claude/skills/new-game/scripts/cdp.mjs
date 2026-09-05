@@ -11,7 +11,13 @@
 import { spawn } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+/**
+ * The Mac path is the default because that is where this is normally run. The
+ * override exists so the same script drives a Linux container (a Claude Code
+ * web session, say), where Chromium lives somewhere else entirely and the
+ * failure is otherwise an unhandled ENOENT with no hint in it.
+ */
+const CHROME = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const [url, outPng, actionsFile] = process.argv.slice(2);
 const PORT = 9333;
 
@@ -153,8 +159,12 @@ if (actionsFile) {
         localStorage.setItem('tf-games:save:${game}', JSON.stringify({
           updatedAt: Date.now(),
           data: Object.assign({
-            v: 1, game: '${game}', seed: 'a1b2c3d4e5f60718', level: ${level},
+            // Must match SAVE_VERSION in shared/progress.ts. A save written
+            // one version behind is migrated straight back to level 1, so a
+            // stale number here reads as "seedSave silently did nothing".
+            v: 2, game: '${game}', seed: 'a1b2c3d4e5f60718', level: ${level},
             difficultyOffset: 0, recentOutcomes: [], inProgress: null,
+            seenHowToPlay: true,
             settings: { colorBlindShapes: false, theme: 'dark', sound: false },
             stats: { levelsCleared: 0, totalUndos: 0, totalHints: 0, totalRestarts: 0 },
           }, ${JSON.stringify(rest)}),

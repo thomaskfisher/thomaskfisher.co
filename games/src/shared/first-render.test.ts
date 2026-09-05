@@ -6,6 +6,7 @@ import { BusJamGame } from '../busjam/game';
 import { SurvivalGame } from '../survival/game';
 import { FiveDiceGame } from '../fivedice/game';
 import { GridlockGame } from '../gridlock/game';
+import { DepotGame } from '../depot/game';
 
 /**
  * The first render happens before the save has loaded.
@@ -33,6 +34,7 @@ const games = [
   ['Survival', () => new SurvivalGame()],
   ['Five Dice', () => new FiveDiceGame()],
   ['Gridlock', () => new GridlockGame()],
+  ['Depot', () => new DepotGame()],
 ] as const;
 
 describe('before start() resolves', () => {
