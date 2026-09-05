@@ -90,14 +90,26 @@ board full of barriers, and at least one winner is guaranteed by construction.
 have a rule you cannot infer by tapping: Screw Land loses the level when the
 tray overflows, Bus Jam only lets you tap someone with a clear walk to the top
 edge, Survival's reach limit is invisible until a tap is refused, Five Dice
-takes two taps to write a box, and Gridlock counts a slide of any length as one
-move — which is the unit the "best 14" in its top bar is quoted in. A new player discovers those by losing, which
+takes two taps to write a box, Gridlock counts a slide of any length as one
+move — which is the unit the "best 14" in its top bar is quoted in — and Depot
+drives a bus along its arrow and nowhere else. A new player discovers those by losing, which
 reads as the game being unfair rather than as a rule. `shared/how-to-play.ts` is a short illustrated sheet per game —
 diagrams rather than prose, because the rules are all spatial — shown once on a
 save that has never cleared a level, and available forever from the `?` in the
 top bar or from Settings. Each step is one diagram, a title and a single line of
 caption: the sheet is there to name the rules a player cannot infer, not to sell
 the game or to be read twice.
+
+**The copy has a size, and it is smaller than it feels like it should be.**
+Three steps, a title of three to six words, a caption of one line — around ten
+words, two short sentences at the outside. A goal of one short sentence. A win
+or loss sheet is a two- or three-word title, one `result-line` of a number and a
+bare noun, and the buttons; no paragraph explaining what happened, because the
+board behind the sheet is already showing it. Depot's first draft ran to four
+steps with a twenty-three-word caption carrying two rules at once, and it read
+as a manual next to the other six. A rule that will not fit is usually two
+rules, and a rule nobody loses a level for not knowing does not belong here at
+all — which is why Depot's `?` buses are not on its sheet.
 
 `shouldAutoShow` is deliberately not just `!seenHowToPlay`: adding the flag to
 the save format makes every existing player read as never having seen it, and

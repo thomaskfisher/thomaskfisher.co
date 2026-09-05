@@ -237,13 +237,9 @@ function handleEffect(state: GameState): void {
 function showWin(state: GameState): void {
   openSheet(
     (sheet) => {
-      sheet.content.append(el('h2', { class: 'win-title' }, 'All aboard'));
+      sheet.content.append(el('h2', { class: 'win-title' }, 'Depot clear'));
       sheet.content.append(
-        el(
-          'div',
-          { class: 'result-line' },
-          `<b>${state.moveCount}</b><span>${state.moveCount === 1 ? 'bus' : 'buses'} out of the lot</span>`,
-        ),
+        el('div', { class: 'result-line' }, `<b>${state.moveCount}</b><span>buses</span>`),
       );
 
       const next = el('button', { class: 'button button--full' }, 'Next level');
@@ -258,37 +254,21 @@ function showWin(state: GameState): void {
 }
 
 /**
- * Two ways to lose, and they want different words.
+ * Two ways to lose, and the title is the whole difference between them.
  *
- * The clock is optional and nothing about the board is lost when it runs out,
- * so carrying on is the first option there. A jammed kerb is a real dead end —
- * every bay is spent on a colour the front of the queue does not want — so the
- * first option is the move that caused it.
+ * No explanation under it. The board behind the sheet already says why — every
+ * bay is full and the person at the front matches none of them — and a
+ * paragraph restating that is read once and skipped forever after.
  */
 function showLoss(state: GameState): void {
-  const timedOut = state.outOfTime;
-
   openSheet(
     (sheet) => {
       sheet.content.append(
-        el('h2', { class: 'lose-title' }, timedOut ? 'Out of time' : 'Every bay taken'),
+        el('h2', { class: 'lose-title' }, state.outOfTime ? 'Out of time' : 'Bays are full'),
       );
-      if (!timedOut) {
-        sheet.content.append(
-          el(
-            'p',
-            { class: 'result-note' },
-            'Nobody at the front of the queue can board, and there is nowhere to put another bus.',
-          ),
-        );
-      }
 
-      const back = el(
-        'button',
-        { class: 'button button--full' },
-        timedOut ? 'Keep going' : 'Undo that',
-      );
-      back.addEventListener('click', () => {
+      const undo = el('button', { class: 'button button--full' }, 'Undo');
+      undo.addEventListener('click', () => {
         sheet.close();
         game.undo();
       });
@@ -299,7 +279,7 @@ function showLoss(state: GameState): void {
         game.restart();
       });
 
-      sheet.content.append(back, restart);
+      sheet.content.append(undo, restart);
     },
     { dismissible: false },
   );

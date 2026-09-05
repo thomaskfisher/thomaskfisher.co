@@ -1,18 +1,16 @@
 /**
  * Depot's rules sheet. See `shared/how-to-play.ts`.
  *
- * Three of these four rules cannot be inferred by tapping, which is the bar for
- * being in here at all:
+ * Three rules, because three is what cannot be inferred by tapping: a bus
+ * drives along its arrow and nowhere else, only a matching colour boards, and
+ * a full kerb with nobody able to board is the end of the level. A player finds
+ * all three out by losing otherwise, and losing to a rule you were never told
+ * reads as the game being unfair rather than as the game being hard.
  *
- *  - a bus drives out along its arrow and nowhere else, so a tap is refused
- *    unless that whole lane is clear;
- *  - the bays are the only place a bus can go, and running out of them is how
- *    the level ends — not by anything happening on the lot;
- *  - a `?` bus stays revealed once it has been seen, which is what makes it a
- *    move worth spending rather than a coin toss.
- *
- * A new player finds all three out by losing, and losing to a rule you were
- * never told reads as the game being unfair rather than as the game being hard.
+ * The `?` bus is deliberately not in here. It is a fourth step for a mechanic
+ * that does not appear until level 18, and nobody loses a level for not knowing
+ * that a revealed colour stays revealed — the bar for this sheet is a rule you
+ * would otherwise discover by being punished for it, not every rule there is.
  */
 
 import { type GameRules, artArrow, artCross, artTap } from '../shared/how-to-play';
@@ -103,11 +101,11 @@ function seats(x: number, y: number, count: number, taken: number, color: string
 
 export const RULES: GameRules = {
   gameName: 'Depot',
-  goal: 'Clear the whole queue by bringing each colour the bus it is waiting for.',
+  goal: 'Clear the lot and the queue with it.',
   steps: [
     {
-      title: 'Tap a bus to drive it out',
-      text: 'It only goes the way its arrow points, and that lane has to be clear.',
+      title: 'Tap a bus to send it out',
+      text: 'It drives the way its arrow points. The lane has to be clear.',
       art:
         lot(6, 12, 4, 2) +
         bus(7, 13, 32, 13, RED, 'right') +
@@ -118,17 +116,8 @@ export const RULES: GameRules = {
         artCross(82, 44, 7),
     },
     {
-      title: 'It pulls into a loading bay',
-      text: 'Bays are the only place a bus can wait, and there are never many.',
-      art:
-        bay(6, 20, RED) +
-        bay(34, 20, YELLOW) +
-        bay(62, 20, null) +
-        artArrow(74, 60, 74, 51, 0),
-    },
-    {
       title: 'The front of the line boards',
-      text: 'Only onto a bus of their own colour. Fill every seat and it drives off.',
+      text: 'Only a bus of their own colour. Fill it and it leaves.',
       art:
         line(7, 46, [BLUE, BLUE, GREEN, RED, BLUE]) +
         bus(40, 10, 46, 17, BLUE, 'right') +
@@ -136,16 +125,16 @@ export const RULES: GameRules = {
         artArrow(20, 38, 44, 30, 8),
     },
     {
-      title: 'Every bay full is the end',
-      text: 'If nobody at the front matches a bay, nothing can move. A ? bus hides its colour until you pull it, then stays shown.',
+      title: 'A bus needs a free bay',
+      text: 'Fill them with colours nobody wants and the level is over.',
       art:
-        bay(4, 18, RED) +
-        bay(30, 18, GREEN) +
-        artCross(20, 56, 7) +
-        `<rect x="60" y="18" width="28" height="20" rx="4" fill="#2c3550"/>` +
-        `<text class="ha-label ha-label--invert" x="74" y="32" text-anchor="middle">?</text>` +
-        artArrow(74, 52, 74, 43, 0) +
-        line(66, 56, [YELLOW]),
+        // Every bay taken, and the person at the front matching none of them.
+        // An empty bay here would say the opposite of the caption.
+        bay(6, 14, RED) +
+        bay(34, 14, YELLOW) +
+        bay(62, 14, RED) +
+        line(14, 55, [GREEN]) +
+        artCross(34, 55, 7),
     },
   ],
 };

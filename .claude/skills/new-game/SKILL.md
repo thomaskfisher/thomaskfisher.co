@@ -33,6 +33,35 @@ Settings; a level jump (nothing is ever locked).
 purchasable power-ups, locked "LVL 80" teasers, and anything that exists to
 create pressure rather than play. Unlimited undo makes power-ups unnecessary.
 
+**Every word on screen has a budget, and it is smaller than it will feel.** Copy
+the existing games' phrasing before writing your own — open two `rules.ts` files
+and a `showWin`/`showLose` and match what is there. The house sizes:
+
+| Thing | Size | Example |
+| --- | --- | --- |
+| Rules sheet | **3 steps.** 4 only if a fourth rule genuinely loses levels | — |
+| Goal | one short sentence, ~7 words | "Pour until every tube holds one colour." |
+| Step title | 3-6 words, imperative | "Tap a tube to pick it up" |
+| Step caption | **one line, ~10 words**, two short sentences at most | "Same colour on top, or an empty tube." |
+| Win sheet | 2-3 word title, one `result-line` of a number and a **bare noun**, then the button | "All aboard" / `12` `passengers` |
+| Loss sheet | 2-3 word title, then `Undo` and `Restart`. **No paragraph.** | "Bench is full" |
+
+The sheet names rules a player cannot infer — not every rule, and never the
+game's pitch. Three tests to apply:
+
+- **A caption that will not fit is usually two rules.** Split it, or cut one.
+- **A rule nobody loses a level for not knowing does not go on the sheet.** Nice
+  little kindnesses (Depot's `?` bus staying revealed once seen) are discovered
+  happily and explained nowhere.
+- **A loss sheet never explains itself.** The board behind it is already showing
+  why. Depot's first draft had a paragraph under the title, in a class that did
+  not exist in `shell.css` — so it rendered as unstyled body text, which is what
+  a sentence nobody asked for deserves.
+
+Depot's first draft ran to four steps and a twenty-three-word caption carrying
+two rules at once, and it read as a manual next to the other six games. Write
+short first; it is much harder to cut afterwards.
+
 **Non-negotiable technical rules:**
 
 - **Every level is verified solvable by a solver before it is shown.** This is
@@ -115,7 +144,9 @@ Work in this order. It front-loads the risk.
    project: for a sweep of levels, assert well-formed, not-already-solved,
    solvable, and that the solver's own solution actually wins when replayed.
 6. **UI** — `game.ts` controller (owns state, knows nothing about the DOM),
-   then `render.ts`, then CSS, then `main.ts`.
+   then `render.ts`, then CSS, then `main.ts`. Write `rules.ts` and the win/loss
+   sheets against the copy budget above, with another game's open beside you —
+   not in your own voice and trimmed later.
 7. **Verify in a real browser** (below). Not optional — both real bugs found so
    far were invisible to the unit tests.
 8. **Ship** — `npm run build`, then `firebase deploy --only hosting:games`.
