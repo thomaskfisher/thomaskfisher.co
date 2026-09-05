@@ -87,13 +87,11 @@ function bench(x: number, y: number, capacity: number, filled: readonly string[]
 
 export const RULES: GameRules = {
   gameName: 'Bus Jam',
-  goal: 'Clear the whole crowd off the board by getting everyone onto a bus.',
+  goal: 'Get the whole crowd onto the buses.',
   steps: [
     {
-      title: 'Tap someone with a clear walk out',
-      text:
-        'They leave across the top edge, so the cells between them and it have to be ' +
-        'empty. Tap someone boxed in and nothing happens — nobody walks through anybody.',
+      title: 'Tap to walk someone out',
+      text: 'The cells above them have to be empty.',
       art:
         grid(14, 20, 3, 2) +
         artTap(21.5, 27.5, 11) +
@@ -104,10 +102,8 @@ export const RULES: GameRules = {
         artCross(74, 44, 7),
     },
     {
-      title: 'They board the bus, if the colours match',
-      text:
-        'One bus is at the stop at a time. Fill its seats and it pulls away, and the next ' +
-        'bus in the queue behind it moves up to take the stop.',
+      title: 'They board a matching bus',
+      text: 'Fill it and the next bus pulls up.',
       art:
         bus(6, 10, BLUE, 3, 2) +
         queued(58, 10, GREEN) +
@@ -116,26 +112,13 @@ export const RULES: GameRules = {
         person(30, 55, BLUE),
     },
     {
-      title: 'No matching bus? They wait on the bench',
-      text:
-        'The bench is the only other place a person can go, and it is where the level is ' +
-        'lost. Fill its last seat and it is over — so keep a seat spare.',
+      title: 'Otherwise, the bench',
+      text: 'It holds anyone no bus wants yet. Fill it and the level is over.',
       art:
         bench(4, 12, 4, [RED, GREEN, YELLOW]) +
         artArrow(69.5, 44, 69.5, 34, 0) +
         person(69.5, 51, BLUE) +
         artCross(84, 52, 7),
-    },
-    {
-      title: 'Clearing the front opens the back',
-      text:
-        'Everyone who boards frees the cell they stood in, which is what lets the people ' +
-        'behind them out. Choosing who goes first is the whole puzzle.',
-      art:
-        grid(10, 14, 3, 3) +
-        person(34.5, 21.5, RED, true) +
-        person(34.5, 55.5, BLUE) +
-        artArrow(34.5, 48, 34.5, 5, 0),
     },
   ],
 };

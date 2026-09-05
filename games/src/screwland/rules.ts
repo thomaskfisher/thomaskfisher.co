@@ -58,13 +58,11 @@ function tray(x: number, y: number, capacity: number, filled: readonly string[])
 
 export const RULES: GameRules = {
   gameName: 'Screw Land',
-  goal: 'Take the whole structure apart by unscrewing it in an order that works.',
+  goal: 'Unscrew the whole structure.',
   steps: [
     {
       title: 'Tap a screw to take it out',
-      text:
-        'It flies to a box of its own colour up at the top. The boxes tell you which ' +
-        'colours have somewhere to go right now.',
+      text: 'It flies to a box of its own colour.',
       art:
         box(50, 4, RED, 1, 36, 18) +
         `<rect class="ha-fill" x="6" y="34" width="44" height="26" rx="5"/>` +
@@ -74,10 +72,8 @@ export const RULES: GameRules = {
         artArrow(24, 38, 62, 24, 12),
     },
     {
-      title: 'Fill a box and it seals',
-      text:
-        'A full box is carried off and the next one in the little queue beside it takes ' +
-        'its place. Only the boxes you can see are open — the queue is what is coming.',
+      title: 'A full box seals',
+      text: 'The next box in the queue takes its place.',
       art:
         box(6, 24, BLUE, 3, 34, 20) +
         artTick(23, 12, 7) +
@@ -88,10 +84,8 @@ export const RULES: GameRules = {
         artArrow(62, 18, 44, 20, 5),
     },
     {
-      title: 'A screw with no box open goes to the tray',
-      text:
-        'The tray is the only place to park a colour you cannot use yet — and it is where ' +
-        'the level is lost. Fill the last slot and it is over, so keep a slot spare.',
+      title: 'Or it goes to the tray',
+      text: 'For colours with no box open. Fill it and the level is over.',
       art:
         tray(4, 12, 4, [RED, GREEN, YELLOW]) +
         artArrow(64, 44, 64, 32, 0) +
@@ -99,10 +93,8 @@ export const RULES: GameRules = {
         artCross(82, 48, 8),
     },
     {
-      title: 'Plates cover the screws underneath them',
-      text:
-        'A screw you cannot tap is under a plate. Take that plate’s own last screw out, ' +
-        'it falls away, and everything beneath it is yours.',
+      title: 'Plates hide screws',
+      text: 'Take a plate’s last screw out and it falls away.',
       art:
         `<rect class="ha-fill" x="6" y="26" width="52" height="32" rx="5"/>` +
         screw(18, 44, GREEN) +

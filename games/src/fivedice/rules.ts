@@ -2,17 +2,9 @@
  * Five Dice's rules sheet. See `shared/how-to-play.ts`.
  *
  * Most people who open this already know the game, so the sheet is not here to
- * teach dice — it is here for the three things that are this version's own and
- * cannot be discovered by tapping:
- *
- *   - a box takes two taps, and the first one only shows what it would pay;
- *   - a throw stands, because there is no undo, and there is a reason for that;
- *   - a box can be written for nothing, which is how a bad turn ends.
- *
- * The house promises are overridden here rather than inherited. Four of the five
- * games can promise a verified-solvable board, unlimited undo and a hint that
- * points at a winning move. This one can promise none of the three, and printing
- * them anyway would be worse than printing nothing.
+ * teach dice — it is here for the two things that are this version's own and
+ * cannot be discovered by tapping: a box takes two taps, the first only showing
+ * what it would pay, and the upper section pays a bonus at 63.
  */
 
 import type { GameRules } from '../shared/how-to-play';
@@ -108,13 +100,11 @@ function tapBox(x: number, y: number, width: number, height = 11): string {
 
 export const RULES: GameRules = {
   gameName: 'Five Dice',
-  goal: 'Thirteen turns, thirteen boxes, three throws each. Fill the card and add it up.',
+  goal: 'Thirteen boxes, three throws a turn.',
   steps: [
     {
       title: 'Throw, hold, throw again',
-      text:
-        'Every turn opens with five dice already thrown. Tap any of them to hold it back, ' +
-        'then throw the rest — up to three throws a turn, and you can stop after any of them.',
+      text: 'Tap a die to hold it, then throw the rest. Three throws a turn.',
       art:
         hand(4, [6, 6, 2, 4, 1], [0, 1]) +
         artArrow(46, 22, 46, 32, 0) +
@@ -122,10 +112,7 @@ export const RULES: GameRules = {
     },
     {
       title: 'Every turn ends in a box',
-      text:
-        'Thirteen boxes and thirteen turns, so each box is used exactly once. The top six ' +
-        'pay the sum of their own number; the bottom seven pay for shapes — three alike, a ' +
-        'full house, a run, and Chance, which takes whatever is on the table.',
+      text: 'Each of the thirteen is used once.',
       art:
         box(5, 4, 82, 'Sixes', '18') +
         box(5, 18, 82, 'Full house', '25') +
@@ -134,9 +121,7 @@ export const RULES: GameRules = {
     },
     {
       title: 'A box takes two taps',
-      text:
-        'The first tap shows you what that box would pay for the hand in front of you. ' +
-        'The second one writes it down for good. Nothing is written by accident.',
+      text: 'The first shows what it would pay, the second writes it down.',
       art:
         box(14, 8, 64, 'Sixes', '24', 'chosen') +
         tapBox(14, 8, 64) +
@@ -145,11 +130,8 @@ export const RULES: GameRules = {
         artTick(84, 51.5, 6),
     },
     {
-      title: '63 in the top six is worth 35 more',
-      text:
-        'Add up the six boxes at the top of the card. Reach 63 — roughly three of each ' +
-        'number — and you take a 35 point bonus on top. It is the one thing worth planning ' +
-        'the early turns around.',
+      title: '63 up top pays 35 more',
+      text: 'Roughly three of each number gets you there.',
       art:
         // The six upper boxes as bars, four of them already filled — the picture
         // is "this column adds up to something", which no label would improve.
@@ -167,29 +149,5 @@ export const RULES: GameRules = {
         `<text class="ha-label ha-label--invert" x="66" y="28">63</text>` +
         `<text class="ha-label ha-label--sm ha-label--invert" x="66" y="39">+35</text>`,
     },
-    {
-      title: 'A throw stands',
-      text:
-        'There is no undo here, and that is deliberate: the dice are decided before you ' +
-        'touch them, so taking a throw back would just be reading the answer. If a turn ' +
-        'comes to nothing, write a zero somewhere cheap — every card has one bad turn in it.',
-      art:
-        // The shared undo glyph, scaled up out of its 24x24 box and struck out.
-        `<g class="ha-dim" transform="translate(2 9) scale(1.7)" stroke-width="1.5" ` +
-        `stroke-linecap="round" stroke-linejoin="round">` +
-        `<path d="M4 10h10a5 5 0 0 1 0 10H9"/><path d="M4 10l4.5-4.5M4 10l4.5 4.5"/></g>` +
-        `<path class="ha-strike" d="M7 15 L41 47" stroke-width="2.2" stroke-linecap="round"/>` +
-        box(50, 26, 36, 'Ones', '0', 'chosen'),
-    },
-  ],
-  /**
-   * The house promises, rewritten for a game of chance. The point of the shared
-   * ones is that a player should read the same sentence in every game; the point
-   * of these is that all three of those sentences would be false here.
-   */
-  promises: [
-    'The dice are fair and they are decided before you touch them. Nothing here adjusts a throw because you are doing well, and nothing is held back to sell you anything.',
-    'Hint is free and unlimited. It plays the odds rather than the answer — it cannot see your next throw any more than you can, and it will set up the dice it recommends.',
-    'No ads, no accounts, no lives, no timers. Your card, your record and your settings never leave this phone, and a new round is always one tap away.',
   ],
 };

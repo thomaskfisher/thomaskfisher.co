@@ -1,7 +1,7 @@
 {
   "name": "Bus Jam",
   "short_name": "Bus Jam",
-  "description": "Clear the crowd one bus at a time. No ads, no timers, no accounts — and it works offline.",
+  "description": "Get the whole crowd onto the buses.",
   "id": "/busjam/",
   "start_url": "./",
   "scope": "./",

@@ -255,7 +255,7 @@ function showWin(state: GameState): void {
         ),
       );
 
-      const next = el('button', { class: 'button button--full' }, `Play level ${state.level + 1}`);
+      const next = el('button', { class: 'button button--full' }, 'Next level');
       next.addEventListener('click', () => {
         sheet.close();
         void game.advance();
@@ -269,14 +269,8 @@ function showWin(state: GameState): void {
 /**
  * The run is over. Not dismissible — the squad is gone or the horde is through,
  * and leaving the board tappable would only invite dead taps.
- *
- * There are no lives and no ad break here, so the recovery is generous: start
- * the lane again, or step back to just before the wrong turn. Every level has a
- * way through, and saying so is what keeps a loss a puzzle rather than a tax.
  */
 function showLost(state: GameState): void {
-  const horde = state.generated?.board.horde ?? 0;
-
   const headline = state.outOfTime
     ? 'Out of time'
     : state.lossCause === 'overrun'
@@ -285,30 +279,17 @@ function showLost(state: GameState): void {
         ? 'Stopped at the barrier'
         : 'Squad wiped out';
 
-  const explanation = state.outOfTime
-    ? 'The clock ran out — the squad was fine. Step back and keep going, or turn the clock ' +
-      'off in the top bar and take the lane at your own pace.'
-    : state.lossCause === 'overrun'
-      ? `You reached the front with ${formatCount(state.count)} against ${formatCount(horde)}. ` +
-        'A different route through the same gates gets there with more — every level here has one.'
-      : state.lossCause === 'blocked'
-        ? 'The barrier needed more soldiers than the squad had left. Growing earlier, or ' +
-          'arriving in a different lane, gets through it.'
-        : 'That gate took the last of them. Every level here can be cleared — the route is ' +
-          'what has to change, not the board.';
-
   openSheet(
     (sheet) => {
       sheet.content.append(el('h2', { class: 'lose-title' }, headline));
-      sheet.content.append(el('p', {}, explanation));
 
-      const undo = el('button', { class: 'button button--full' }, 'Step back');
+      const undo = el('button', { class: 'button button--full' }, 'Undo');
       undo.addEventListener('click', () => {
         sheet.close();
         game.undo();
       });
 
-      const restart = el('button', { class: 'button button--ghost button--full' }, 'Start the lane again');
+      const restart = el('button', { class: 'button button--ghost button--full' }, 'Restart');
       restart.addEventListener('click', () => {
         sheet.close();
         game.restart();

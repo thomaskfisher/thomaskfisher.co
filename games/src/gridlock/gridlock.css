@@ -280,28 +280,6 @@
   display: none;
 }
 
-/* ---------------------------------------------------------------- results */
-
-.win-title,
-.lose-title {
-  margin: 0 0 2px;
-  font-size: 1.35rem;
-}
-
-.result-line {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin: 2px 0 14px;
-  color: var(--text-dim);
-  font-size: 0.9rem;
-}
-
-.result-line b {
-  font-size: 1.5rem;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-}
 
 @media (prefers-reduced-motion: reduce) {
   .car {

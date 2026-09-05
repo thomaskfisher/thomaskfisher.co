@@ -1,7 +1,7 @@
 {
   "name": "Gridlock",
   "short_name": "Gridlock",
-  "description": "Slide the cars out of the way and drive the red one out. No ads, no timers, no accounts — and it works offline.",
+  "description": "Slide the cars aside and drive the red one out.",
   "id": "/gridlock/",
   "start_url": "./",
   "scope": "./",

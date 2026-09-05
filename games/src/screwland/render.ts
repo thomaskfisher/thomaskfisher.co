@@ -400,8 +400,7 @@ export class SinkRenderer {
 export function describeProgress(state: GameState): string {
   if (!state.generated) return 'Loading';
   const left = state.board.removed.filter((gone) => !gone).length;
-  const parked = state.sinks.buffer.length;
-  return `${left} screws left, ${parked} in the tray`;
+  return `${left} screw${left === 1 ? '' : 's'} left`;
 }
 
 export type { Screw };

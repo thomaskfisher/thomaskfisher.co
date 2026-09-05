@@ -236,14 +236,12 @@ function showWin(state: GameState): void {
           'div',
           { class: 'result-line' },
           `<b>${state.moveCount}</b><span>${
-            perfect
-              ? 'moves — the shortest there is'
-              : `moves · it can be done in ${par}`
+            perfect ? 'moves — the best there is' : `moves · best ${par}`
           }</span>`,
         ),
       );
 
-      const next = el('button', { class: 'button button--full' }, `Play level ${state.level + 1}`);
+      const next = el('button', { class: 'button button--full' }, 'Next level');
       next.addEventListener('click', () => {
         sheet.close();
         void game.advance();
@@ -255,25 +253,14 @@ function showWin(state: GameState): void {
 }
 
 /**
- * The only way this game ends badly, and only when the clock is on.
- *
- * Nothing about the park is lost — the cars are exactly where they were — so
- * the recovery is simply to carry on, and the sheet says so rather than
- * offering a consolation.
+ * The only way this game ends badly, and only when the clock is on. Nothing
+ * about the park is lost — the cars are exactly where they were — so carrying
+ * on is the first option.
  */
 function showOutOfTime(): void {
   openSheet(
     (sheet) => {
       sheet.content.append(el('h2', { class: 'lose-title' }, 'Out of time'));
-      sheet.content.append(
-        el(
-          'p',
-          {},
-          'The clock ran out — the park is untouched and every car is where you left it. ' +
-            'Carry on from here, or turn the clock off in the top bar and take it at your ' +
-            'own pace.',
-        ),
-      );
 
       const carry = el('button', { class: 'button button--full' }, 'Keep going');
       carry.addEventListener('click', () => {
@@ -281,11 +268,7 @@ function showOutOfTime(): void {
         game.undo();
       });
 
-      const restart = el(
-        'button',
-        { class: 'button button--ghost button--full' },
-        'Start this park again',
-      );
+      const restart = el('button', { class: 'button button--ghost button--full' }, 'Restart');
       restart.addEventListener('click', () => {
         sheet.close();
         game.restart();

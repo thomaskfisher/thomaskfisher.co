@@ -1,7 +1,7 @@
 {
   "name": "Color Sort",
   "short_name": "Color Sort",
-  "description": "A calm sorting puzzle. No ads, no timers, no accounts — and it works offline.",
+  "description": "Pour until every tube holds one colour.",
   "id": "/colorsort/",
   "start_url": "./",
   "scope": "./",

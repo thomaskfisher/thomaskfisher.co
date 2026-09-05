@@ -92,6 +92,12 @@ export function openSheet(
 /* Controls                                                            */
 /* ------------------------------------------------------------------ */
 
+/** A row's label, with the explanatory line only when there is one to give. */
+function rowLabel(label: string, description: string): HTMLDivElement {
+  const text = description ? `${label}<small>${description}</small>` : label;
+  return el('div', { class: 'sheet-row-label' }, text);
+}
+
 export function toggleRow(
   label: string,
   description: string,
@@ -99,13 +105,7 @@ export function toggleRow(
   onChange: (value: boolean) => void,
 ): HTMLDivElement {
   const row = el('div', { class: 'sheet-row' });
-  row.append(
-    el(
-      'div',
-      { class: 'sheet-row-label' },
-      `${label}<small>${description}</small>`,
-    ),
-  );
+  row.append(rowLabel(label, description));
 
   const button = el('button', {
     class: 'switch',
@@ -133,7 +133,7 @@ export function segmentedRow<T extends string>(
   onChange: (value: T) => void,
 ): HTMLDivElement {
   const row = el('div', { class: 'sheet-row' });
-  row.append(el('div', { class: 'sheet-row-label' }, `${label}<small>${description}</small>`));
+  row.append(rowLabel(label, description));
 
   const group = el('div', { class: 'segmented', role: 'group', 'aria-label': label });
   for (const option of options) {

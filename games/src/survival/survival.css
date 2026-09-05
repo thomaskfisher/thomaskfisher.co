@@ -285,28 +285,4 @@
   color: #fff;
 }
 
-/* ---------------------------------------------------------------- sheets */
 
-.win-title,
-.lose-title {
-  text-align: center;
-}
-
-.result-line {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 8px;
-  margin: 2px 0 16px;
-  font-variant-numeric: tabular-nums;
-}
-
-.result-line b {
-  font-size: 1.6rem;
-  font-weight: 800;
-}
-
-.result-line span {
-  color: var(--text-dim);
-  font-size: 0.9rem;
-}

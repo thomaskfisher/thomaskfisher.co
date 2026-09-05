@@ -1,7 +1,7 @@
 {
   "name": "Screw Land",
   "short_name": "Screw Land",
-  "description": "Take it apart, one screw at a time. No ads, no timers, no accounts — and it works offline.",
+  "description": "Unscrew the structure in an order that works.",
   "id": "/screwland/",
   "start_url": "./",
   "scope": "./",

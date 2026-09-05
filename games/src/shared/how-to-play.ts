@@ -2,20 +2,16 @@
  * How to play.
  *
  * Every one of these games opens straight onto a board with no explanation, and
- * three of the four have a rule you cannot infer by tapping: Screw Land loses
- * the level when the tray overflows, Bus Jam only lets you tap someone with a
- * clear walk to the top edge, and Survival's reach limit is invisible until you
- * try to cross the board in one step and are refused. A new player finds those
- * out by losing, which reads as the game being unfair rather than as a rule.
+ * three of them have a rule you cannot infer by tapping: Screw Land loses the
+ * level when the tray overflows, Bus Jam only lets you tap someone with a clear
+ * walk to the top edge, and Survival's reach limit is invisible until you try
+ * to cross the board in one step and are refused. A new player finds those out
+ * by losing, which reads as the game being unfair rather than as a rule.
  *
  * So each game carries a short illustrated rules sheet, shown once on a fresh
- * save and available forever after from the `?` in the top bar. Diagrams rather
- * than prose: the rules are all spatial, and "a plate falls when its last screw
- * comes out" is one picture and four lines of text.
- *
- * The closing promises are written here rather than per game because they are
- * the same promise in all four — they are the house rules, and a player who has
- * read them once in Color Sort should read the same words in Bus Jam.
+ * save and available after that from the `?` in the top bar. Diagrams rather
+ * than prose: the rules are all spatial, and a picture with a six-word caption
+ * beats a paragraph.
  */
 
 import { el, openSheet } from './ui';
@@ -23,7 +19,7 @@ import { el, openSheet } from './ui';
 export interface RuleStep {
   /** Short and imperative. This is the line someone skims. */
   title: string;
-  /** A sentence or two under the title. Plain text — no markup. */
+  /** One short line under the title. Plain text — no markup. */
   text: string;
   /** Inline SVG drawn in a `0 0 92 64` viewBox. See the `art*` helpers below. */
   art: string;
@@ -35,16 +31,6 @@ export interface GameRules {
   /** One sentence: what finishing a level actually means. */
   goal: string;
   steps: RuleStep[];
-  /**
-   * Replaces the closing house promises.
-   *
-   * They are shared because they are the same promise in four of the games, and
-   * a player who reads them in Color Sort should read the same words in Bus Jam.
-   * Five Dice is the exception: it has no solver to verify a level, no undo, and
-   * a hint that plays the odds rather than a winning line, so repeating the
-   * default here would be a lie in three places out of three.
-   */
-  promises?: string[];
 }
 
 /**
@@ -61,12 +47,6 @@ export function shouldAutoShow(save: {
 }): boolean {
   return !save.seenHowToPlay && save.stats.levelsCleared === 0;
 }
-
-const HOUSE_PROMISES = [
-  'Every level is solved by a computer before you ever see it. You can lose one, but you can never be handed a board that cannot be finished.',
-  'Undo goes back as far as you like, and Hint always points at a move that still wins. Both are free, unlimited, and cost you nothing to use.',
-  'Nothing is locked and nothing is timed unless you ask for it. Settings will jump you to any level you like.',
-];
 
 export interface HowToPlayOptions {
   rules: GameRules;
@@ -115,7 +95,7 @@ function build(
   firstRun: boolean,
   close: () => void,
 ): void {
-  content.append(el('h2', {}, `How to play ${rules.gameName}`));
+  content.append(el('h2', {}, 'How to play'));
   content.append(el('p', { class: 'howto-goal' }, rules.goal));
 
   const list = el('ol', { class: 'howto-steps' });
@@ -129,15 +109,7 @@ function build(
   }
   content.append(list);
 
-  const promises = el('ul', { class: 'howto-promises' });
-  for (const line of rules.promises ?? HOUSE_PROMISES) promises.append(el('li', {}, line));
-  content.append(promises);
-
-  const done = el(
-    'button',
-    { class: 'button button--full' },
-    firstRun ? 'Start playing' : 'Got it',
-  );
+  const done = el('button', { class: 'button button--full' }, firstRun ? 'Play' : 'Got it');
   done.addEventListener('click', close);
   content.append(done);
 }

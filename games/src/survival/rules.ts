@@ -90,24 +90,13 @@ function tapCell(col: number, row: number): string {
   return ring(2, false) + ring(5.5, true);
 }
 
-/** A short accent arrow pointing straight up, for "you go this way". */
-function up(x: number, from: number, to: number): string {
-  return (
-    `<path class="ha-accent" d="M${x} ${from} V${to}" stroke-width="1.8" stroke-linecap="round"/>` +
-    `<path class="ha-accent" d="M${x - 5} ${to + 5} l5 -5 l5 5" stroke-width="1.8" ` +
-    `stroke-linecap="round" stroke-linejoin="round"/>`
-  );
-}
-
 export const RULES: GameRules = {
   gameName: 'Survival',
-  goal: 'Walk your squad up the board and arrive at the top outnumbering the horde.',
+  goal: 'Outnumber the horde at the top.',
   steps: [
     {
-      title: 'Nothing moves until you tap',
-      text:
-        'This is not a race. The whole board is on screen from the start and it waits for ' +
-        'you — tap a cell in the row directly ahead and the squad walks into it.',
+      title: 'Tap the row ahead',
+      text: 'Nothing moves until you do. Take as long as you like.',
       art:
         gate(0, 0, '+40') +
         gate(1, 0, '×3') +
@@ -119,10 +108,8 @@ export const RULES: GameRules = {
         tapCell(1, 1),
     },
     {
-      title: 'Every cell changes your numbers',
-      text:
-        'Multiply, add, subtract, divide — and grey walls have to be outnumbered, then ' +
-        'take their own strength with them. Order matters: ×3 then +50 is not +50 then ×3.',
+      title: 'Cells change your count',
+      text: 'Grey walls must be outnumbered, and cost you their strength.',
       art:
         gate(0, 0, '×4') +
         gate(1, 0, '+90') +
@@ -133,10 +120,8 @@ export const RULES: GameRules = {
         squad(1, '12'),
     },
     {
-      title: 'You can only step one lane sideways',
-      text:
-        'From row to row you may shift a lane, sometimes two — never straight across the ' +
-        'board. So the best cell up ahead may simply not be reachable from where you are.',
+      title: 'Only one lane sideways',
+      text: 'The best cell ahead may be out of reach.',
       art:
         gate(0, 0, '×5') +
         outOfReach(0, 0) +
@@ -148,19 +133,6 @@ export const RULES: GameRules = {
         gate(1, 1, '+40') +
         gate(2, 1, '×3') +
         squad(2, '30'),
-    },
-    {
-      title: 'Arrive at the top with more than the horde',
-      text:
-        'The number waiting up there is the one to beat, and it is on screen from the ' +
-        'first move. Get past it and the level is yours.',
-      art:
-        `<rect x="6" y="4" width="80" height="16" rx="5" fill="#e6394a" fill-opacity="0.22" ` +
-        `stroke="#e6394a" stroke-width="1.6"/>` +
-        `<text class="ha-label ha-label--sm" x="46" y="12">HORDE 480</text>` +
-        up(46, 44, 26) +
-        `<rect class="ha-accent-fill" x="26" y="47" width="40" height="15" rx="5"/>` +
-        `<text class="ha-label ha-label--invert" x="46" y="54.5">612</text>`,
     },
   ],
 };

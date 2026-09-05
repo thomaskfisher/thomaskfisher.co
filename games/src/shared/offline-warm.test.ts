@@ -271,7 +271,10 @@ describe('every built game', () => {
 
   for (const slug of slugs) {
     it(`${slug} has a launcher card and a service worker`, () => {
-      expect(launcherHtml).toContain(`href="./${slug}/"`);
+      // `a.card` is the selector in warm.js, not decoration: restyling the
+      // launcher's links under another class name stops every game warming,
+      // and nothing else would notice.
+      expect(launcherHtml).toContain(`class="card" href="./${slug}/"`);
       expect(workerStubs[`../../public/${slug}/sw.js`]).toContain(`initGameWorker('${slug}'`);
     });
   }

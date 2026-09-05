@@ -1,7 +1,7 @@
 {
   "name": "Survival",
   "short_name": "Survival",
-  "description": "Route your squad through the gates and outnumber the horde. No ads, no timers, no accounts — and it works offline.",
+  "description": "Route your squad past the gates and outnumber the horde.",
   "id": "/survival/",
   "start_url": "./",
   "scope": "./",

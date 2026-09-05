@@ -5,6 +5,9 @@
  * server-free design: iOS can evict local storage under disk pressure or when
  * Safari data is cleared, and local data never follows you to a new phone.
  * A copied code costs nothing and prevents losing hundreds of levels.
+ *
+ * Rows carry an explanatory line only where the label alone would leave a real
+ * question. Most of them do not.
  */
 
 import { setSoundEnabled } from './audio';
@@ -53,14 +56,11 @@ export function openSettings<M>(options: SettingsSheetOptions<M>): void {
 
   openSheet((sheet) => {
     sheet.content.append(el('h2', {}, 'Settings'));
-    sheet.content.append(
-      el('p', {}, 'No ads, no accounts, no tracking. Everything stays on this device.'),
-    );
 
     sheet.content.append(
       segmentedRow(
         'Theme',
-        'Match your phone, or pick one.',
+        '',
         [
           { value: 'system' as const, label: 'Auto' },
           { value: 'light' as const, label: 'Light' },
@@ -78,7 +78,7 @@ export function openSettings<M>(options: SettingsSheetOptions<M>): void {
       sheet.content.append(
         toggleRow(
           'Shapes on colors',
-          'Adds a distinct symbol to every color, so the puzzle never depends on telling colors apart.',
+          'A symbol on each color.',
           settings.colorBlindShapes,
           (colorBlindShapes) => options.onSettingsChange({ colorBlindShapes }),
         ),
@@ -89,9 +89,7 @@ export function openSettings<M>(options: SettingsSheetOptions<M>): void {
       sheet.content.append(
         toggleRow(
           'Timed play',
-          'Puts a clock on every level. Solving something adds time back. The board is ' +
-            'exactly the same either way — this only changes whether you get to sit with it. ' +
-            'Also on the clock in the top bar.',
+          'A clock on every level.',
           settings.timed,
           (timed) => options.onSettingsChange({ timed }),
         ),
@@ -99,7 +97,7 @@ export function openSettings<M>(options: SettingsSheetOptions<M>): void {
     }
 
     sheet.content.append(
-      toggleRow('Sound', 'Soft pours and chimes.', settings.sound, (sound) => {
+      toggleRow('Sound', '', settings.sound, (sound) => {
         setSoundEnabled(sound);
         options.onSettingsChange({ sound });
       }),
@@ -119,13 +117,7 @@ export function openSettings<M>(options: SettingsSheetOptions<M>): void {
 
 function buildHowToPlayRow(open: () => void): HTMLElement {
   const row = el('div', { class: 'sheet-row' });
-  row.append(
-    el(
-      'div',
-      { class: 'sheet-row-label' },
-      'How to play<small>The rules, in pictures. Also on the ? in the top bar.</small>',
-    ),
-  );
+  row.append(el('div', { class: 'sheet-row-label' }, 'How to play'));
 
   const button = el('button', { class: 'button button--ghost' }, 'Show');
   button.addEventListener('click', open);
@@ -136,13 +128,7 @@ function buildHowToPlayRow(open: () => void): HTMLElement {
 function buildLevelJump<M>(options: SettingsSheetOptions<M>): HTMLElement {
   const noun = options.levelNoun ?? 'Level';
   const row = el('div', { class: 'sheet-row' });
-  row.append(
-    el(
-      'div',
-      { class: 'sheet-row-label' },
-      `${noun}<small>Currently on ${options.currentLevel}. Jump anywhere — nothing is locked.</small>`,
-    ),
-  );
+  row.append(el('div', { class: 'sheet-row-label' }, noun));
 
   const input = el('input', {
     class: 'field',
@@ -169,22 +155,18 @@ function buildBackup<M>(options: SettingsSheetOptions<M>, save: SaveData<M>): HT
     el(
       'div',
       { class: 'sheet-row-label' },
-      'Back up your progress<small>Everything you have played lives only on this phone. Copy this ' +
-        'code somewhere safe, ' +
-        'or paste one in to restore progress on another device.</small>',
+      'Backup<small>Keep a code to restore your progress.</small>',
     ),
   );
 
   const note = el('p', { class: 'note' });
 
-  const copy = el('button', { class: 'button button--ghost button--full' }, 'Copy save code');
+  const copy = el('button', { class: 'button button--ghost button--full' }, 'Copy code');
   copy.addEventListener('click', () => {
     const code = exportSave(save);
     void writeToClipboard(code).then((ok) => {
       note.className = ok ? 'note note--ok' : 'note';
-      note.textContent = ok
-        ? 'Copied. Paste it somewhere you will still have in a year.'
-        : 'Could not reach the clipboard — the code is in the box below.';
+      note.textContent = ok ? 'Copied.' : 'Clipboard unavailable — the code is below.';
       if (!ok) {
         const box = el('textarea', { class: 'field', rows: '3', readonly: 'readonly' });
         (box as HTMLTextAreaElement).value = code;
@@ -197,19 +179,19 @@ function buildBackup<M>(options: SettingsSheetOptions<M>, save: SaveData<M>): HT
   const input = el('input', {
     class: 'field',
     type: 'text',
-    placeholder: 'Paste a save code to restore',
+    placeholder: 'Paste a code to restore',
     style: 'margin-top:10px',
     'aria-label': 'Save code to restore',
   }) as HTMLInputElement;
 
-  const restore = el('button', { class: 'button button--ghost button--full' }, 'Restore from code');
+  const restore = el('button', { class: 'button button--ghost button--full' }, 'Restore');
   restore.addEventListener('click', () => {
     const code = input.value.trim();
     if (!code) return;
     try {
       const restored = importSave<M>(code, options.gameId);
       note.className = 'note note--ok';
-      note.textContent = `Restored — ${(options.levelNoun ?? 'Level').toLowerCase()} ${restored.level}.`;
+      note.textContent = `Restored to ${(options.levelNoun ?? 'Level').toLowerCase()} ${restored.level}.`;
       void options.onImport(restored);
     } catch (error) {
       note.className = 'note note--error';
@@ -223,8 +205,7 @@ function buildBackup<M>(options: SettingsSheetOptions<M>, save: SaveData<M>): HT
 
 function buildStats<M>(save: SaveData<M>, line?: string): HTMLElement {
   const { levelsCleared, totalUndos, totalHints } = save.stats;
-  const summary =
-    line ?? `${levelsCleared} levels cleared · ${totalUndos} undos · ${totalHints} hints`;
+  const summary = line ?? `${levelsCleared} cleared · ${totalUndos} undos · ${totalHints} hints`;
   return el(
     'div',
     { class: 'sheet-row' },

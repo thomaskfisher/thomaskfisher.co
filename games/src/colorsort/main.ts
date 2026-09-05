@@ -203,12 +203,12 @@ function showWin(state: GameState): void {
 
       const stats = el('div', { class: 'win-stats' });
       stats.append(
-        el('div', { class: 'win-stat' }, `<b>${state.moveCount}</b><span>Your moves</span>`),
-        el('div', { class: 'win-stat' }, `<b>${par}</b><span>Solver's moves</span>`),
+        el('div', { class: 'win-stat' }, `<b>${state.moveCount}</b><span>Moves</span>`),
+        el('div', { class: 'win-stat' }, `<b>${par}</b><span>Best</span>`),
       );
       sheet.content.append(stats);
 
-      const next = el('button', { class: 'button button--full' }, `Play level ${state.level + 1}`);
+      const next = el('button', { class: 'button button--full' }, 'Next level');
       next.addEventListener('click', () => {
         sheet.close();
         void game.advance();
@@ -221,26 +221,17 @@ function showWin(state: GameState): void {
 
 function showStuck(outOfTime: boolean): void {
   openSheet((sheet) => {
-    sheet.content.append(el('h2', {}, outOfTime ? 'Out of time' : 'No moves left'));
     sheet.content.append(
-      el(
-        'p',
-        {},
-        outOfTime
-          ? 'The clock ran out — the board itself was fine. Undo, start over, or turn the ' +
-              'clock off in the top bar and take as long as you like.'
-          : 'This board is out of legal pours. Undo as far back as you like — there is no ' +
-              'penalty, and every level here is solvable.',
-      ),
+      el('h2', { class: 'lose-title' }, outOfTime ? 'Out of time' : 'No moves left'),
     );
 
-    const undo = el('button', { class: 'button button--full' }, 'Undo last move');
+    const undo = el('button', { class: 'button button--full' }, 'Undo');
     undo.addEventListener('click', () => {
       sheet.close();
       game.undo();
     });
 
-    const restart = el('button', { class: 'button button--ghost button--full' }, 'Start level over');
+    const restart = el('button', { class: 'button button--ghost button--full' }, 'Restart');
     restart.addEventListener('click', () => {
       sheet.close();
       game.restart();

@@ -374,6 +374,5 @@ export class StopRenderer {
 export function describeProgress(state: GameState): string {
   if (!state.generated) return 'Loading';
   const left = state.board.boarded.filter((gone) => !gone).length;
-  const waiting = state.sinks.buffer.length;
-  return `${left} waiting, ${waiting} on the bench`;
+  return `${left} waiting`;
 }

@@ -19,14 +19,16 @@ describe('rules sheets', () => {
   for (const rules of RULES) {
     describe(rules.gameName, () => {
       it('states a goal and at least three steps', () => {
-        expect(rules.goal.length).toBeGreaterThan(20);
+        expect(rules.goal.length).toBeGreaterThan(10);
         expect(rules.steps.length).toBeGreaterThanOrEqual(3);
       });
 
+      /* The captions are deliberately short — one line each — so these only
+         check that a step still has one, not that it says much. */
       it('gives every step a title, some text, and art that draws', () => {
         for (const step of rules.steps) {
           expect(step.title.length, rules.gameName).toBeGreaterThan(5);
-          expect(step.text.length, step.title).toBeGreaterThan(30);
+          expect(step.text.length, step.title).toBeGreaterThan(10);
           expect(step.art, step.title).not.toContain('undefined');
           expect(step.art, step.title).not.toContain('NaN');
           // Every mark is one of these three, so art with none of them is empty.

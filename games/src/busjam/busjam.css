@@ -419,15 +419,3 @@
   pointer-events: none;
 }
 
-/* --------------------------------------------------------- end of level */
-
-.win-title,
-.lose-title {
-  margin: 0 0 6px;
-  font-size: 1.6rem;
-  text-align: center;
-}
-
-.lose-title {
-  color: var(--danger);
-}

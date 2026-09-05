@@ -1,19 +1,13 @@
 /**
  * Gridlock's rules sheet. See `shared/how-to-play.ts`.
  *
- * Two things here genuinely cannot be worked out by tapping, and they are the
- * reason this sheet exists rather than being a courtesy:
+ * The one thing here that genuinely cannot be worked out by tapping is that a
+ * slide of any length counts as one move. The top bar shows the move count
+ * against the best possible, and without knowing the unit that number is
+ * meaningless — someone counting cells will think a nine-move par is absurd.
  *
- *  - **A slide of any length is one move.** The top bar shows the move count
- *    against the best possible, and without knowing the unit that number is
- *    meaningless — someone counting cells will think a nine-move par is absurd.
- *  - **The park cannot be lost.** Every other game in the collection can end a
- *    level badly, so a new player arrives braced for it and plays carefully
- *    around a danger that is not there. Saying plainly that any slide can be
- *    taken straight back is what turns this into a puzzle you poke at.
- *
- * The third, the control scheme, is inferable but expensive to discover: a car
- * that answers only to being dragged reads as broken to someone who taps it.
+ * The control scheme is inferable but expensive to discover: a car that answers
+ * only to being dragged reads as broken to someone who taps it.
  */
 
 import type { GameRules } from '../shared/how-to-play';
@@ -138,25 +132,13 @@ function forbidden(column: number, row: number): string {
   );
 }
 
-/** The curling arrow that means "and back again". */
-function undoArrow(cx: number, cy: number): string {
-  return (
-    `<path class="ha-accent" d="M${cx - 8} ${cy} a8 8 0 1 1 3 6.2" stroke-width="1.7" ` +
-    `stroke-linecap="round" fill="none"/>` +
-    `<path class="ha-accent" d="M${cx - 12} ${cy - 3.6} l4 3.8 l4.2 -3.4" stroke-width="1.7" ` +
-    `stroke-linecap="round" stroke-linejoin="round" fill="none"/>`
-  );
-}
-
 export const RULES: GameRules = {
   gameName: 'Gridlock',
-  goal: 'Slide the other cars out of the way until the red one can drive out through the gap.',
+  goal: 'Drive the red car out through the gap.',
   steps: [
     {
       title: 'Get the red car out',
-      text:
-        'It is the only one that leaves. Everything else is in the way — clear its row and ' +
-        'drive it through the gap on the right.',
+      text: 'It is the only one that leaves.',
       art:
         park() +
         exit(1) +
@@ -167,10 +149,8 @@ export const RULES: GameRules = {
         track(2, 1, 4, 1),
     },
     {
-      title: 'Cars only go the way they point',
-      text:
-        'A car across the park slides left and right; one facing up the park slides up and ' +
-        'down. Nothing turns, nothing changes lane, and nothing jumps another car.',
+      title: 'No turning, no jumping',
+      text: 'A car slides only along the way it points.',
       art:
         park() +
         car(1, 1, 2, 'h') +
@@ -182,10 +162,8 @@ export const RULES: GameRules = {
         track(4, 2, 4, 3),
     },
     {
-      title: 'Drag it, or tap to see where it goes',
-      text:
-        'Drag a car as far as you like — however many bays it travels, that is one move. ' +
-        'Or tap it, and every bay it can reach is marked for you.',
+      title: 'Drag a car, or tap it',
+      text: 'Tapping marks the bays it can reach. Any distance is one move.',
       art:
         park() +
         car(1, 2, 2, 'v') +
@@ -196,19 +174,6 @@ export const RULES: GameRules = {
         `<circle class="ha-accent ha-faint" cx="${x(1) + CELL / 2}" cy="${y(2) + CELL / 2}" ` +
         `r="11.5" stroke-width="1.3"/>` +
         car(3, 1, 2, 'h'),
-    },
-    {
-      title: 'You cannot get stuck',
-      text:
-        'Every slide can be taken straight back, so there is no wrong move and no way to ' +
-        'lose. The only question a level asks is how few moves you can do it in.',
-      art:
-        park() +
-        car(0, 1, 2, 'h', true) +
-        car(2, 0, 2, 'v') +
-        car(4, 2, 2, 'v') +
-        exit(1) +
-        undoArrow(46, 48),
     },
   ],
 };

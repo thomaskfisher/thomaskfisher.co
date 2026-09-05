@@ -350,27 +350,10 @@
 
 /* --------------------------------------------------------- the result sheet */
 
-.win-title {
-  text-align: center;
-}
-
-.result-line {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 8px;
-  margin: 2px 0 14px;
-  font-variant-numeric: tabular-nums;
-}
-
+/* The grand total is the whole point of this sheet, so it runs larger than
+   the shared one in shell.css. */
 .result-line b {
   font-size: 2.1rem;
-  font-weight: 800;
-}
-
-.result-line span {
-  color: var(--text-dim);
-  font-size: 0.9rem;
 }
 
 /* A narrow phone: the two-line box label is what gives first, not the number. */

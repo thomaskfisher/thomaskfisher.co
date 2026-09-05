@@ -25,7 +25,7 @@ import { applyTheme, el, icons, openSheet, prefersReducedMotion } from '../share
 import { CATEGORIES } from './model';
 import { FiveDiceGame, GAME_ID, type GameState } from './game';
 import { RULES } from './rules';
-import { BoardRenderer, describeRecord, describeUpper } from './render';
+import { BoardRenderer, describeRecord } from './render';
 
 const app = document.getElementById('app');
 if (!app) throw new Error('#app is missing');
@@ -36,7 +36,7 @@ const roundLabel = el('b', {}, 'Round 1');
 const recordLabel = el('span', {}, '');
 const newRoundButton = el(
   'button',
-  { class: 'icon-button', 'aria-label': 'Abandon this card and deal a new one' },
+  { class: 'icon-button', 'aria-label': 'New card' },
   icons.restart,
 );
 const settingsButton = el(
@@ -235,8 +235,8 @@ function clearControlHints(): void {
  * the sheet and nothing else.
  */
 function showResult(state: GameState): void {
-  const { grand, lower } = state.totals;
-  const { best, rounds, average } = state.record;
+  const { grand } = state.totals;
+  const { best, rounds } = state.record;
   const isBest = grand >= best && rounds > 0;
 
   openSheet(
@@ -245,16 +245,8 @@ function showResult(state: GameState): void {
       sheet.content.append(
         el('div', { class: 'result-line' }, `<b>${grand}</b><span>points</span>`),
       );
-      sheet.content.append(
-        el(
-          'p',
-          {},
-          `${describeUpper(state)}, and ${lower} down the bottom. ` +
-            (rounds > 1 ? `Your average is ${Math.round(average)} over ${rounds} cards.` : ''),
-        ),
-      );
 
-      const next = el('button', { class: 'button button--full' }, `Deal round ${state.level + 1}`);
+      const next = el('button', { class: 'button button--full' }, 'New card');
       next.addEventListener('click', () => {
         sheet.close();
         game.advance();
@@ -266,11 +258,9 @@ function showResult(state: GameState): void {
 }
 
 /**
- * Abandoning a card.
- *
- * Confirmed, because it throws away a card in progress — and it says what that
- * costs, since a player halfway through a good one deserves to see the number
- * before they lose it. Nothing else is lost: rounds are not a ladder.
+ * Abandoning a card. Confirmed, because it throws away a card in progress —
+ * and it shows the score so far, since a player halfway through a good one
+ * deserves to see the number before they lose it.
  */
 function confirmNewRound(state: GameState): void {
   const written = CATEGORIES.length - state.openBoxes.length;
@@ -285,13 +275,12 @@ function confirmNewRound(state: GameState): void {
       el(
         'p',
         {},
-        `${written} of ${CATEGORIES.length} boxes are filled, for ${state.totals.grand} so far. ` +
-          'An abandoned card is not counted in your record — and the next one is dealt straight ' +
-          'away, so nothing is lost by walking away from a bad one.',
+        `${written} of ${CATEGORIES.length} boxes filled, for ${state.totals.grand}. ` +
+          'An abandoned card is not counted in your record.',
       ),
     );
 
-    const confirm = el('button', { class: 'button button--full' }, 'Deal a new card');
+    const confirm = el('button', { class: 'button button--full' }, 'New card');
     confirm.addEventListener('click', () => {
       sheet.close();
       game.newRound();

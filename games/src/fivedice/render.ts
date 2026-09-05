@@ -210,16 +210,7 @@ export function describeThrows(state: GameState): string {
 export function describeRecord(state: GameState): string {
   const { rounds, best, average } = state.record;
   if (rounds === 0) return 'First card';
-  const mean = Math.round(average);
-  return `Best ${best} · average ${mean} · ${rounds} card${rounds === 1 ? '' : 's'}`;
-}
-
-/** The result sheet's own summary of an upper section. */
-export function describeUpper(state: GameState): string {
-  const { upper, bonus } = state.totals;
-  return bonus > 0
-    ? `${upper} up top, and the ${bonus} bonus`
-    : `${upper} up top, ${UPPER_TARGET - upper} short of the bonus`;
+  return `Best ${best} · avg ${Math.round(average)}`;
 }
 
 /** Which upper box a face belongs to, for the rules sheet and for tests. */

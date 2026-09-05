@@ -94,21 +94,19 @@ move — which is the unit the "best 14" in its top bar is quoted in. A new play
 reads as the game being unfair rather than as a rule. `shared/how-to-play.ts` is a short illustrated sheet per game —
 diagrams rather than prose, because the rules are all spatial — shown once on a
 save that has never cleared a level, and available forever from the `?` in the
-top bar or from Settings. The closing promises (verified solvable, free undo and
-hints, nothing locked) are written once in the shared module rather than five
-times, because they are the same promise in all five puzzles. Five Dice
-overrides them, because all three would be false there — see below.
+top bar or from Settings. Each step is one diagram, a title and a single line of
+caption: the sheet is there to name the rules a player cannot infer, not to sell
+the game or to be read twice.
 
 `shouldAutoShow` is deliberately not just `!seenHowToPlay`: adding the flag to
 the save format makes every existing player read as never having seen it, and
 interrupting someone on level 60 to explain the tap target is worse than not
 explaining it at all.
 
-**Five Dice keeps a different promise, because it cannot keep the usual one.**
-There is nothing to verify: every round can be finished, since writing a zero in
-a box is always legal. So the promise it makes instead is that **the dice are
-fair and were fixed before you touched them**, and both halves of that are
-tested rather than asserted. `dice.test.ts` is where the generator invariant
+**Five Dice cannot make the guarantee the puzzles make.** There is nothing to
+verify: every round can be finished, since writing a zero in a box is always
+legal. What it offers instead is that **the dice are fair and were fixed before
+you touched them**, and both halves of that are tested rather than asserted. `dice.test.ts` is where the generator invariant
 sweep would be in any other game here — chi-square on the faces overall and per
 slot, per throw and per turn; independence between neighbouring dice; and the
 rate of the rare hands against the arithmetic, because a per-face check passes
@@ -464,12 +462,10 @@ them; they belong in later as optional modifiers, not as load-bearing rules.
   game — carries a player's record with it. A finished card is banked and
   `inProgress` cleared in the same breath, so closing the app on the result sheet
   keeps the score and reopening cannot count it twice.
-- **The shared chrome now takes a few opt-outs.** `showTimer`, `showShapes`,
-  `levelNoun` and `progressLine` on the settings sheet, and `promises` on the
-  rules sheet. All default to the puzzle behaviour, so the other four call sites
-  are unchanged. Offering a row that does nothing is worse than not offering it,
-  and printing "every level is solved before you see it" in a dice game would be
-  worse still.
+- **The shared chrome takes a few opt-outs.** `showTimer`, `showShapes`,
+  `levelNoun` and `progressLine` on the settings sheet. All default to the puzzle
+  behaviour, so the other four call sites are unchanged. Offering a row that does
+  nothing is worse than not offering it.
 - **Saves are per-device.** iOS can evict local storage under disk pressure or
   when Safari data is cleared, and nothing follows the player to a new phone.
   Settings → *Copy save code* is the backup; it is the reason a server is not

@@ -3,10 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta
-      name="description"
-      content="Small puzzle games with no ads, no accounts, and no tracking. They work offline."
-    />
+    <meta name="description" content="Small puzzle games that work offline." />
     <meta name="robots" content="noindex" />
     <title>Games</title>
     <link rel="icon" href="./icons/colorsort-192.png" />
@@ -40,12 +37,12 @@
       body {
         margin: 0;
         min-height: 100dvh;
-        padding: max(32px, env(safe-area-inset-top)) 20px calc(32px + env(safe-area-inset-bottom));
+        padding: max(28px, env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 26px;
+        gap: 22px;
         font-family: ui-rounded, 'SF Pro Rounded', system-ui, -apple-system, sans-serif;
         color: var(--text);
         background:
@@ -54,39 +51,29 @@
         -webkit-tap-highlight-color: transparent;
       }
 
-      header {
-        text-align: center;
-        max-width: 30rem;
-      }
-
       h1 {
-        margin: 0 0 8px;
-        font-size: clamp(1.7rem, 7vw, 2.3rem);
-        letter-spacing: -0.02em;
-      }
-
-      header p {
         margin: 0;
-        color: var(--text-dim);
-        font-size: 0.95rem;
-        line-height: 1.55;
+        font-size: clamp(1.6rem, 6vw, 2rem);
+        letter-spacing: -0.02em;
       }
 
       ul {
         list-style: none;
         margin: 0;
         padding: 0;
-        width: min(30rem, 100%);
+        width: min(26rem, 100%);
         display: grid;
+        grid-template-columns: repeat(2, 1fr);
         gap: 12px;
       }
 
       a.card {
         display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: 15px;
-        padding: 16px;
-        border-radius: 18px;
+        gap: 10px;
+        padding: 18px 10px 16px;
+        border-radius: 20px;
         background: var(--surface);
         color: inherit;
         text-decoration: none;
@@ -95,118 +82,62 @@
       }
 
       a.card:active {
-        transform: scale(0.985);
+        transform: scale(0.97);
       }
 
       a.card img {
-        width: 56px;
-        height: 56px;
-        border-radius: 14px;
-        flex: 0 0 auto;
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
       }
 
-      .card-text b {
-        display: block;
-        font-size: 1.02rem;
-      }
-
-      .card-text span {
-        font-size: 0.84rem;
-        color: var(--text-dim);
-        line-height: 1.45;
-      }
-
-      li.soon .card {
-        opacity: 0.45;
-        pointer-events: none;
-      }
-
-      .placeholder {
-        width: 56px;
-        height: 56px;
-        border-radius: 14px;
-        flex: 0 0 auto;
-        background: color-mix(in srgb, var(--text-dim) 22%, transparent);
-      }
-
-      footer {
-        max-width: 30rem;
-        text-align: center;
-        font-size: 0.8rem;
-        line-height: 1.6;
-        color: var(--text-dim);
+      a.card b {
+        font-size: 0.95rem;
+        font-weight: 600;
       }
     </style>
   </head>
   <body>
-    <header>
-      <h1>Games</h1>
-      <p>No ads. No accounts. No tracking. Nothing leaves your phone, and they all work offline.</p>
-    </header>
+    <h1>Games</h1>
 
     <ul>
       <li>
         <a class="card" href="./colorsort/">
           <img src="./icons/colorsort-192.png" alt="" />
-          <span class="card-text">
-            <b>Color Sort</b>
-            <span>Pour liquids until every tube holds one color. Endless, and never unsolvable.</span>
-          </span>
+          <b>Color Sort</b>
         </a>
       </li>
       <li>
         <a class="card" href="./screwland/">
           <img src="./icons/screwland-192.png" alt="" />
-          <span class="card-text">
-            <b>Screw Land</b>
-            <span>Unscrew the plates in the right order. Every level comes apart — guaranteed.</span>
-          </span>
+          <b>Screw Land</b>
         </a>
       </li>
       <li>
         <a class="card" href="./busjam/">
           <img src="./icons/busjam-192.png" alt="" />
-          <span class="card-text">
-            <b>Bus Jam</b>
-            <span>Walk the crowd onto the right buses. Every level has a way through.</span>
-          </span>
+          <b>Bus Jam</b>
         </a>
       </li>
       <li>
         <a class="card" href="./fivedice/">
           <img src="./icons/fivedice-192.png" alt="" />
-          <span class="card-text">
-            <b>Five Dice</b>
-            <span>Thirteen boxes, three throws a turn. Fair dice, and a hint that plays the odds.</span>
-          </span>
+          <b>Five Dice</b>
         </a>
       </li>
       <li>
         <a class="card" href="./gridlock/">
           <img src="./icons/gridlock-192.png" alt="" />
-          <span class="card-text">
-            <b>Gridlock</b>
-            <span>Slide the cars aside and drive the red one out. You can't get stuck.</span>
-          </span>
+          <b>Gridlock</b>
         </a>
       </li>
       <li>
         <a class="card" href="./survival/">
           <img src="./icons/survival-192.png" alt="" />
-          <span class="card-text">
-            <b>Survival</b>
-            <span>Route your squad through the gates and outnumber the horde. Take your time.</span>
-          </span>
+          <b>Survival</b>
         </a>
       </li>
     </ul>
-
-    <footer>
-      New to one of these? Every game explains itself the first time you open it, and the
-      <b>?</b> in its top corner has the rules again whenever you want them.
-      <br /><br />
-      Add one to your home screen (Share &rarr; Add to Home Screen) and it opens like an app.
-    </footer>
 
     <script>
       // Inline and dependency-free on purpose: the launcher emits no JS chunk,

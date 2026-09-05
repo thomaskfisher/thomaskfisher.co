@@ -171,7 +171,7 @@ game.subscribe((state) => {
 
   if (state.phase === 'lost' && lastPhase !== 'lost') {
     sfx.reject();
-    window.setTimeout(() => showLost(state.lossReason ?? 'noMoves', state.outOfTime), 420);
+    window.setTimeout(() => showLost(state.outOfTime), 420);
   }
 
   lastPhase = state.phase;
@@ -245,14 +245,10 @@ function showWin(state: GameState): void {
     (sheet) => {
       sheet.content.append(el('h2', { class: 'win-title' }, 'Taken apart'));
       sheet.content.append(
-        el(
-          'p',
-          { style: 'text-align:center' },
-          `${state.moveCount} screws, no ads, no timer.`,
-        ),
+        el('div', { class: 'result-line' }, `<b>${state.moveCount}</b><span>screws</span>`),
       );
 
-      const next = el('button', { class: 'button button--full' }, `Play level ${state.level + 1}`);
+      const next = el('button', { class: 'button button--full' }, 'Next level');
       next.addEventListener('click', () => {
         sheet.close();
         void game.advance();
@@ -266,40 +262,21 @@ function showWin(state: GameState): void {
 /**
  * The level is over. Not dismissible — an overflowed tray has no legal move
  * left in it, so leaving the board tappable would only invite dead taps.
- *
- * There are no lives and no ad break here, so the recovery is generous: start
- * over, or step back to just before the mistake. Every level is solvable, and
- * saying so is what keeps a loss feeling like a puzzle rather than a tax.
  */
-function showLost(reason: NonNullable<GameState['lossReason']>, outOfTime: boolean): void {
+function showLost(outOfTime: boolean): void {
   openSheet(
     (sheet) => {
       sheet.content.append(
         el('h2', { class: 'lose-title' }, outOfTime ? 'Out of time' : 'Out of room'),
       );
-      sheet.content.append(
-        el(
-          'p',
-          {},
-          outOfTime
-            ? 'The clock ran out — the board itself was fine. Try again, or turn the ' +
-                'clock off in the top bar and take as long as you like.'
-            : reason === 'trayFull'
-              ? 'That screw had no open box and the tray was full, so the level is over. ' +
-                  'Every level here is solvable — a different order gets it out.'
-              : 'Nothing you can still reach fits an open box, and the tray is full, ' +
-                  'so the level is over. Every level here is solvable — a different ' +
-                  'order gets it out.',
-        ),
-      );
 
-      const restart = el('button', { class: 'button button--full' }, 'Try again');
+      const restart = el('button', { class: 'button button--full' }, 'Restart');
       restart.addEventListener('click', () => {
         sheet.close();
         game.restart();
       });
 
-      const undo = el('button', { class: 'button button--ghost button--full' }, 'Undo last screw');
+      const undo = el('button', { class: 'button button--ghost button--full' }, 'Undo');
       undo.addEventListener('click', () => {
         sheet.close();
         game.undo();

@@ -73,32 +73,18 @@ function runOutline(x: number, from: number, count: number): string {
   );
 }
 
-/** The Undo control, drawn as a badge. Same glyph as the button in the footer. */
-function undoBadge(cx: number, cy: number, r = 10): string {
-  const scale = (r * 2 * 0.62) / 24;
-  const offset = 12 * scale;
-  return (
-    `<circle class="ha-accent-fill" cx="${cx}" cy="${cy}" r="${r}"/>` +
-    `<g class="ha-on-accent" transform="translate(${cx - offset} ${cy - offset}) scale(${scale.toFixed(3)})" ` +
-    `stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">` +
-    `<path d="M4 10h10a5 5 0 0 1 0 10H9"/><path d="M4 10l4.5-4.5M4 10l4.5 4.5"/></g>`
-  );
-}
-
 export const RULES: GameRules = {
   gameName: 'Color Sort',
-  goal: 'Pour the liquid from tube to tube until every tube holds a single colour.',
+  goal: 'Pour until every tube holds one colour.',
   steps: [
     {
       title: 'Tap a tube to pick it up',
-      text: 'It lifts, so you can see which one you are holding. Tap it again to put it back.',
+      text: 'It lifts. Tap it again to put it back.',
       art: artTap(26, 28, 13) + tube(18, [RED, BLUE, BLUE], 6) + tube(56, [BLUE, RED]),
     },
     {
-      title: 'Tap a second tube to pour into it',
-      text:
-        'A pour only works onto its own colour, or into an empty tube — and it moves the ' +
-        'whole run of that colour at once, as much of it as there is room for.',
+      title: 'Tap another to pour into it',
+      text: 'Same colour on top, or an empty tube. The whole run pours at once.',
       art:
         tube(18, [RED, BLUE, BLUE]) +
         runOutline(18, 1, 2) +
@@ -111,23 +97,13 @@ export const RULES: GameRules = {
         artArrow(28, 14, 62, 14, 9),
     },
     {
-      title: 'Finish when every tube is one colour',
-      text: 'Tubes you emptied along the way are fine to leave empty — that is the level done.',
+      title: 'One colour per tube wins',
+      text: 'Tubes left empty are fine.',
       art:
         tube(8, [RED, RED, RED, RED]) +
         tube(32, [BLUE, BLUE, BLUE, BLUE]) +
         tube(56, [GREEN, GREEN, GREEN, GREEN]) +
         artTick(83, 16, 7),
-    },
-    {
-      title: 'Running out of pours is not losing',
-      text:
-        'A board with no legal pour left will say so and offer you the way back. Undo as ' +
-        'far as you need — this board is still solvable, and so is every other one.',
-      art:
-        tube(16, [GREEN, RED, BLUE, RED]) +
-        tube(42, [RED, GREEN, RED, BLUE]) +
-        undoBadge(78, 30, 11),
     },
   ],
 };

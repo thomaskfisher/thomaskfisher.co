@@ -1,7 +1,7 @@
 {
   "name": "Five Dice",
   "short_name": "Five Dice",
-  "description": "Five dice, thirteen boxes, three throws a turn. No ads, no accounts, no timers — the dice are fair, and it works offline.",
+  "description": "Thirteen boxes, three throws a turn.",
   "id": "/fivedice/",
   "start_url": "./",
   "scope": "./",
