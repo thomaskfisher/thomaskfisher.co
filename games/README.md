@@ -13,6 +13,7 @@ in-game currency. Everything is static; all state lives on the player's device.
 | Five Dice | Playable |
 | Gridlock | Playable |
 | Depot | Playable |
+| Backgammon | Playable |
 
 ## Working on it
 
@@ -26,15 +27,15 @@ npm run icons      # regenerate PWA icons (output is committed)
 
 ## How it works
 
-**Six of the seven are puzzles. Five Dice is not, and it bends the house rules
-on purpose.** Everything below about verified levels, measured difficulty and
-unlimited undo describes Color Sort, Screw Land, Bus Jam, Survival, Gridlock
-and Depot. Yahtzee
-is a game of chance: there is no board to verify, no difficulty to curve, and
-rewinding a throw would be reading the answer. What it keeps is everything that
-made this collection worth building — no ads, no servers, no currency, nothing
-locked, and a free unlimited hint — and what it puts in place of the rest is set
-out under *Five Dice* below.
+**Six of the eight are puzzles. Five Dice and Backgammon are not, and both bend
+the house rules on purpose.** Everything below about verified levels, measured
+difficulty and unlimited undo describes Color Sort, Screw Land, Bus Jam,
+Survival, Gridlock and Depot. Yahtzee is a game of chance: there is no board to
+verify, no difficulty to curve, and rewinding a throw would be reading the
+answer. Backgammon has a second player in it, which takes the hint with it and
+puts a fence around undo. What both keep is everything that made this collection
+worth building — no ads, no servers, no currency, nothing locked — and what they
+put in place of the rest is set out under *Five Dice* and *Backgammon* below.
 
 **Every level is verified before it is shown.** Levels are dealt at random from
 a seed, then solved. A board the solver cannot finish is discarded, so unlike
@@ -86,13 +87,14 @@ share of them get through. "How many ways are there to win" becomes the literal
 difficulty dial, it means the same thing on a board full of multipliers and a
 board full of barriers, and at least one winner is guaranteed by construction.
 
-**Every game explains itself once, then gets out of the way.** Six of the seven
-have a rule you cannot infer by tapping: Screw Land loses the level when the
+**Every game explains itself once, then gets out of the way.** Seven of the
+eight have a rule you cannot infer by tapping: Screw Land loses the level when the
 tray overflows, Bus Jam only lets you tap someone with a clear walk to the top
 edge, Survival's reach limit is invisible until a tap is refused, Five Dice
 takes two taps to write a box, Gridlock counts a slide of any length as one
-move — which is the unit the "best 14" in its top bar is quoted in — and Depot
-drives a bus along its arrow and nowhere else. A new player discovers those by losing, which
+move — which is the unit the "best 14" in its top bar is quoted in — Depot
+drives a bus along its arrow and nowhere else, and Backgammon needs two checkers
+to hold a point against one. A new player discovers those by losing, which
 reads as the game being unfair rather than as a rule. `shared/how-to-play.ts` is a short illustrated sheet per game —
 diagrams rather than prose, because the rules are all spatial — shown once on a
 save that has never cleared a level, and available forever from the `?` in the
@@ -245,6 +247,53 @@ will accept. Seats per colour then equal passengers per colour exactly, which is
 the invariant everything else rests on: one seat short and a bus holds a bay for
 the rest of the level, one over and the queue can never drain.
 
+**Backgammon is the only game here with two people in it, and that decides
+everything unusual about it.** There is no level to generate, no solver deciding
+whether a board can be finished, and no difficulty curve: the opponent is the
+person holding the other end of the phone. What the collection's rules leave
+behind still applies — no ads, no servers, nothing locked, nothing bought — and
+the three that do not survive a second player are the hint, unlimited undo, and
+the idea of a level at all. Games are numbered rather than levelled, and the
+running tally rides in the save so an evening's score survives closing the app.
+
+**Its dice are Five Dice's dice.** Every face is a pure function of (seed, turn,
+die), so a saved game is a move list rather than a board, a position is
+reproducible from its game number, and neither player can be handed a roll that
+depended on how the game was going. `dice.test.ts` holds it to that — uniform
+per turn and per die, doubles at one in six, the whole 6x6 grid flat — and it
+stands where the puzzles keep their generator sweep. The opening roll is a real
+one: both players throw a die, ties are thrown again, and the higher starts and
+plays that pair.
+
+**Undo takes back checkers, not turns.** In the puzzles undo is unlimited
+because the board is fully known and rewinding tells you nothing you could not
+already see. Here the roll is the unknown, and determinism means an undo that
+crossed a hand-over would be an oracle: play, watch the reply come up on the
+board, take your own move back and play it again knowing the answer. So a
+checker can be picked up and put down for as long as the turn is yours, and the
+button that hands the board over is what spends it. Which is also how it works
+on a real board. There is no hint for the same reason inverted: a hint here
+would be an engine sitting at the table playing one side better than the other.
+What replaces it is that the board marks every legal move and refuses none —
+the half of a hint that teaches rather than the half that plays.
+
+**The rule that makes it backgammon is "play both dice if you can", and it
+cannot be decided a move at a time.** A move that is legal on its own can be
+illegal because making it leaves the other die unplayable when some other move
+would not have. `legal.ts` therefore searches whole sequences, and — like
+Gridlock's sweep and unlike the puzzles' bounded solvers — **the search is
+complete rather than budgeted**: a turn is at most four dice deep over a handful
+of occupied points, so the space is walked exhaustively every time and "no legal
+move" means there is none. That is what lets the board offer moves it will never
+take back, and it carries the awkward corner of the rule too: when only one die
+can be played and both would work alone, the larger is the one you have to play.
+
+**The board is drawn in whichever player's numbering is on the move**, so it
+turns over when the turn does — home board bottom right, checkers travelling
+right to left along the bottom, for both of them. Two people sharing one phone
+never read the board upside down, and the whole thing flipping is also the
+clearest possible signal that the turn has changed hands.
+
 **Screw Land is 2D on purpose.** The original is a 3D object you rotate, but the
 3D is skin: the puzzle is that plates overlap, so a screw under another plate is
 unreachable until the plate above loses all of *its* screws and falls. Layered
@@ -296,6 +345,11 @@ src/gridlock/         model, solve, generate, render, game, main, rules, plus
                       ascii — a six-by-six park as six lines of six characters,
                       imported only by the tests and tools
 src/depot/            model, solve, generate, render, game, main, rules
+src/backgammon/       board, legal, model, render, game, main, rules — no
+                      generate and no solve: there is no level to build, and
+                      what legal.ts searches is one turn rather than a level.
+                      fixtures.ts builds a position from a sparse map and is
+                      imported only by the tests
 public/               icons, per-game manifest, a two-line sw.js per game,
                       game-sw (the shared worker body) and warm (downloads every
                       game from any page) — copied verbatim, never bundled
@@ -332,6 +386,20 @@ The name is the other departure. Yahtzee is Hasbro's trademark; the game is not.
 The categories keep the names anyone would look for — full house, small
 straight, chance — and the fifty-point row is Five of a kind. If the title
 should be otherwise it is one string in four files.
+
+### Cut from Backgammon v1
+
+The doubling cube, match play, and the 2x and 3x that a gammon and a backgammon
+are worth. The cube is a whole second game layered on the first and it is the
+half most people never touch; without a match to play to, the multipliers have
+nothing to multiply. A gammon and a backgammon are still *named* on the result
+sheet, because they are what the two people at the table will notice, and naming
+them costs one string and no rules.
+
+Combined moves are the other departure: a checker is moved one die at a time
+rather than dragged the sum of both in one go. Two taps instead of one, and in
+exchange the move is unambiguous, the intermediate point is visibly legal or
+not, and the move list stays one integer per die.
 
 ### Cut from Depot v1
 
@@ -487,6 +555,31 @@ them; they belong in later as optional modifiers, not as load-bearing rules.
   screen. `.app` now pins its column to `minmax(0, 1fr)`, which makes that
   measurement trustworthy for every game here.
 
+- **Turning a board round for the other player is a reflection, not a rotation.**
+  The obvious way to give each backgammon player their own view is to rotate the
+  board 180 degrees, which is what walking round the table does — and it puts
+  their home board in the wrong corner, because on a real board the two homes
+  sit in the same half and only one player has theirs on the right. Every
+  digital backgammon quietly mirrors instead, so that both players get home
+  bottom-right, and the transform is `i -> 23 - i` on the point numbering with
+  the screen slots left alone. Worth deriving on paper before writing the
+  renderer: it looks like an off-by-one when you get it wrong, and it is not one.
+- **A deterministic game can still have undo — inside a turn.** Five Dice has
+  none at all, because a rewind there is an oracle. Backgammon's rewind is only
+  an oracle across a hand-over, where the opponent's roll has already been
+  revealed; inside your own turn the dice are already on the table and taking a
+  checker back tells you nothing. So the fence goes at the hand-over rather than
+  round the whole button, which is both the correct rule and the one a real
+  board enforces. The corollary is that the turn has to end on a tap rather than
+  when the dice run out — otherwise the last move of a turn could never be taken
+  back.
+- **A game with two players still needs the shared save's level number.** It is
+  the game counter, `completeLevel` still does the right thing, and the settings
+  sheet's jump row becomes "deal me a different opening". Nothing in
+  `shared/progress.ts` needed changing except two optional fields for the
+  running tally — which is the same trick Five Dice's `bestScore` plays, and the
+  reason both live in `stats` is that the save code in Settings then carries
+  them.
 - **A reversible puzzle needs a different difficulty signal, and gets a better
   one.** Trap rate assumes a directed state space with dead ends in it. Gridlock
   has neither, so the rollout measured nothing — but the same property that

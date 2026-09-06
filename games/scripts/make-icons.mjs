@@ -119,6 +119,39 @@ function fillRoundedRect(canvas, x, y, w, h, radius, color, alpha = 1) {
   }
 }
 
+/**
+ * Coverage of a pixel by a triangle, sampled 3x3 for antialiasing.
+ *
+ * The rounded rectangle is the only shape this file needed until backgammon,
+ * which is nothing but triangles. Same sampling, same compositing — an edge
+ * function per side, and a point is inside when all three agree on its sign.
+ */
+function fillTriangle(canvas, [ax, ay], [bx, by], [cx, cy], color, alpha = 1) {
+  const x0 = Math.max(0, Math.floor(Math.min(ax, bx, cx)));
+  const y0 = Math.max(0, Math.floor(Math.min(ay, by, cy)));
+  const x1 = Math.min(canvas.size, Math.ceil(Math.max(ax, bx, cx)));
+  const y1 = Math.min(canvas.size, Math.ceil(Math.max(ay, by, cy)));
+
+  const edge = (px, py, sx, sy, ex, ey) => (px - sx) * (ey - sy) - (py - sy) * (ex - sx);
+
+  for (let py = y0; py < y1; py++) {
+    for (let px = x0; px < x1; px++) {
+      let hits = 0;
+      for (let sy = 0; sy < 3; sy++) {
+        for (let sx = 0; sx < 3; sx++) {
+          const qx = px + (sx + 0.5) / 3;
+          const qy = py + (sy + 0.5) / 3;
+          const e0 = edge(qx, qy, ax, ay, bx, by);
+          const e1 = edge(qx, qy, bx, by, cx, cy);
+          const e2 = edge(qx, qy, cx, cy, ax, ay);
+          if ((e0 >= 0 && e1 >= 0 && e2 >= 0) || (e0 <= 0 && e1 <= 0 && e2 <= 0)) hits++;
+        }
+      }
+      if (hits > 0) canvas.set(px, py, color, (hits / 9) * alpha);
+    }
+  }
+}
+
 const hex = (value) => [
   parseInt(value.slice(1, 3), 16),
   parseInt(value.slice(3, 5), 16),
@@ -574,6 +607,73 @@ function drawDepot(size, { maskable }) {
   return encodePng(size, size, canvas.data);
 }
 
+/**
+ * Four points down, four up, and two checkers.
+ *
+ * The alternating triangles are the whole mark — nothing else in a phone's home
+ * screen looks like them — so they get the space, and the game's six-a-side is
+ * cut to four for the same reason Gridlock's park is: at 48px, twelve points
+ * across turn into grey mush.
+ */
+function drawBackgammon(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.19 : size * 0.11;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const area = size - inset * 2;
+  fillRoundedRect(canvas, inset, inset, area, area, area * 0.07, hex('#16233c'));
+
+  const column = area / 4;
+  const depth = area * 0.42;
+  const shades = [hex('#33507f'), hex('#1e2e4b')];
+
+  for (let index = 0; index < 4; index++) {
+    const left = inset + index * column;
+    const pad = column * 0.08;
+    // Hanging from the top, and standing up from the bottom offset by one, so
+    // no point sits directly under one of its own colour.
+    fillTriangle(
+      canvas,
+      [left + pad, inset],
+      [left + column - pad, inset],
+      [left + column / 2, inset + depth],
+      shades[index % 2],
+    );
+    fillTriangle(
+      canvas,
+      [left + pad, inset + area],
+      [left + column - pad, inset + area],
+      [left + column / 2, inset + area - depth],
+      shades[(index + 1) % 2],
+    );
+  }
+
+  // Two checkers, one a side, big enough to read as checkers at 48px.
+  const checker = column * 0.78;
+  const place = (fx, fy, color, edge) => {
+    const cx = inset + area * fx;
+    const cy = inset + area * fy;
+    fillRoundedRect(canvas, cx - checker / 2, cy - checker / 2, checker, checker, checker / 2, edge);
+    fillRoundedRect(
+      canvas,
+      cx - checker / 2 + checker * 0.13,
+      cy - checker / 2 + checker * 0.13,
+      checker * 0.74,
+      checker * 0.74,
+      checker * 0.37,
+      color,
+    );
+  };
+
+  place(0.375, 0.79, hex('#edf2fb'), hex('#93a8c8'));
+  place(0.625, 0.21, hex('#d2455a'), hex('#8b2534'));
+
+  return encodePng(size, size, canvas.data);
+}
+
 const targets = [
   ['colorsort-180.png', 180, { maskable: false }, drawColorSort],
   ['colorsort-192.png', 192, { maskable: false }, drawColorSort],
@@ -603,6 +703,10 @@ const targets = [
   ['depot-192.png', 192, { maskable: false }, drawDepot],
   ['depot-512.png', 512, { maskable: false }, drawDepot],
   ['depot-maskable-512.png', 512, { maskable: true }, drawDepot],
+  ['backgammon-180.png', 180, { maskable: false }, drawBackgammon],
+  ['backgammon-192.png', 192, { maskable: false }, drawBackgammon],
+  ['backgammon-512.png', 512, { maskable: false }, drawBackgammon],
+  ['backgammon-maskable-512.png', 512, { maskable: true }, drawBackgammon],
 ];
 
 for (const [name, size, options, draw] of targets) {

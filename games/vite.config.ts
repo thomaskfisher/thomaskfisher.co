@@ -31,6 +31,7 @@ export default defineConfig({
         fivedice: 'fivedice/index.html',
         gridlock: 'gridlock/index.html',
         depot: 'depot/index.html',
+        backgammon: 'backgammon/index.html',
       },
     },
   },

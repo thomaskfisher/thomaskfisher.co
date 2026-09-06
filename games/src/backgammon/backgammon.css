@@ -1,0 +1,440 @@
+/* ==========================================================================
+   Backgammon.
+
+   One board, two people, one phone. Everything is sized from `--u`, the width
+   of a point, which `fitBoard` in main.ts solves for once per layout: twelve of
+   them plus the bar across, and two five-checker halves plus the middle and the
+   two trays down. A backgammon board with five checkers standing on a point is
+   very nearly square, which is why this fits a portrait phone at all.
+
+   The board is drawn in the numbering of whichever player is on the move, so it
+   turns over when the turn does. See the header of `render.ts`.
+   ========================================================================== */
+
+:root {
+  --bg-felt: #16233c;
+  --bg-frame: #0d1729;
+  --bg-pt-a: #33496f;
+  --bg-pt-b: #1e2e4b;
+  --bg-white: #edf2fb;
+  --bg-white-edge: #93a8c8;
+  --bg-white-ink: #1a2740;
+  --bg-red: #d2455a;
+  --bg-red-edge: #8b2534;
+  --bg-red-ink: #ffe7ea;
+  --bg-line: rgba(233, 240, 255, 0.14);
+  /* The names in the trays, which sit on the rail rather than on the felt and
+     therefore need their own contrast. Literal white on a pale light-theme
+     rail is the one place a checker colour cannot double as a text colour. */
+  --bg-white-label: #edf2fb;
+  --bg-red-label: #f0697d;
+}
+
+:root[data-theme='light'] {
+  --bg-felt: #dbe3f1;
+  --bg-frame: #b9c6de;
+  --bg-pt-a: #8ea3c4;
+  --bg-pt-b: #c3cfe3;
+  --bg-white: #ffffff;
+  --bg-white-edge: #7f92b1;
+  --bg-white-ink: #223354;
+  --bg-red: #c93a50;
+  --bg-red-edge: #86202e;
+  --bg-red-ink: #fff0f2;
+  --bg-line: rgba(22, 35, 60, 0.16);
+  --bg-white-label: #2c3e63;
+  --bg-red-label: #a52c3f;
+}
+
+.board {
+  display: grid;
+  place-items: center;
+  padding: 2px 6px;
+  min-height: 0;
+  /* Fallbacks, so the first paint is laid out correctly — before fitBoard has
+     measured anything. */
+  --u: 26px;
+  --bar: 30px;
+  --half: 140px;
+  --mid: 44px;
+  --tray: 20px;
+  --checker: 24px;
+}
+
+.board.is-loading {
+  opacity: 0.55;
+}
+
+.bg-frame {
+  display: grid;
+  grid-template-columns: repeat(6, var(--u)) var(--bar) repeat(6, var(--u));
+  grid-template-rows: var(--tray) var(--half) var(--mid) var(--half) var(--tray);
+  border-radius: 14px;
+  background: var(--bg-felt);
+  box-shadow: 0 0 0 3px var(--bg-frame), 0 6px 20px var(--shadow);
+  /* Whose board it is now. Two pixels of colour around the edge is what makes
+     the hand-over legible from across a table. */
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+  transition: outline-color 0.2s ease;
+}
+
+.bg-frame.is-white {
+  outline-color: var(--bg-white-edge);
+}
+
+.bg-frame.is-red {
+  outline-color: var(--bg-red);
+}
+
+/* ------------------------------------------------------------- the points */
+
+.bg-point {
+  position: relative;
+  padding: 0;
+  background: none;
+  min-width: 0;
+}
+
+.bg-tri {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-pt-a);
+}
+
+.bg-tri.is-b {
+  background: var(--bg-pt-b);
+}
+
+.bg-point--top .bg-tri {
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.bg-point--bottom .bg-tri {
+  clip-path: polygon(0 100%, 100% 100%, 50% 0);
+}
+
+/* A point with a move in it. Faint on purpose: it is there to be found when
+   you go looking, not to play the game for you — and on a turn with a checker
+   on the bar it is the whole explanation of why nothing else will move. */
+.bg-point.can-move::after,
+.bg-bar.can-move::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  width: calc(var(--u) * 0.22);
+  height: calc(var(--u) * 0.22);
+  margin-left: calc(var(--u) * -0.11);
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.75;
+}
+
+.bg-point--top.can-move::after {
+  bottom: calc(var(--u) * 0.12);
+}
+
+.bg-point--bottom.can-move::after,
+.bg-bar.can-move::after {
+  top: calc(var(--u) * 0.12);
+}
+
+/* The checker in your hand. It lifts off the point, which is what a hand does
+   with a checker and is legible in a way a second shade of blue is not — the
+   tint alone read as barely different from a landing square. */
+.bg-point.is-selected .bg-tri,
+.bg-bar.is-selected {
+  background: color-mix(in srgb, var(--accent) 30%, var(--bg-pt-a));
+}
+
+.bg-point.is-selected .bg-checker:last-child,
+.bg-bar.is-selected .bg-checker:last-child {
+  box-shadow: inset 0 0 0 2px var(--accent), 0 3px 6px rgba(0, 0, 0, 0.45);
+}
+
+.bg-point--top.is-selected .bg-checker:last-child {
+  transform: translateY(7px);
+}
+
+.bg-point--bottom.is-selected .bg-checker:last-child,
+.bg-bar.is-selected .bg-checker:last-child {
+  transform: translateY(-7px);
+}
+
+/* Where the checker in your hand can land. */
+.bg-point.is-target .bg-tri {
+  background: color-mix(in srgb, var(--accent) 66%, var(--bg-pt-a));
+}
+
+/* The ring sits at the point's tip, which is the end a stack does not reach —
+   at the other end it would land on top of a checker and disappear. It also
+   replaces the can-move dot rather than sitting next to it, because a point
+   can be both at once and two marks in one place is one too many. */
+.bg-point.is-target::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  width: calc(var(--checker) * 0.44);
+  height: calc(var(--checker) * 0.44);
+  margin-left: calc(var(--checker) * -0.22);
+  border-radius: 50%;
+  border: 2px solid var(--bg-white);
+  z-index: 30;
+}
+
+.bg-point.is-target::after {
+  display: none;
+}
+
+.bg-point--top.is-target::before {
+  bottom: calc(var(--u) * 0.3);
+}
+
+.bg-point--bottom.is-target::before {
+  top: calc(var(--u) * 0.3);
+}
+
+/* ----------------------------------------------------------- the checkers */
+
+.bg-stack {
+  position: absolute;
+  inset: 0;
+}
+
+.bg-checker {
+  position: absolute;
+  transition: transform 0.12s ease;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: var(--checker);
+  height: var(--checker);
+  margin-left: calc(var(--checker) / -2);
+  border-radius: 50%;
+  font-size: calc(var(--checker) * 0.42);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.bg-checker--white {
+  background: radial-gradient(circle at 32% 28%, #fff, var(--bg-white) 62%);
+  box-shadow: inset 0 0 0 2px var(--bg-white-edge), 0 1px 2px rgba(0, 0, 0, 0.3);
+  color: var(--bg-white-ink);
+}
+
+.bg-checker--red {
+  background: radial-gradient(circle at 32% 28%, color-mix(in srgb, #fff 26%, var(--bg-red)), var(--bg-red) 62%);
+  box-shadow: inset 0 0 0 2px var(--bg-red-edge), 0 1px 2px rgba(0, 0, 0, 0.3);
+  color: var(--bg-red-ink);
+}
+
+/* The shape overlay. Colour is the only thing telling the two sides apart, so
+   this is the row in Settings that matters here: a filled centre for White, a
+   ring for Red, both legible at a checker's size. */
+.bg-checker.has-glyph::before {
+  content: '';
+  width: 34%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.bg-checker--white.has-glyph::before {
+  background: var(--bg-white-edge);
+}
+
+.bg-checker--red.has-glyph::before {
+  border: 2px solid var(--bg-red-ink);
+}
+
+/* How deep the stack really is, on the checker at the top of it. */
+.bg-count {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------------------------------------------------------------- the bar */
+
+.bg-bar {
+  position: relative;
+  grid-column: 7;
+  grid-row: 2 / 5;
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  padding: 0;
+  background: var(--bg-frame);
+  border-left: 1px solid var(--bg-line);
+  border-right: 1px solid var(--bg-line);
+}
+
+.bg-bar-zone {
+  position: relative;
+}
+
+/* ------------------------------------------------------------- the middle */
+
+.bg-dice {
+  grid-column: 8 / -1;
+  grid-row: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 0.3);
+}
+
+.bg-die {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  flex: 0 0 auto;
+  width: calc(var(--mid) * 0.62);
+  height: calc(var(--mid) * 0.62);
+  /* Sized from the die's own custom property, never a percentage: percentage
+     padding resolves against the containing block's width, not the element's. */
+  padding: calc(var(--mid) * 0.08);
+  border-radius: calc(var(--mid) * 0.14);
+  background: linear-gradient(160deg, #fff, #dfe6f2);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* A die that has been played. Still on the table, because "one move left" is
+   the thing a player most needs to see, and a die that vanished would take the
+   answer with it. */
+.bg-die.is-spent {
+  opacity: 0.32;
+  box-shadow: none;
+}
+
+.bg-pip {
+  align-self: center;
+  justify-self: center;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #16233c;
+  opacity: 0;
+}
+
+/* Pips by face, from `data-face`. In CSS rather than toggled per pip, so there
+   is no visibility state to fall out of step with the dice. */
+.bg-die[data-face='1'] .bg-pip:nth-child(5),
+.bg-die[data-face='2'] .bg-pip:nth-child(3),
+.bg-die[data-face='2'] .bg-pip:nth-child(7),
+.bg-die[data-face='3'] .bg-pip:nth-child(3),
+.bg-die[data-face='3'] .bg-pip:nth-child(5),
+.bg-die[data-face='3'] .bg-pip:nth-child(7),
+.bg-die[data-face='4'] .bg-pip:nth-child(1),
+.bg-die[data-face='4'] .bg-pip:nth-child(3),
+.bg-die[data-face='4'] .bg-pip:nth-child(7),
+.bg-die[data-face='4'] .bg-pip:nth-child(9),
+.bg-die[data-face='5'] .bg-pip:nth-child(1),
+.bg-die[data-face='5'] .bg-pip:nth-child(3),
+.bg-die[data-face='5'] .bg-pip:nth-child(5),
+.bg-die[data-face='5'] .bg-pip:nth-child(7),
+.bg-die[data-face='5'] .bg-pip:nth-child(9),
+.bg-die[data-face='6'] .bg-pip:nth-child(1),
+.bg-die[data-face='6'] .bg-pip:nth-child(3),
+.bg-die[data-face='6'] .bg-pip:nth-child(4),
+.bg-die[data-face='6'] .bg-pip:nth-child(6),
+.bg-die[data-face='6'] .bg-pip:nth-child(7),
+.bg-die[data-face='6'] .bg-pip:nth-child(9) {
+  opacity: 1;
+}
+
+/* -------------------------------------------------------------- the trays */
+
+.bg-tray {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  background: var(--bg-frame);
+  color: var(--text-dim);
+  font-size: calc(var(--tray) * 0.52);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+}
+
+.bg-tray--far {
+  grid-row: 1;
+  border-radius: 12px 12px 0 0;
+}
+
+.bg-tray--near {
+  grid-row: 5;
+  border-radius: 0 0 12px 12px;
+}
+
+.bg-tray.is-turn {
+  color: var(--text);
+}
+
+.bg-tray-name--white {
+  color: var(--bg-white-label);
+}
+
+.bg-tray-name--red {
+  color: var(--bg-red-label);
+}
+
+.bg-tray-pips {
+  opacity: 0.7;
+}
+
+/* Fifteen slots filling up: the running score of a game of backgammon, with no
+   number to explain. */
+.bg-slots {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.bg-slot {
+  width: calc(var(--tray) * 0.16);
+  height: calc(var(--tray) * 0.5);
+  border-radius: 2px;
+  background: var(--bg-line);
+}
+
+.bg-tray.is-white .bg-slot.is-filled {
+  background: var(--bg-white);
+}
+
+.bg-tray.is-red .bg-slot.is-filled {
+  background: var(--bg-red);
+}
+
+.bg-tray-off {
+  min-width: 1.4em;
+  text-align: right;
+}
+
+/* Where a checker being borne off lands. */
+.bg-tray--near.is-target {
+  background: color-mix(in srgb, var(--accent) 48%, var(--bg-frame));
+  color: var(--text);
+}
+
+/* ------------------------------------------------------------ the message */
+
+.bg-status {
+  padding: 6px 16px 0;
+  text-align: center;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  min-height: 1.4em;
+}
+
+.bg-status.is-alert {
+  color: var(--danger);
+}
+
+/* The primary control carries the turn, so it is the one that changes colour. */
+.control.control--go:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}

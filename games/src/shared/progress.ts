@@ -60,6 +60,15 @@ export interface SaveData<M> {
     bestScore?: number;
     /** Every finished round added up, so an average needs no history kept. */
     scoreTotal?: number;
+    /**
+     * Backgammon only, and optional for the same reason. It is the one game
+     * with two players in it, so "cleared" counts games finished and says
+     * nothing about who won them. The running tally rides in the save so that
+     * the code in Settings carries it too — an evening's score is exactly the
+     * thing a pair of players would be annoyed to lose to a cleared browser.
+     */
+    whiteWins?: number;
+    redWins?: number;
   };
 }
 
