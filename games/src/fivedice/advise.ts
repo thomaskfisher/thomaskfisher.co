@@ -24,7 +24,7 @@
  *
  * "What closing c gives up" is the expected score of a whole turn spent chasing
  * c on its own — computed with the same machinery, once, at startup. Without
- * that term the hint writes a 5 in Five of a kind the moment nothing better is
+ * that term the hint writes a 5 in Yahtzee the moment nothing better is
  * on the table, which is how a greedy Yahtzee player loses fifty points.
  *
  * Two rolls of exact lookahead over 252 distinct hands is a few hundred thousand
@@ -186,7 +186,7 @@ function scoreTable(): number[][] {
  * The expected score of a turn spent chasing one box and nothing else.
  *
  * This is the price of closing that box, and it is what stops the hint writing
- * a 5 in Five of a kind or an 8 in Sixes. A card has thirteen turns and thirteen
+ * a 5 in Yahtzee or an 8 in Sixes. A card has thirteen turns and thirteen
  * boxes, so "one dedicated turn" is a fair estimate of what a box is worth.
  */
 let cachedForgone: number[] | null = null;

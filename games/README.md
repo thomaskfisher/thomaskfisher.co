@@ -139,7 +139,7 @@ five, read the faces, rewind, and throw back only the ones that disappointed you
 — and a replayed round is the whole deck face up. Undo exists in the puzzles so
 that a wrong move is not a punishment; here it would simply delete the game.
 What undo was actually protecting against is the misfire, the stray tap that
-writes a zero in Five of a kind twenty minutes into a good card, and that is
+writes a zero in Yahtzee twenty minutes into a good card, and that is
 handled directly: **a box takes two taps**, the first of which only shows what
 it would pay. Abandoning a card lives in the top bar behind a confirmation, is
 never counted in the record, and costs nothing, because rounds are not a ladder.
@@ -150,7 +150,7 @@ player must, and `advise.test.ts` holds it to that by asserting that the same
 position gets the same advice from two different rounds. Within a turn the
 arithmetic is exact — 252 distinct hands, every way of holding, two throws of
 lookahead — and a box is priced at what a whole turn spent chasing it would
-earn, which is what stops the hint handing over Five of a kind for a five-point
+earn, which is what stops the hint handing over Yahtzee for a five-point
 hand. It does not plan across turns, so it is a strong player rather than a
 perfect one: `tools/dice.ts` measures it at a mean of 233 a card, against
 roughly 254 for perfect play and 200-220 for a good human.
@@ -395,8 +395,11 @@ the storage key `save:fivedice`, the cache namespace and every identifier in the
 code — because renaming those would orphan a save and turn an installed
 home-screen icon into a 404, for a string nobody reads. `fivedice` is the id;
 Yahtzee is the name. The categories keep the names anyone would look for — full
-house, small straight, chance — and the fifty-point row is still **Five of a
-kind** rather than Yahtzee, which is a loose end rather than a decision.
+house, small straight, chance — and so, now, does the fifty-point row: it is
+**Yahtzee**, which is what a player expects to see on a card headed Yahtzee. Its
+id stays `five-of-a-kind`, on the same id-versus-name split as the game's own
+slug; a card is saved by box position rather than by id, so nothing on disk
+depends on either.
 
 ### Cut from Backgammon v1
 

@@ -23,7 +23,7 @@
  * rounds are not a ladder and abandoning one costs nothing.
  *
  * What undo was protecting against was the misfire — the stray tap that writes a
- * zero in Five of a kind and spoils a card twenty minutes in. That is a real
+ * zero in Yahtzee and spoils a card twenty minutes in. That is a real
  * risk on a phone and it is handled directly: tapping a box selects it and shows
  * what it would pay, and it takes a second, deliberate tap to write it down.
  */

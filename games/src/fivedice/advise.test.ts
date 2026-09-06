@@ -41,7 +41,7 @@ describe('the tables', () => {
     const prices = Object.fromEntries(boxPrices().map(({ name, expected }) => [name, expected]));
 
     expect(prices['Chance']).toBeCloseTo(23.33, 1);
-    expect(prices['Five of a kind']).toBeLessThan(4);
+    expect(prices['Yahtzee']).toBeLessThan(4);
     expect(prices['Sixes']).toBeGreaterThan(prices['Ones'] as number);
   });
 });
@@ -82,8 +82,8 @@ describe('what it advises', () => {
   });
 
   /**
-   * The whole point of pricing a box. A greedy hint hands over Five of a kind for
-   * a five-point hand the moment nothing better is showing, and a card never
+   * The whole point of pricing a box. A greedy hint hands over Yahtzee for a
+   * five-point hand the moment nothing better is showing, and a card never
    * recovers from it.
    */
   it('will not scratch an expensive box while a cheap one is open', () => {

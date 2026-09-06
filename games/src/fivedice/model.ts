@@ -117,7 +117,10 @@ export const CATEGORIES: readonly Category[] = [
   },
   {
     id: 'five-of-a-kind',
-    name: 'Five of a kind',
+    // The id stays `five-of-a-kind` for the same reason the slug stays
+    // `fivedice`: it identifies the box, the name labels it, and only the tests
+    // ever look one up. A card is saved by position, not by id.
+    name: 'Yahtzee',
     section: 'lower',
     note: 'All five the same · 50',
     score: (counts) => (counts.some((count) => count === 5) ? 50 : 0),
