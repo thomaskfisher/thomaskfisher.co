@@ -1,5 +1,5 @@
 /**
- * Five Dice renderer.
+ * Yahtzee renderer.
  *
  * The scorecard and the tray are both fixed in size — thirteen boxes and five
  * dice, forever — so the DOM is built once and updated in place. That keeps every

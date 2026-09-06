@@ -34,7 +34,7 @@ export interface SettingsSheetOptions<M> {
   onClose?: () => void;
 
   /*
-   * The rest of these exist for Five Dice, which is a dice game rather than a
+   * The rest of these exist for Yahtzee, which is a dice game rather than a
    * puzzle: it counts rounds instead of levels, has no clock, and has no colour
    * carrying information. Defaulting them to the puzzle behaviour keeps the
    * other four games' call sites unchanged, and offering a row that does nothing

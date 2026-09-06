@@ -50,7 +50,7 @@ export interface SaveData<M> {
     totalHints: number;
     totalRestarts: number;
     /**
-     * Five Dice only, and optional because no other game has anything to put
+     * Yahtzee only, and optional because no other game has anything to put
      * here. It is the one game whose outcome is a number rather than cleared or
      * not: a round always finishes, so `levelsCleared` counts rounds played and
      * says nothing about how they went. Both live in `stats` rather than in a

@@ -1,6 +1,6 @@
 {
-  "name": "Five Dice",
-  "short_name": "Five Dice",
+  "name": "Yahtzee",
+  "short_name": "Yahtzee",
   "description": "Thirteen boxes, three throws a turn.",
   "id": "/fivedice/",
   "start_url": "./",

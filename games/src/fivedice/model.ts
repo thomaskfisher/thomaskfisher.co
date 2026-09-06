@@ -1,5 +1,5 @@
 /**
- * Five Dice rules. Pure: no DOM, no I/O, and no `Math.random()`.
+ * Yahtzee rules. Pure: no DOM, no I/O, and no `Math.random()`.
  *
  * This is Yahtzee, and it is the odd one out in this collection. The other four
  * games are puzzles: a level is generated, a solver proves it can be finished,

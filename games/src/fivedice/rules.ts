@@ -1,5 +1,5 @@
 /**
- * Five Dice's rules sheet. See `shared/how-to-play.ts`.
+ * Yahtzee's rules sheet. See `shared/how-to-play.ts`.
  *
  * Most people who open this already know the game, so the sheet is not here to
  * teach dice — it is here for the two things that are this version's own and
@@ -99,7 +99,7 @@ function tapBox(x: number, y: number, width: number, height = 11): string {
 }
 
 export const RULES: GameRules = {
-  gameName: 'Five Dice',
+  gameName: 'Yahtzee',
   goal: 'Thirteen boxes, three throws a turn.',
   steps: [
     {

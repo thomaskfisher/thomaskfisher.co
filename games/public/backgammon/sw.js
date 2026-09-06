@@ -7,7 +7,7 @@
  * towards the update byte-check, so a change to the shared body still lands
  * here.
  *
- * Like Five Dice, this game has no level generator, so the crawl in the shared
+ * Like Yahtzee, this game has no level generator, so the crawl in the shared
  * body finds only the entry chunk and the stylesheet — there is nothing to
  * generate, only a board and two people.
  */

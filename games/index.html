@@ -68,6 +68,7 @@
       }
 
       a.card {
+        position: relative;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -79,6 +80,28 @@
         text-decoration: none;
         box-shadow: 0 2px 14px rgba(6, 12, 24, 0.22);
         transition: transform 0.15s ease;
+      }
+
+      /* "This one needs somebody else." Absolutely positioned so a card that
+         carries it is still exactly the same size as one that does not —
+         the grid would otherwise go uneven for a badge. */
+      .two-up {
+        position: absolute;
+        top: 9px;
+        right: 9px;
+        display: grid;
+        place-items: center;
+        width: 27px;
+        height: 21px;
+        border-radius: 999px;
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .two-up svg {
+        width: 15px;
+        height: 15px;
+        fill: currentColor;
       }
 
       a.card:active {
@@ -122,7 +145,7 @@
       <li>
         <a class="card" href="./fivedice/">
           <img src="./icons/fivedice-192.png" alt="" />
-          <b>Five Dice</b>
+          <b>Yahtzee</b>
         </a>
       </li>
       <li>
@@ -141,6 +164,14 @@
         <a class="card" href="./backgammon/">
           <img src="./icons/backgammon-192.png" alt="" />
           <b>Backgammon</b>
+          <span class="two-up" role="img" aria-label="Two players">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="8.7" cy="8" r="3.8" />
+              <path d="M1.4 19.6c0-4 3.2-6.4 7.3-6.4s7.3 2.4 7.3 6.4z" />
+              <circle cx="17.3" cy="9.2" r="3" />
+              <path d="M17.3 13.9c3.5 0 5.6 2.2 5.6 5.7h-4.6c0-2.3-.6-4.2-1.7-5.7z" />
+            </svg>
+          </span>
         </a>
       </li>
       <li>

@@ -160,12 +160,27 @@ function check(state: GameState, seed: string): void {
 describe('a game played out', () => {
   const seeds = Array.from({ length: 40 }, (_, i) => `game-${i}`);
 
-  it('always finishes, with the checkers all accounted for', () => {
-    for (const seed of seeds) {
-      const { state } = selfPlay(seed);
-      expect(state.winner).not.toBe(null);
-    }
-  });
+  /*
+   * These three are the only tests in the project that run for seconds rather
+   * than milliseconds, and they say so rather than sitting under the 5s default
+   * and failing on a busy machine. Forty games is around twenty thousand moves,
+   * each one costing a complete turn search — three of them, in fact, because
+   * the loop asks what is legal, the assertion asks again, and `applyMove`
+   * checks for itself. That redundancy is deliberate: it is what proves the
+   * state machine agrees with the search rather than trusting one of them.
+   */
+  const SWEEP_TIMEOUT = 30_000;
+
+  it(
+    'always finishes, with the checkers all accounted for',
+    () => {
+      for (const seed of seeds) {
+        const { state } = selfPlay(seed);
+        expect(state.winner).not.toBe(null);
+      }
+    },
+    SWEEP_TIMEOUT,
+  );
 
   it('replays from its move list to the same position', () => {
     for (const seed of seeds.slice(0, 12)) {
@@ -176,7 +191,7 @@ describe('a game played out', () => {
       expect(again.state.turn).toBe(state.turn);
       expect(again.state.winner).toBe(state.winner);
     }
-  });
+  }, SWEEP_TIMEOUT);
 
   it('stops the replay at a move that no longer applies, and keeps the rest', () => {
     const { moves } = selfPlay('game-0');
@@ -220,7 +235,7 @@ describe('the whole board is reachable', () => {
     }
     expect(hits).toBeGreaterThan(0);
     expect(entries).toBeGreaterThan(0);
-  });
+  }, 30_000);
 });
 
 describe('legalPlays and the state machine agree', () => {

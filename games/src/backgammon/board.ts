@@ -16,7 +16,7 @@
  * 18-23, and the starting position is symmetric under `i -> 23 - i`.
  *
  * **The dice are fixed before either player touches them.** Every face is a
- * pure function of (seed, turn, die), exactly as in Five Dice and for the same
+ * pure function of (seed, turn, die), exactly as in Yahtzee and for the same
  * reasons: a saved game is a short list of moves rather than a board, a bug
  * report is reproducible from its game number, and neither player can be
  * accused of a roll that depended on how the game was going. `dice.test.ts`

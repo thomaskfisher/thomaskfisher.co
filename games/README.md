@@ -10,7 +10,7 @@ in-game currency. Everything is static; all state lives on the player's device.
 | Screw Land | Playable |
 | Bus Jam | Playable |
 | Survival | Playable |
-| Five Dice | Playable |
+| Yahtzee | Playable |
 | Gridlock | Playable |
 | Depot | Playable |
 | Backgammon | Playable |
@@ -27,7 +27,7 @@ npm run icons      # regenerate PWA icons (output is committed)
 
 ## How it works
 
-**Six of the eight are puzzles. Five Dice and Backgammon are not, and both bend
+**Six of the eight are puzzles. Yahtzee and Backgammon are not, and both bend
 the house rules on purpose.** Everything below about verified levels, measured
 difficulty and unlimited undo describes Color Sort, Screw Land, Bus Jam,
 Survival, Gridlock and Depot. Yahtzee is a game of chance: there is no board to
@@ -35,7 +35,7 @@ verify, no difficulty to curve, and rewinding a throw would be reading the
 answer. Backgammon has a second player in it, which takes the hint with it and
 puts a fence around undo. What both keep is everything that made this collection
 worth building — no ads, no servers, no currency, nothing locked — and what they
-put in place of the rest is set out under *Five Dice* and *Backgammon* below.
+put in place of the rest is set out under *Yahtzee* and *Backgammon* below.
 
 **Every level is verified before it is shown.** Levels are dealt at random from
 a seed, then solved. A board the solver cannot finish is discarded, so unlike
@@ -90,7 +90,7 @@ board full of barriers, and at least one winner is guaranteed by construction.
 **Every game explains itself once, then gets out of the way.** Seven of the
 eight have a rule you cannot infer by tapping: Screw Land loses the level when the
 tray overflows, Bus Jam only lets you tap someone with a clear walk to the top
-edge, Survival's reach limit is invisible until a tap is refused, Five Dice
+edge, Survival's reach limit is invisible until a tap is refused, Yahtzee
 takes two taps to write a box, Gridlock counts a slide of any length as one
 move — which is the unit the "best 14" in its top bar is quoted in — Depot
 drives a bus along its arrow and nowhere else, and Backgammon needs two checkers
@@ -118,7 +118,7 @@ the save format makes every existing player read as never having seen it, and
 interrupting someone on level 60 to explain the tap target is worse than not
 explaining it at all.
 
-**Five Dice cannot make the guarantee the puzzles make.** There is nothing to
+**Yahtzee cannot make the guarantee the puzzles make.** There is nothing to
 verify: every round can be finished, since writing a zero in a box is always
 legal. What it offers instead is that **the dice are fair and were fixed before
 you touched them**, and both halves of that are tested rather than asserted. `dice.test.ts` is where the generator invariant
@@ -133,7 +133,7 @@ rather than merely seeded: throwing one die and throwing three both give slot 0
 the same face, so choosing differently cannot change what a throw was going to
 give you. That also keeps the save a move list, exactly as in the other games.
 
-**Which is why Five Dice has no undo, and no restart.** Both would be exploits
+**Which is why Yahtzee has no undo, and no restart.** Both would be exploits
 rather than kindnesses. Determinism means a rewind is an oracle — throw all
 five, read the faces, rewind, and throw back only the ones that disappointed you
 — and a replayed round is the whole deck face up. Undo exists in the puzzles so
@@ -256,7 +256,7 @@ the three that do not survive a second player are the hint, unlimited undo, and
 the idea of a level at all. Games are numbered rather than levelled, and the
 running tally rides in the save so an evening's score survives closing the app.
 
-**Its dice are Five Dice's dice.** Every face is a pure function of (seed, turn,
+**Its dice are Yahtzee's dice.** Every face is a pure function of (seed, turn,
 die), so a saved game is a move list rather than a board, a position is
 reproducible from its game number, and neither player can be handed a roll that
 depended on how the game was going. `dice.test.ts` holds it to that — uniform
@@ -374,7 +374,7 @@ firebase hosting:channel:deploy preview --only games
 firebase deploy --only hosting:games
 ```
 
-### Cut from Five Dice v1
+### Cut from Yahtzee v1
 
 The bonus for a second five-of-a-kind, and the joker rules for where one may be
 written. Both are rare, and each adds a whole dimension to every decision on the
@@ -382,10 +382,21 @@ card. So a full house here is exactly three of one face and two of another, and
 five alike is not a run — the strict reading, and the one most implementations
 quietly do not use.
 
-The name is the other departure. Yahtzee is Hasbro's trademark; the game is not.
-The categories keep the names anyone would look for — full house, small
-straight, chance — and the fifty-point row is Five of a kind. If the title
-should be otherwise it is one string in four files.
+**The name is not a cut, and it used to be.** This shipped as *Five Dice*,
+because Yahtzee is Hasbro's trademark even though the game itself — five dice,
+thirteen boxes, three throws — is not, and it is the trademark rather than the
+rules that a different name avoids. It was renamed on purpose: this site is
+`noindex`, sells nothing, and is played by two people, so the name that everyone
+already knows is worth more here than the distance from the trademark. On
+anything public-facing the calculation goes the other way.
+
+The rename is the display name only. The slug stays `fivedice` — so does the URL,
+the storage key `save:fivedice`, the cache namespace and every identifier in the
+code — because renaming those would orphan a save and turn an installed
+home-screen icon into a 404, for a string nobody reads. `fivedice` is the id;
+Yahtzee is the name. The categories keep the names anyone would look for — full
+house, small straight, chance — and the fifty-point row is still **Five of a
+kind** rather than Yahtzee, which is a loose end rather than a decision.
 
 ### Cut from Backgammon v1
 
@@ -564,7 +575,7 @@ them; they belong in later as optional modifiers, not as load-bearing rules.
   bottom-right, and the transform is `i -> 23 - i` on the point numbering with
   the screen slots left alone. Worth deriving on paper before writing the
   renderer: it looks like an off-by-one when you get it wrong, and it is not one.
-- **A deterministic game can still have undo — inside a turn.** Five Dice has
+- **A deterministic game can still have undo — inside a turn.** Yahtzee has
   none at all, because a rewind there is an oracle. Backgammon's rewind is only
   an oracle across a hand-over, where the opponent's roll has already been
   revealed; inside your own turn the dice are already on the table and taking a
@@ -577,7 +588,7 @@ them; they belong in later as optional modifiers, not as load-bearing rules.
   the game counter, `completeLevel` still does the right thing, and the settings
   sheet's jump row becomes "deal me a different opening". Nothing in
   `shared/progress.ts` needed changing except two optional fields for the
-  running tally — which is the same trick Five Dice's `bestScore` plays, and the
+  running tally — which is the same trick Yahtzee's `bestScore` plays, and the
   reason both live in `stats` is that the save code in Settings then carries
   them.
 - **A reversible puzzle needs a different difficulty signal, and gets a better
@@ -611,7 +622,7 @@ them; they belong in later as optional modifiers, not as load-bearing rules.
   pixels off the right of the screen — invisible at desktop width and obvious on
   a phone. Reading `getComputedStyle` for the padding costs one call on resize
   and cannot go stale.
-- **Check the arithmetic before blaming the generator.** Five Dice's fairness
+- **Check the arithmetic before blaming the generator.** Yahtzee's fairness
   sweep failed on large straights at nearly twice the expected rate, which looks
   exactly like a hash mixing its inputs badly — and five hashing variants were
   measured before the actual bug turned up in the test itself: a large straight
@@ -628,7 +639,7 @@ them; they belong in later as optional modifiers, not as load-bearing rules.
   min-content width past 100px and ran the tray off the screen while crushing
   the pips to nothing — with the width property still reading 60. Size padding
   from the element's own custom property.
-- **A fixed-size board still has to be fitted.** Five Dice is always seven rows
+- **A fixed-size board still has to be fitted.** Yahtzee is always seven rows
   by two columns and five dice, so there is no level-to-level variation to solve
   for — but phones vary by three hundred pixels of height, and a scorecard that
   needs scrolling is one you cannot plan from. The row height is solved for the
@@ -637,7 +648,7 @@ them; they belong in later as optional modifiers, not as load-bearing rules.
 
 ## Notes for later
 
-- **Five Dice's record rides in `stats`.** It is the one game whose outcome is a
+- **Yahtzee's record rides in `stats`.** It is the one game whose outcome is a
   number rather than cleared-or-not, so `bestScore` and `scoreTotal` are optional
   fields on the shared save. They live there rather than in a store of their own
   so that the save code in Settings — the entire backup story for a server-free

@@ -1,5 +1,5 @@
 /**
- * Five Dice game controller.
+ * Yahtzee game controller.
  *
  * Owns all state and persistence; knows nothing about the DOM.
  *

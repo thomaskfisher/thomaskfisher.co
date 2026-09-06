@@ -1,5 +1,5 @@
 /**
- * Five Dice entry point. Wires the controller to the renderer and the chrome.
+ * Yahtzee entry point. Wires the controller to the renderer and the chrome.
  *
  * Three things here differ from the other games' entry points, all of them
  * following from this being a game of chance rather than a puzzle:
@@ -311,7 +311,7 @@ settingsButton.addEventListener('click', () => {
 
   openSettings({
     gameId: GAME_ID,
-    gameName: 'Five Dice',
+    gameName: 'Yahtzee',
     save: game.currentSave,
     currentLevel: game.currentSave.level,
     levelNoun: 'Round',

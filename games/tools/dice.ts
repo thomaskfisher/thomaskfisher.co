@@ -1,5 +1,5 @@
 /**
- * Five Dice: what the hint engine actually averages, and what it prices boxes at.
+ * Yahtzee: what the hint engine actually averages, and what it prices boxes at.
  *
  * The house lesson from the other games is to measure the signal before
  * calibrating anything to it. There is no difficulty band here, but there is one

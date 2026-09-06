@@ -21,7 +21,7 @@
  */
 
 const CACHE_PREFIX = 'launcher-';
-const CACHE_VERSION = `${CACHE_PREFIX}v2`;
+const CACHE_VERSION = `${CACHE_PREFIX}v3`;
 const SHELL = [
   './',
   './index.html',
