@@ -71,3 +71,37 @@ move is thirty moves of no decisions.
 ```bash
 npx vitest run --config tools/vitest.gridlock.config.ts --root .
 ```
+
+## solitaire.ts
+
+Calibration for Solitaire, and the evidence behind `VERIFY_BUDGET`. Three
+sections: how far the trap rate spreads over random deals (0.0 to 1.0 with mass
+everywhere, which is why deal selection is the only lever the game needs), what
+a verification search costs at three budgets, and what the finished generator
+delivers level by level.
+
+The second section is the one that set the budget, and it is a ratio rather than
+a rate: a deal this search *can* win is won in about 560ms, so almost all of a
+larger budget is spent proving nothing about deals that were going to be
+discarded either way. Failing cheaply is worth more than failing conclusively.
+
+```bash
+npx vitest run --config tools/vitest.solitaire.config.ts --root .
+```
+
+## spider.ts
+
+Calibration for Spider, and the evidence behind `TWO_SUIT_FROM` and the shape of
+`solve.ts`. Three sections: how far the signal spreads at one suit and at two,
+what a search costs, and the curve the generator delivers.
+
+The first section is the one that changed the design twice. It is why the signal
+here is *how many sets naive play finished* rather than *did it finish* — the
+binary version scored every two-suit board 1.00 — and it is why two suits start
+where the curve's band saturates rather than wherever a ladder felt right: a
+one-suit board scores 0.1 to 0.98 and a two-suit board scores 0.98 whatever else
+is true about it.
+
+```bash
+npx vitest run --config tools/vitest.spider.config.ts --root .
+```

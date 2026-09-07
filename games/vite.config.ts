@@ -32,6 +32,8 @@ export default defineConfig({
         gridlock: 'gridlock/index.html',
         depot: 'depot/index.html',
         backgammon: 'backgammon/index.html',
+        solitaire: 'solitaire/index.html',
+        spider: 'spider/index.html',
       },
     },
   },

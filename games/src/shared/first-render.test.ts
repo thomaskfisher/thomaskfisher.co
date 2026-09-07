@@ -8,6 +8,8 @@ import { FiveDiceGame } from '../fivedice/game';
 import { GridlockGame } from '../gridlock/game';
 import { DepotGame } from '../depot/game';
 import { BackgammonGame } from '../backgammon/game';
+import { SolitaireGame } from '../solitaire/game';
+import { SpiderGame } from '../spider/game';
 
 /**
  * The first render happens before the save has loaded.
@@ -37,6 +39,8 @@ const games = [
   ['Gridlock', () => new GridlockGame()],
   ['Depot', () => new DepotGame()],
   ['Backgammon', () => new BackgammonGame()],
+  ['Solitaire', () => new SolitaireGame()],
+  ['Spider', () => new SpiderGame()],
 ] as const;
 
 describe('before start() resolves', () => {

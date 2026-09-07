@@ -1,0 +1,254 @@
+/* ==========================================================================
+   Spider.
+
+   Ten columns across a phone is the hardest constraint in this collection, and
+   it decides everything: a card is about 35px wide, its corner is the only part
+   of it that survives being buried, and the fan spacing exists to keep that
+   corner clear. Both are computed in JS — the fit pass in main.ts and `fanFor`
+   in render.ts — because a card size in a media query cannot know how deep the
+   columns have got.
+
+   The row above the tableau is the game's clock and its scoreboard: how many
+   rounds of the stock are left, and how many of the eight sets are off the
+   board. Both are drawn as the things they count rather than as numbers,
+   because both are read at a glance and neither is ever read carefully.
+   ========================================================================== */
+
+.app--spider {
+  grid-template-rows: auto 1fr auto;
+}
+
+.board {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 8px;
+  min-height: 0;
+  padding: 4px 6px 6px;
+  /* Columns stack their cards with a z-index that climbs with the pile —
+     thirty in a bad endgame — and without this those numbers compete with the
+     settings sheet instead of with each other. */
+  isolation: isolate;
+}
+
+/* ---------------------------------------------------------- table colours */
+
+.table {
+  --card-face: #fbfaf7;
+  --card-edge: rgba(20, 32, 55, 0.24);
+  --card-black: #1d2b45;
+  --card-red: #cf2f3f;
+  --card-blue: #1668c8;
+  --card-green: #17864a;
+  --slot-line: rgba(233, 240, 255, 0.22);
+  --slot-fill: rgba(233, 240, 255, 0.05);
+
+  display: contents;
+}
+
+:root[data-theme='light'] .table {
+  --slot-line: rgba(22, 35, 60, 0.18);
+  --slot-fill: rgba(22, 35, 60, 0.04);
+}
+
+/* ---------------------------------------------------------------- reserve */
+
+.reserve {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: calc(var(--card-h) * 0.62);
+}
+
+/* The stock, drawn as the rounds it has left. Five little backs is a clock
+   somebody reads without counting; the number 5 is not. */
+.stock {
+  position: relative;
+  width: calc(var(--card-w) + 28px);
+  height: 100%;
+  padding: 0;
+}
+
+.deal-back {
+  position: absolute;
+  top: 0;
+  width: calc(var(--card-w) * 0.62);
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(160deg, #3a5b96, #23406f);
+  box-shadow: 0 0 0 1px rgba(10, 20, 40, 0.45);
+}
+
+.stock.is-empty::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--card-w) * 0.62);
+  border: 1.5px dashed var(--slot-line);
+  border-radius: 4px;
+}
+
+.sets {
+  display: flex;
+  gap: 4px;
+}
+
+.set {
+  width: calc(var(--card-w) * 0.34);
+  height: calc(var(--card-h) * 0.44);
+  border: 1.5px solid var(--slot-line);
+  border-radius: 3px;
+}
+
+.set.is-done {
+  border-color: transparent;
+  background: linear-gradient(160deg, var(--accent), color-mix(in srgb, var(--accent) 62%, #000));
+}
+
+.set.is-won {
+  animation: set-home 0.5s ease-out;
+}
+
+@keyframes set-home {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ---------------------------------------------------------------- tableau */
+
+.tableau {
+  display: grid;
+  grid-template-columns: repeat(10, var(--card-w));
+  justify-content: center;
+  gap: 3px;
+  min-height: 0;
+}
+
+.column {
+  position: relative;
+  min-height: var(--card-h);
+  border-radius: 4px;
+}
+
+/* An empty column is the most valuable thing on a Spider board, so it is drawn
+   as a place rather than as a hole. */
+.column:empty {
+  height: var(--card-h);
+  border: 1.5px dashed var(--slot-line);
+  background: var(--slot-fill);
+}
+
+/* ------------------------------------------------------------------ cards */
+
+.card {
+  position: absolute;
+  left: 0;
+  width: var(--card-w);
+  height: var(--card-h);
+  padding: 0;
+  border-radius: 4px;
+  background: var(--card-face);
+  box-shadow:
+    0 0 0 1px var(--card-edge),
+    0 1px 2px rgba(6, 12, 24, 0.28);
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  overflow: hidden;
+}
+
+.card--down {
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.09) 0 3px, transparent 3px 6px),
+    linear-gradient(160deg, #3a5b96, #23406f);
+  box-shadow:
+    0 0 0 1px rgba(10, 20, 40, 0.4),
+    0 1px 2px rgba(6, 12, 24, 0.3);
+}
+
+.card .rank {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+  font-size: calc(var(--card-w) * 0.46);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.card .rank i {
+  font-size: calc(var(--card-w) * 0.34);
+  font-style: normal;
+}
+
+/* The big suit sits low so it is hidden under the next card in a fanned
+   column. The corner is the only part of a buried card you can read. */
+.card .pip {
+  position: absolute;
+  right: 2px;
+  bottom: 0;
+  font-size: calc(var(--card-w) * 0.6);
+  line-height: 1;
+  opacity: 0.88;
+}
+
+/* ------------------------------------------------------------ highlights */
+
+.card.is-held {
+  transform: translateX(4px);
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 4px 10px rgba(6, 12, 24, 0.4);
+}
+
+/* Where the run in hand could land. On the card it would land *on*, so the
+   mark says which card is being built on rather than which column. */
+.card.is-target {
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 1px 2px rgba(6, 12, 24, 0.28);
+}
+
+/* An empty column is a place rather than a card, so it is marked itself. */
+.column.is-target,
+.slot.is-target {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.card.is-hinted,
+.column.is-hinted,
+.stock.is-hinted {
+  animation: hint-pulse 1.1s ease-in-out 3;
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 4px;
+}
+
+@keyframes hint-pulse {
+  0%,
+  100% {
+    outline-color: var(--accent);
+  }
+  50% {
+    outline-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card.is-hinted,
+  .column.is-hinted,
+  .stock.is-hinted,
+  .set.is-won {
+    animation: none;
+  }
+}

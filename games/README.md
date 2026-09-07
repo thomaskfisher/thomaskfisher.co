@@ -14,39 +14,42 @@ in-game currency. Everything is static; all state lives on the player's device.
 | Gridlock | Playable |
 | Depot | Playable |
 | Backgammon | Playable |
+| Solitaire | Playable |
+| Spider | Playable |
 
 ## Working on it
 
 ```bash
 npm install
 npm run dev        # http://localhost:5273
-npm test           # solver, generator, layout, curve, clock, dice fairness
+npm test           # solvers, generators, layout, curve, clock, dice fairness
 npm run build      # -> dist/
 npm run icons      # regenerate PWA icons (output is committed)
 ```
 
 ## How it works
 
-**Six of the eight are puzzles. Yahtzee and Backgammon are not, and both bend
+**Eight of the ten are puzzles. Yahtzee and Backgammon are not, and both bend
 the house rules on purpose.** Everything below about verified levels, measured
 difficulty and unlimited undo describes Color Sort, Screw Land, Bus Jam,
-Survival, Gridlock and Depot. Yahtzee is a game of chance: there is no board to
-verify, no difficulty to curve, and rewinding a throw would be reading the
-answer. Backgammon has a second player in it, which takes the hint with it and
-puts a fence around undo. What both keep is everything that made this collection
-worth building — no ads, no servers, no currency, nothing locked — and what they
-put in place of the rest is set out under *Yahtzee* and *Backgammon* below.
+Survival, Gridlock, Depot, Solitaire and Spider. Yahtzee is a game of chance:
+there is no board to verify, no difficulty to curve, and rewinding a throw would
+be reading the answer. Backgammon has a second player in it, which takes the
+hint with it and puts a fence around undo. What both keep is everything that
+made this collection worth building — no ads, no servers, no currency, nothing
+locked — and what they put in place of the rest is set out under *Yahtzee* and
+*Backgammon* below.
 
 **Every level is verified before it is shown.** Levels are dealt at random from
 a seed, then solved. A board the solver cannot finish is discarded, so unlike
 the games this replaces, a level is never a dead end. The same solver drives the
 hint button, which is free and unlimited.
 
-**Difficulty is measured, not assumed.** In five of the six puzzles the signal
+**Difficulty is measured, not assumed.** In six of the eight puzzles the signal
 is *trap rate*: the fraction of naive playthroughs that dead-end. It models the
 player we are building for — someone enjoying a puzzle on the couch, not running
-a search. See `colorsort/generate.ts`. Gridlock is the exception and gets
-something better; see below.
+a search. See `colorsort/generate.ts`. Gridlock gets something better and Spider
+something slightly different; both are below.
 
 **Generation is deterministic.** A board is a pure function of
 `(profileSeed, level)`, so a save stores a move list rather than a board, levels
@@ -87,14 +90,16 @@ share of them get through. "How many ways are there to win" becomes the literal
 difficulty dial, it means the same thing on a board full of multipliers and a
 board full of barriers, and at least one winner is guaranteed by construction.
 
-**Every game explains itself once, then gets out of the way.** Seven of the
-eight have a rule you cannot infer by tapping: Screw Land loses the level when the
+**Every game explains itself once, then gets out of the way.** Nine of the ten
+have a rule you cannot infer by tapping: Screw Land loses the level when the
 tray overflows, Bus Jam only lets you tap someone with a clear walk to the top
 edge, Survival's reach limit is invisible until a tap is refused, Yahtzee
 takes two taps to write a box, Gridlock counts a slide of any length as one
 move — which is the unit the "best 14" in its top bar is quoted in — Depot
 drives a bus along its arrow and nowhere else, and Backgammon needs two checkers
-to hold a point against one. A new player discovers those by losing, which
+to hold a point against one, Solitaire never gives a card back once it has gone
+home, and Spider's stock refuses to deal while any column is empty. A new player
+discovers those by losing, which
 reads as the game being unfair rather than as a rule. `shared/how-to-play.ts` is a short illustrated sheet per game —
 diagrams rather than prose, because the rules are all spatial — shown once on a
 save that has never cleared a level, and available forever from the `?` in the
@@ -198,7 +203,7 @@ discarded anyway. And a hard park has vertical cars standing across the exit row
 so the seed layout plants two or three of them rather than making the climb
 rediscover that every time.
 
-**Two of the six puzzles share an engine.** Screw Land has a five-slot tray and
+**Two of the eight puzzles share an engine.** Screw Land has a five-slot tray and
 boxes taking three matching screws; Bus Jam has a five-slot bench and buses
 taking three matching passengers. Same thing — `shared/buffer-sink.ts`. Bus Jam
 adds grid pathfinding on top.
@@ -294,6 +299,93 @@ right to left along the bottom, for both of them. Two people sharing one phone
 never read the board upside down, and the whole thing flipping is also the
 clearest possible signal that the turn has changed hands.
 
+**Solitaire turns one card and lets you go round the pack forever, which puts
+every ounce of its difficulty in the deal.** Draw three and a redeal limit are
+the usual ways to make Klondike hard, and both make it hard *at the rules*: the
+same board is a wall on level 1 and a wall on level 400. Turning one card with
+no limit means the rules never change and the only thing that varies between
+levels is which fifty-two cards came out in which order — which is exactly what
+the generator is for. The trap rate across random deals runs from 0.0 to 1.0
+with real mass everywhere in between, so one lever turns out to be plenty.
+
+**Finished cards fly home on their own.** A card sitting in the tableau is only
+ever useful for one thing — holding the card one rank below it in the other
+colour — so once both of those are already on the foundations it can never be
+wanted again, and leaving it down there is busywork rather than a decision.
+`autoPlay` sends every such card up after every move. That is a rule rather than
+a convenience and it lives in the model, because the solver and the difficulty
+rollouts have to be measuring the game the player is actually playing. It also
+runs the endgame out instead of asking for forty taps.
+
+**What goes home stays home**, and that one is a real rule you can lose to.
+Banking a card that is *not* finished is still your call — burying a column
+under a seven you had to move somewhere is a genuine decision — but there is no
+move that takes it back off. It cannot cost a solution, because a line that
+banks a card and later wants it back is the same line that never banked it. What
+it does cost is a search that has to consider putting twenty-eight cards back on
+the board at every position, and a definition of "finished" that could go
+backwards. Undo is what protects a bank made in error.
+
+**Being stuck in Solitaire is a question, not a state.** With unlimited redeals
+there is nearly always *something* legal to do, so the position that actually
+ends a game is the one that is still playable and no longer winnable — and
+deciding that costs a whole search. Running one after every tap would be absurd;
+running one when the player asks is exactly right. So the hint button is also
+the "am I stuck?" button: it answers with a move, with the loss sheet, or — when
+the search ran out of budget rather than out of positions — with nothing at all,
+because a maybe is not worth showing anybody.
+
+**Spider's solver is a player rather than a proof, and that was not the first
+plan.** It started as Solitaire's: depth-first, transposition table, move
+ordering, node budget. It solved *nothing* — not one deal in forty, at one suit
+or at two, at any budget. A mid-game Spider position offers something like a
+hundred legal moves of which two are worth making, and a depth-first search that
+guesses wrong at move ten spends its whole budget three hundred moves down a
+line that was dead before it started. What works is a heuristic player run over
+and over: greedy most of the time, something else the rest of it, restarted from
+the deal when it gets stuck. A hundred playouts cost less than one search did.
+
+The trade is worth stating plainly. A playout that wins *is* a winning line, and
+`generate.ts` replays it to check, so `solved` means here what it means
+everywhere else in this collection. What is gone is the opposite answer:
+playouts can never establish that no line exists, so **Spider has no
+`unsolvable`**. The promise a player needs is the one-directional one — a level
+ships only when a line through it has been found and replayed — and Spider does
+not need the other half anyway, because it has no redeal: running out really
+does produce a position with no legal move in it, which `isDead` catches exactly
+and for nothing.
+
+**Spider is graded on how far short naive play falls, not on whether it fell
+short.** Trap rate, the signal five other games run on, turned out to have
+nothing to say here: measured over two hundred boards, the naive player wins
+about a quarter of one-suit deals and essentially none at two suits, so every
+two-suit level scored 1.00 and the whole back half of the curve was a coin with
+the same face on both sides. Grading the same rollouts by **how many of the
+eight sets they finished** fixes it without changing what is being modelled — a
+board where a player usually gets five sets out is plainly easier than one where
+they usually get one — and a run that wins still scores all eight, so on a
+one-suit board this tracks the trap rate it replaces.
+
+**Two suits start at level 28, and that number is measured rather than chosen.**
+The measurement is unusually blunt: a one-suit board scores anywhere from 0.1 to
+0.98 on that signal, and a two-suit board scores 0.98 whatever else is true
+about it. Two suits does not sit *on* the scale, it sits above the top of it. So
+the step goes where the curve first asks for the top — where the band's upper
+edge saturates. Putting it any earlier would have the generator dealing
+two-suit boards that score above the band they were given and discarding every
+one of them, which is the two-levers-cancelling failure that cost Screw Land a
+week. It is keyed to the level number rather than to the band because the band
+carries jitter, and deciding from it would flip a player between one suit and
+two on consecutive levels.
+
+**Both card games are dealt from `shared/cards.ts`,** which is a deck and
+nothing more. It also carries the one accessibility question a card game asks
+that the rest of the collection does not: the shape overlay every other game
+offers is pointless here, because the suits *are* four distinct shapes and what
+is hard to read is red against black. The answer to that is the four-colour deck
+— diamonds blue, clubs green — and it rides on the same setting, doing the same
+job in the only way these two games can do it.
+
 **Screw Land is 2D on purpose.** The original is a 3D object you rotate, but the
 3D is skin: the puzzle is that plates overlap, so a screw under another plate is
 unreachable until the plate above loses all of *its* screws and falls. Layered
@@ -331,7 +423,8 @@ buried in a sheet serves neither.
 index.html            launcher
 colorsort/index.html  one entry per game
 src/shared/           rng, storage, progress, difficulty, audio, ui, pwa,
-                      buffer-sink (Screw Land + Bus Jam), levelSource,
+                      cards (Solitaire + Spider), levelSource,
+                      buffer-sink (Screw Land + Bus Jam),
                       timer + timed-play + timer-chip (the optional clock),
                       how-to-play (the rules sheet + its drawing helpers)
 src/colorsort/        model, solve, generate, layout, render, game, main, rules
@@ -345,6 +438,10 @@ src/gridlock/         model, solve, generate, render, game, main, rules, plus
                       ascii — a six-by-six park as six lines of six characters,
                       imported only by the tests and tools
 src/depot/            model, solve, generate, render, game, main, rules
+src/solitaire/        model, solve, generate, render, game, main, rules
+src/spider/           model, solve, generate, render, game, main, rules — its
+                      solve.ts is a player run many times rather than a search,
+                      and reports no `unsolvable`; see above
 src/backgammon/       board, legal, model, render, game, main, rules — no
                       generate and no solve: there is no level to build, and
                       what legal.ts searches is one turn rather than a level.
@@ -400,6 +497,31 @@ house, small straight, chance — and so, now, does the fifty-point row: it is
 id stays `five-of-a-kind`, on the same id-versus-name split as the game's own
 slug; a card is saved by box position rather than by id, so nothing on disk
 depends on either.
+
+### Cut from Solitaire v1
+
+Draw three and a redeal limit, which are the two usual ways to make Klondike
+hard and both of which make it hard at the rules rather than at the deal. Also
+the score, the timer, the "Vegas" mode, and every other number the originals put
+on screen — none of them is a decision, and the level number is the only one
+here.
+
+Taking a card back off a foundation is a cut too, and a load-bearing one: see
+*What goes home stays home* above.
+
+### Cut from Spider v1
+
+**Four suits.** It is the marquee mode and it is out on the strength of a
+measurement rather than a preference: the heuristic player that verifies these
+deals solves about half of two-suit boards within the budget a background worker
+has, and four suits is a large step past that. Shipping it would mean either a
+generator that takes a minute a level or a promise about solvability that is
+softer than the rest of this collection's. One and two suits is the ladder most
+people play anyway; four can come back when the player in `solve.ts` is stronger.
+
+The score, the move counter as a target, the timer, and the "very hard" deal
+selection some versions do by dealing *deliberately* awkward boards rather than
+by verifying them.
 
 ### Cut from Backgammon v1
 

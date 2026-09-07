@@ -5,11 +5,13 @@ import { RULES as BUSJAM } from '../busjam/rules';
 import { RULES as COLORSORT } from '../colorsort/rules';
 import { RULES as DEPOT } from '../depot/rules';
 import { RULES as SCREWLAND } from '../screwland/rules';
+import { RULES as SOLITAIRE } from '../solitaire/rules';
+import { RULES as SPIDER } from '../spider/rules';
 import { RULES as SURVIVAL } from '../survival/rules';
 import { shouldAutoShow } from './how-to-play';
 import { defaultSave, migrate } from './progress';
 
-const RULES = [COLORSORT, SCREWLAND, BUSJAM, SURVIVAL, DEPOT, BACKGAMMON];
+const RULES = [COLORSORT, SCREWLAND, BUSJAM, SURVIVAL, DEPOT, BACKGAMMON, SOLITAIRE, SPIDER];
 
 /**
  * The diagrams are strings of SVG assembled by hand, which means a stray

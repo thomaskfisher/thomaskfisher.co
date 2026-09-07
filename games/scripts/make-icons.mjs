@@ -674,6 +674,109 @@ function drawBackgammon(size, { maskable }) {
   return encodePng(size, size, canvas.data);
 }
 
+/**
+ * A fanned hand with the top card face up.
+ *
+ * At 48px a suit pip is a red smudge and a rank is nothing at all, so the mark
+ * has to read from the *silhouette*: three stepped white rectangles is "cards"
+ * before a single detail on them is legible.
+ */
+function drawSolitaire(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.2 : size * 0.12;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const area = size - inset * 2;
+  const cardW = area * 0.5;
+  const cardH = cardW * 1.4;
+  const corner = cardW * 0.14;
+  const step = area * 0.12;
+
+  // Two backs behind, stepped up and left, then the face on top.
+  const top = inset + (area - cardH) / 2 + step;
+  const left = inset + (area - cardW) / 2 - step;
+
+  fillRoundedRect(canvas, left, top, cardW, cardH, corner, hex('#2f4f86'));
+  fillRoundedRect(canvas, left + step, top - step, cardW, cardH, corner, hex('#4067a8'));
+  fillRoundedRect(canvas, left + step * 2, top - step * 2, cardW, cardH, corner, hex('#fbfaf7'));
+
+  // A diamond, because it is the one suit two triangles can draw honestly.
+  const cx = left + step * 2 + cardW / 2;
+  const cy = top - step * 2 + cardH / 2;
+  const r = cardW * 0.3;
+  const red = hex('#cf2f3f');
+  // Overlapping across the waist on purpose: two triangles that merely meet
+  // leave a hairline of card showing between them at 512px.
+  fillTriangle(canvas, [cx, cy - r * 1.2], [cx - r, cy + 0.5], [cx + r, cy + 0.5], red);
+  fillTriangle(canvas, [cx, cy + r * 1.2], [cx - r, cy - 0.5], [cx + r, cy - 0.5], red);
+
+  return encodePng(size, size, canvas.data);
+}
+
+/**
+ * Ten columns, one of them a run coming together.
+ *
+ * Spider's whole shape on screen is a wall of narrow columns, and the moment
+ * that matters is a descending run assembling in one of them. Four columns
+ * rather than ten: at 48px, ten are each two pixels wide and the mark turns to
+ * grey corduroy.
+ */
+function drawSpider(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.2 : size * 0.12;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const area = size - inset * 2;
+  const columns = 4;
+  const gap = area * 0.07;
+  const cardW = (area - gap * (columns - 1)) / columns;
+  const corner = cardW * 0.2;
+  const cardH = area * 0.3;
+  const step = area * 0.17;
+
+  // Every card is drawn on a slightly larger dark rectangle. Without it the
+  // stacked backs in a column merge into one bar and the mark reads as a bar
+  // chart rather than as cards.
+  const edge = Math.max(1, size * 0.012);
+  const card = (x, y, color) => {
+    fillRoundedRect(canvas, x - edge, y - edge, cardW + edge * 2, cardH + edge * 2, corner, BACKGROUND);
+    fillRoundedRect(canvas, x, y, cardW, cardH, corner, color);
+  };
+
+  const backs = [3, 2, 3, 2];
+  for (let column = 0; column < columns; column++) {
+    const x = inset + column * (cardW + gap);
+    for (let index = 0; index < backs[column]; index++) {
+      card(x, inset + index * step, hex('#2f4f86'));
+    }
+  }
+
+  // The run: three face-up cards stepping down the second column, each with a
+  // pip, so one column is visibly coming together while the rest are shut.
+  const runX = inset + (cardW + gap);
+  for (let index = 0; index < 3; index++) {
+    const y = inset + (index + 1) * step;
+    card(runX, y, hex('#fbfaf7'));
+    fillRoundedRect(
+      canvas,
+      runX + cardW * 0.24,
+      y + cardH * 0.16,
+      cardW * 0.3,
+      cardH * 0.3,
+      cardW * 0.12,
+      hex('#cf2f3f'),
+    );
+  }
+
+  return encodePng(size, size, canvas.data);
+}
+
 const targets = [
   ['colorsort-180.png', 180, { maskable: false }, drawColorSort],
   ['colorsort-192.png', 192, { maskable: false }, drawColorSort],
@@ -707,6 +810,14 @@ const targets = [
   ['backgammon-192.png', 192, { maskable: false }, drawBackgammon],
   ['backgammon-512.png', 512, { maskable: false }, drawBackgammon],
   ['backgammon-maskable-512.png', 512, { maskable: true }, drawBackgammon],
+  ['solitaire-180.png', 180, { maskable: false }, drawSolitaire],
+  ['solitaire-192.png', 192, { maskable: false }, drawSolitaire],
+  ['solitaire-512.png', 512, { maskable: false }, drawSolitaire],
+  ['solitaire-maskable-512.png', 512, { maskable: true }, drawSolitaire],
+  ['spider-180.png', 180, { maskable: false }, drawSpider],
+  ['spider-192.png', 192, { maskable: false }, drawSpider],
+  ['spider-512.png', 512, { maskable: false }, drawSpider],
+  ['spider-maskable-512.png', 512, { maskable: true }, drawSpider],
 ];
 
 for (const [name, size, options, draw] of targets) {

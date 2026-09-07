@@ -49,6 +49,17 @@ export interface SettingsSheetOptions<M> {
   showTimer?: boolean;
   /** Offer the shape-on-colour overlay. Pointless where no colour means anything. */
   showShapes?: boolean;
+  /**
+   * What the colour-vision row is called here, when a game accommodates colour
+   * vision deficiency in a way a symbol overlay cannot.
+   *
+   * The card games are the case. Their suits are already four distinct shapes,
+   * so there is nothing to overlay; what is hard to read is red against black,
+   * and the answer to that is the four-colour deck. Same setting, same job,
+   * different words — see `shared/cards.ts`.
+   */
+  shapesLabel?: string;
+  shapesDescription?: string;
 }
 
 export function openSettings<M>(options: SettingsSheetOptions<M>): void {
@@ -77,8 +88,8 @@ export function openSettings<M>(options: SettingsSheetOptions<M>): void {
     if (options.showShapes !== false) {
       sheet.content.append(
         toggleRow(
-          'Shapes on colors',
-          'A symbol on each color.',
+          options.shapesLabel ?? 'Shapes on colors',
+          options.shapesDescription ?? 'A symbol on each color.',
           settings.colorBlindShapes,
           (colorBlindShapes) => options.onSettingsChange({ colorBlindShapes }),
         ),
