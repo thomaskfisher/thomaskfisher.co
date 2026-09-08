@@ -68,7 +68,9 @@
       "Bash(.claude/skills/ship/scripts/preflight.sh)",
       "Bash(command -v firebase npm node npx yarn pnpm)",
       "Bash(echo \"exit=$?\")",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
     ]
   },
   "hooks": {
