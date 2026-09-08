@@ -7,6 +7,7 @@ import './depot.css';
 
 import { setSoundEnabled, sfx } from '../shared/audio';
 import { registerServiceWorker } from '../shared/pwa';
+import { pinViewportHeight } from '../shared/viewport';
 import { createHowToPlay, shouldAutoShow } from '../shared/how-to-play';
 import { openSettings } from '../shared/settings-sheet';
 import { createTimedPlay } from '../shared/timed-play';
@@ -18,6 +19,10 @@ import { BoardRenderer, describeProgress } from './render';
 
 const app = document.getElementById('app');
 if (!app) throw new Error('#app is missing');
+
+// Before anything measures the board: the shell is sized from the height this
+// writes down, not from the browser's idea of the viewport. See viewport.ts.
+pinViewportHeight();
 
 /* ------------------------------------------------------------------ chrome */
 

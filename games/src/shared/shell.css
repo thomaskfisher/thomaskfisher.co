@@ -18,8 +18,11 @@ body {
   margin: 0;
   height: 100%;
   /* Not 100vh: iOS counts the collapsing URL bar in vh and the board is then
-     taller than the visible area. */
-  height: 100dvh;
+     taller than the visible area. Not 100dvh on its own either: Chrome for
+     Android reports the dynamic viewport as if the bottom address bar were not
+     there. `--app-height` is the measured visible height — see
+     shared/viewport.ts — and dvh is the fallback for the frame before it lands. */
+  height: var(--app-height, 100dvh);
   overflow: hidden;
   overscroll-behavior: none; /* kills pull-to-refresh mid-level */
 }
@@ -88,7 +91,7 @@ button {
      widened box and sizes the board bigger still. `minmax(0, 1fr)` pins the
      column to the screen and makes that measurement trustworthy. */
   grid-template-columns: minmax(0, 1fr);
-  height: 100dvh;
+  height: var(--app-height, 100dvh);
   /* Keep content clear of the notch and the home indicator. */
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
     env(safe-area-inset-left);
@@ -202,7 +205,12 @@ button {
 
 .overlay {
   position: fixed;
-  inset: 0;
+  /* Not `inset: 0`: a fixed element is laid out against the layout viewport,
+     which is the one that runs on under Chrome for Android's bottom address
+     bar. Anchored at the top and given the visible height instead, so a sheet
+     centres in what the player can see. */
+  inset: 0 0 auto 0;
+  height: var(--app-height, 100dvh);
   display: grid;
   place-items: center;
   padding: 24px;
@@ -215,7 +223,7 @@ button {
 
 .sheet {
   width: min(420px, 100%);
-  max-height: 82dvh;
+  max-height: calc(var(--app-height, 100dvh) * 0.82);
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 22px;

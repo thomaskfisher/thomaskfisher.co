@@ -17,9 +17,14 @@ import { applyLayout, chooseLayout } from './layout';
 import { isComplete } from './model';
 import { BoardRenderer } from './render';
 import { registerServiceWorker } from '../shared/pwa';
+import { pinViewportHeight } from '../shared/viewport';
 
 const app = document.getElementById('app');
 if (!app) throw new Error('#app is missing');
+
+// Before anything measures the board: the shell is sized from the height this
+// writes down, not from the browser's idea of the viewport. See viewport.ts.
+pinViewportHeight();
 
 /* ------------------------------------------------------------------ chrome */
 

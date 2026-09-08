@@ -56,7 +56,43 @@
       "Bash(mkdir -p /Users/tfisher/Code/thomaskfisher.co/.claude/skills/new-game/scripts)",
       "Bash(cp /private/tmp/claude-501/-Users-tfisher-Code-thomaskfisher-co/a380d0af-094e-446d-995f-994432aaf11b/scratchpad/cdp.mjs /Users/tfisher/Code/thomaskfisher.co/.claude/skills/new-game/scripts/cdp.mjs)",
       "Edit(/.claude/skills/new-game/**)",
-      "Bash(node --check .claude/skills/new-game/scripts/cdp.mjs)"
+      "Bash(node --check .claude/skills/new-game/scripts/cdp.mjs)",
+      "Read(//Users/thomasfisher/.nvm/versions/**)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//usr/local/**)",
+      "Read(//Users/thomasfisher/.volta/**)",
+      "Read(//opt/homebrew/**)",
+      "Bash(ls /pkg/env/global/bin 2>/dev/null | head -20; ls ~/Developer/thomaskfisher.co/games/node_modules/.bin 2>/dev/null | head)",
+      "Read(//pkg/env/global/**)",
+      "Read(//Users/thomasfisher/**)",
+      "Bash(.claude/skills/ship/scripts/preflight.sh)",
+      "Bash(command -v firebase npm node npx yarn pnpm)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(git add *)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Ping.aiff"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Ping.aiff"
+          }
+        ]
+      }
     ]
   }
 }
