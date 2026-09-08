@@ -49,6 +49,10 @@ export default defineConfig({
 
   test: {
     environment: 'node',
+    // Without this, vitest stubs CSS imports out and `shell.css?raw` arrives as
+    // an empty string — which is how viewport.test.ts spent a while asserting
+    // against nothing at all rather than against the stylesheet.
+    css: true,
     include: ['src/**/*.test.ts'],
   },
 });

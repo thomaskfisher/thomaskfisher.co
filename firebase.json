@@ -33,6 +33,66 @@
           "source": "/rsvp.html",
           "destination": "https://wedding.thomaskfisher.com/rsvp",
           "type": 301
+        },
+        {
+          "source": "/blog/tcm",
+          "destination": "https://blog.thomaskfisher.com/tcm",
+          "type": 301
+        },
+        {
+          "source": "/blog/tcm/index.html",
+          "destination": "https://blog.thomaskfisher.com/tcm",
+          "type": 301
+        },
+        {
+          "source": "/blog/rentsoft",
+          "destination": "https://blog.thomaskfisher.com/rentsoft",
+          "type": 301
+        },
+        {
+          "source": "/blog/rentsoft/index.html",
+          "destination": "https://blog.thomaskfisher.com/rentsoft",
+          "type": 301
+        },
+        {
+          "source": "/blog/sovy",
+          "destination": "https://blog.thomaskfisher.com/sovy",
+          "type": 301
+        },
+        {
+          "source": "/blog/sovy/index.html",
+          "destination": "https://blog.thomaskfisher.com/sovy",
+          "type": 301
+        },
+        {
+          "source": "/blog/comingsoon",
+          "destination": "https://blog.thomaskfisher.com/comingsoon",
+          "type": 301
+        },
+        {
+          "source": "/blog/comingsoon/index.html",
+          "destination": "https://blog.thomaskfisher.com/comingsoon",
+          "type": 301
+        },
+        {
+          "source": "/blog/template",
+          "destination": "https://blog.thomaskfisher.com/template",
+          "type": 301
+        },
+        {
+          "source": "/blog/template/index.html",
+          "destination": "https://blog.thomaskfisher.com/template",
+          "type": 301
+        },
+        {
+          "source": "/blog",
+          "destination": "https://blog.thomaskfisher.com",
+          "type": 301
+        },
+        {
+          "source": "/blog/**",
+          "destination": "https://blog.thomaskfisher.com",
+          "type": 301
         }
       ],
       "rewrites": [
@@ -120,6 +180,16 @@
           "destination": "/index.html"
         }
       ]
+    },
+    {
+      "target": "blog",
+      "public": "blog/public",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "cleanUrls": true
     }
   ]
 }

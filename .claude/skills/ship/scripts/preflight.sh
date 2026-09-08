@@ -57,11 +57,12 @@ add() { case " $targets " in *" $1 "*) ;; *) targets="$targets $1" ;; esac; }
 
 while IFS= read -r file; do
   case "$file" in
-    # Hosting config can change how any of the three sites is served.
-    firebase.json|.firebaserc) add portfolio; add games; add wedding ;;
+    # Hosting config can change how any of the four sites is served.
+    firebase.json|.firebaserc) add portfolio; add games; add wedding; add blog ;;
     games/*)                   add games ;;
     public/*)                  add portfolio ;;
     wedding/*)                 add wedding ;;
+    blog/*)                    add blog ;;
   esac
 done <<< "$changed"
 

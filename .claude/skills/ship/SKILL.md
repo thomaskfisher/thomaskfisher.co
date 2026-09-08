@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Deploy the changed sites to Firebase Hosting, then commit and push to the default branch — the whole release in one command. Use whenever Thomas says "ship it", "ship", "deploy and push", "deploy this", "push it live", "release", or asks to get the current work onto thomaskfisher.com, games.thomaskfisher.com or wedding.thomaskfisher.com. Works out which of the three hosting targets the changes actually affect and leaves the other two alone.
+description: Deploy the changed sites to Firebase Hosting, then commit and push to the default branch — the whole release in one command. Use whenever Thomas says "ship it", "ship", "deploy and push", "deploy this", "push it live", "release", or asks to get the current work onto thomaskfisher.com, games.thomaskfisher.com, blog.thomaskfisher.com or wedding.thomaskfisher.com. Works out which of the four hosting targets the changes actually affect and leaves the rest alone.
 ---
 
 # Ship
@@ -34,8 +34,8 @@ Otherwise it gives you:
 | `--- changed files` | Everything this ship will publish and record |
 
 Targets come from paths: `games/**` → games, `public/**` → portfolio,
-`wedding/**` → wedding, and `firebase.json` or `.firebaserc` → all three,
-because hosting config can change how any site is served. A change to
+`wedding/**` → wedding, `blog/**` → blog, and `firebase.json` or `.firebaserc`
+→ all four, because hosting config can change how any site is served. A change to
 `README.md` or `.claude/**` maps to nothing: **`targets: none` is not an error**,
 it just means skip step 3 and go straight to committing.
 
@@ -60,7 +60,7 @@ the previous build.
 Skip `npm test` only when the games changes are documentation alone
 (`games/README.md`), or when Thomas passed `--no-tests`. Say which you did.
 
-The portfolio and wedding sites are static — no build, no gate.
+The portfolio, blog and wedding sites are static — no build, no gate.
 
 ## 3. Deploy
 
@@ -109,6 +109,7 @@ commit subject and short SHA, and that the push landed.
 | `portfolio` | https://thomaskfisher.com |
 | `games` | https://games.thomaskfisher.com |
 | `wedding` | https://wedding.thomaskfisher.com |
+| `blog` | https://blog.thomaskfisher.com |
 
 **If the deploy succeeded but the commit or push then failed**, lead with that.
 The live sites are ahead of the repo, that is the one genuinely bad state this
@@ -118,7 +119,7 @@ success-shaped summary.
 ## Arguments
 
 - *(none)* — everything the preflight found.
-- `games` / `portfolio` / `wedding` — deploy only that target, whatever the
+- `games` / `portfolio` / `wedding` / `blog` — deploy only that target, whatever the
   preflight says. Still commit and push everything.
 - `--no-tests` — skip `npm test`. Never skips the build.
 - Anything else in quotes — the commit summary line.

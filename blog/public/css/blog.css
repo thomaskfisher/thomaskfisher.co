@@ -271,3 +271,53 @@ hr {
 
     .testimonial { padding: 28px 20px; }
 }
+
+/* ── Post Index ──────────────────────────────────────── */
+.post-index {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0;
+}
+
+.post-index li {
+    margin: 0;
+    border-top: 1px solid var(--border);
+}
+
+.post-index a {
+    display: block;
+    padding: 28px 0;
+    border-bottom: none;
+}
+
+.post-index a:hover { opacity: 1; }
+
+.post-date {
+    display: block;
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.post-title {
+    display: block;
+    font-family: var(--font-display);
+    font-size: clamp(20px, 3vw, 26px);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: var(--text);
+    transition: color 0.2s var(--ease);
+}
+
+.post-index a:hover .post-title { color: var(--accent); }
+
+.post-desc {
+    display: block;
+    margin-top: 6px;
+    font-size: 15px;
+    color: var(--text-mid);
+    line-height: 1.6;
+}
