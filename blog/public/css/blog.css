@@ -276,34 +276,41 @@ hr {
 .post-index {
     list-style: none;
     padding: 0;
-    margin: 8px 0 0;
+    margin: 24px 0 0;
+    display: grid;
+    gap: 20px;
 }
 
 .post-index li {
     margin: 0;
-    border-top: 1px solid var(--border);
 }
 
+/* Each post is a self-contained card, so the eye never has to work out
+   which screenshot belongs to which heading */
 .post-index a {
     display: flex;
-    align-items: center;
-    gap: 24px;
-    padding: 26px 0;
-    border-bottom: none;
+    align-items: stretch;
+    overflow: hidden;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    border-bottom: 1px solid var(--border);
+    transition: border-color 0.25s var(--ease), transform 0.25s var(--ease);
 }
 
-.post-index a:hover { opacity: 1; }
+.post-index a:hover {
+    opacity: 1;
+    border-color: var(--border-mid);
+    transform: translateY(-2px);
+}
 
-/* Screenshot */
+/* Screenshot, flush to the card's left edge */
 .post-thumb {
-    flex: 0 0 232px;
+    flex: 0 0 208px;
     display: block;
     overflow: hidden;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--bg-card);
-    /* 9:5, matching the generated thumbnails */
-    aspect-ratio: 9 / 5;
+    background: var(--bg-alt);
+    border-right: 1px solid var(--border);
 }
 
 .post-thumb img {
@@ -311,8 +318,8 @@ hr {
     height: 100%;
     object-fit: cover;
     /* Screenshots lead with their header, so favour the top edge */
-    object-position: top center;
-    filter: saturate(0.9) brightness(0.88);
+    object-position: top left;
+    filter: saturate(0.9) brightness(0.82);
     transition: transform 0.5s var(--ease), filter 0.35s var(--ease);
 }
 
@@ -324,6 +331,8 @@ hr {
 .post-body {
     display: block;
     min-width: 0;
+    padding: 26px 28px;
+    align-self: center;
 }
 
 .post-date {
@@ -339,7 +348,7 @@ hr {
 .post-title {
     display: block;
     font-family: var(--font-display);
-    font-size: clamp(20px, 3vw, 26px);
+    font-size: clamp(20px, 3vw, 25px);
     font-weight: 600;
     letter-spacing: -0.025em;
     color: var(--text);
@@ -358,18 +367,23 @@ hr {
 
 /* Stack the screenshot above the text on narrow screens */
 @media (max-width: 640px) {
-    .post-index a {
-        display: block;
-        padding: 24px 0 28px;
-    }
+    .post-index { gap: 18px; }
+
+    .post-index a { display: block; }
 
     .post-thumb {
         width: 100%;
-        margin-bottom: 18px;
+        aspect-ratio: 9 / 5;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
     }
+
+    .post-body { padding: 20px 22px 24px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
+    .post-index a { transition: border-color 0.25s var(--ease); }
+    .post-index a:hover { transform: none; }
     .post-thumb img { transition: filter 0.35s var(--ease); }
     .post-index a:hover .post-thumb img { transform: none; }
 }
