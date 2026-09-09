@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>KeepTrack</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/blog.css" rel="stylesheet">
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+      ga('create', 'UA-89364338-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="https://thomaskfisher.com">TF</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1 id="title">KeepTrack</h1>
+        <p id="date">September 9th, 2026</p>
+        <br><br>
+
+        <img class="img-thumbnail" src="/assets/keeptrack/landing-hero.png">
+
+        <h2 class="blog-header">What is it?</h2>
+        <p>
+            <a href="https://keeptrack.tech" target="_blank">KeepTrack</a> is a web app for owning things well. You add an asset (a house, a car, a motorcycle, an appliance, a computer, anything valuable enough that letting it fall apart would hurt) and then you hang two things off of it: recurring maintenance tasks and notes. The tasks tell you what to do and when. The notes hold everything you would want in your hands while you are doing it. The whole point is that for any given thing you own, all of the useful information about it lives in one place instead of scattered across your email, a kitchen drawer, a glovebox, and your memory.
+        </p>
+        <p>
+            It is also the first side project I have ever built with the help of AI. I started it in March of 2025, right around the time Claude Code came out, and it has been my excuse to learn those tools ever since. That turned out to matter a lot, and I get into it further down, but the tools are not really the point of this post. The point is the house.
+        </p>
+        <p>
+            KeepTrack is live at <a href="https://keeptrack.tech" target="_blank">keeptrack.tech</a>. The free tier covers three assets with three tasks and three notes on each of them, which is enough for a house and a couple of cars if you are disciplined about it.
+        </p>
+
+        <h2 class="blog-header">Why did I build it?</h2>
+        <p>
+            I bought a house. It is by an enormous margin the most expensive thing I have ever purchased, and I would like it to last a long time.
+        </p>
+        <p>
+            The problem was that I had no idea what that actually required. I want to maintain my house and I'm not lazy about it, but there are apparently a thousand things a homeowner is supposed to do and nobody hands you the list at closing. I didn't know what needed to be done, I didn't know how to do most of it, and I really didn't know how often any of it was supposed to happen. Every answer I found lived somewhere different: a YouTube video, a forum post from 2011, a thing the previous owner mentioned once during the walkthrough that I immediately forgot. That is not a discipline problem, it is an information problem. Nothing in my life was going to tell me it was time to drain the water heater.
+        </p>
+        <p>
+            Once I started thinking about it that way I realized the house wasn't special. My cars have the same problem, and so do the motorcycle, the appliances, the electronics, and anything else of value that needs something done to it on a recurring basis. All of them come with a pile of paperwork that I inevitably can't find when I need it: warranties, owner's manuals, service records, receipts, and the note I wrote down about which furnace filter size actually fits. So I built KeepTrack to solve it for myself, for all of it at once.
+        </p>
+
+        <h2 class="blog-header">What does it do?</h2>
+        <h4>Assets</h4>
+        <p>
+            You create an account, log in, and add an asset. Every asset has a category, and the two big ones are property and vehicle.
+        </p>
+        <p>
+            For a property you fill in the things you would expect: address, lot size, square footage, year built, purchase date, and purchase price. For a vehicle it is year, make, model, VIN, color, and mileage. Both of them also get a free-form description field, which in practice is where I dump everything that doesn't have a proper home (parcel numbers, the names of the previous owners, that kind of thing). And there is an "other" category for the long tail, which is how my Mac Mini ended up in there next to a 1971 Land Cruiser.
+        </p>
+        <div class="text-center">
+            <img class="img-thumbnail blog-image" src="/assets/keeptrack/assets.png">
+        </div>
+        <p class="image-description">Other than people, here's the important stuff in my life.</p>
+        <p>
+            The asset record itself is the center of the whole app. Everything else in KeepTrack attaches to one of these.
+        </p>
+        <div class="text-center">
+            <img class="img-thumbnail blog-image" src="/assets/keeptrack/asset-details.png">
+        </div>
+        <p class="image-description">The top of my house's record. Built in 1993, which explains most of the maintenance tasks sitting underneath it.</p>
+
+        <h4>Maintenance Tasks</h4>
+        <p>
+            A maintenance task is a recurring reminder attached to an asset. You give it a title, a cadence, and a description. My house has "Winterize Sprinklers" every year, "Change Furnace Filters" every three months, and "Drain Water Heater" every year. KeepTrack calculates the next due date, emails you when something comes due, and keeps the full completion history so you can see when you last actually did it.
+        </p>
+        <p>
+            The description field is the part I care about most. A reminder that just says "winterize sprinklers" is only half a reminder; I still have to go remember how. So the description can hold whatever makes the job easier the next time around:
+        </p>
+        <ul>
+            <li>Instructions I wrote to myself the last time I figured it out</li>
+            <li>A link to the exact furnace filter I buy, because the standard ones don't fit</li>
+            <li>An embedded YouTube video so I can watch the how-to right there instead of going and finding it again</li>
+        </ul>
+        <p>
+            The goal is to remove every excuse between "you should do this" and actually doing it.
+        </p>
+        <div class="text-center">
+            <img class="img-thumbnail blog-image" src="/assets/keeptrack/asset-tasks.png">
+        </div>
+        <p class="image-description">Maintenance tasks on my house. Note the reminder to myself about which air compressor to use.</p>
+        <p>
+            There is also a Tasks page that pulls every task across every asset into one list, sorted by what is overdue and what is coming up. This is the page that makes me feel bad about myself, which is exactly what I built it to do.
+        </p>
+        <div class="text-center">
+            <img class="img-thumbnail blog-image" src="/assets/keeptrack/tasks.png">
+        </div>
+        <p class="image-description">Every task across every asset in one place. Yes, I'm behind on my furnace filters.</p>
+
+        <h4>Notes</h4>
+        <p>
+            Notes are the free-form half. Text, images, files, links, or whatever else you think would be useful to have later. There is no structure to them on purpose, because the useful stuff never fits a schema.
+        </p>
+        <p>
+            When we redid the sprinklers at our house I ended up with a hand-marked map of the whole system: where every head is, where the shutoff valves are, and what zone is connected to what. That map now lives on my house's asset record instead of in a folder somewhere, and the first time I needed it I actually found it. I have another note that is just a photo of my furnace filters with the size written out, because I have looked that number up more times than I care to admit. On a vehicle it is the same idea with different contents: the warranty PDF, the owner's manual, service records, and receipts from the shop. All of it sitting on the record for the thing it belongs to.
+        </p>
+        <div class="text-center">
+            <img class="img-thumbnail blog-image" src="/assets/keeptrack/asset-notes.png">
+        </div>
+        <p class="image-description">Notes on my house, including the sprinkler map I would otherwise have lost by now.</p>
+
+        <h2 class="blog-header">What have I learned?</h2>
+        <p>AI tools have completely changed how much I can get done in a weekend.</p>
+        <ul>
+            <li>KeepTrack is the first side project I ever built with the help of AI. I started it in March of 2025, right around when Claude Code came out, and the earliest version of it was written by hand the way I had built everything before it.</li>
+            <li>As the tools got better I started using KeepTrack as an excuse to try them out, which is how a side project turned into the place where I got familiar with a way of building software that has since taken over the industry.</li>
+            <li>Features that used to cost me an entire weekend now take an hour or less, and watching that gap widen over the past year has been genuinely incredible.</li>
+        </ul>
+        <p>Building something you personally need is the fastest feedback loop I have ever worked in.</p>
+        <ul>
+            <li>With <a href="https://blog.thomaskfisher.com/tcm" target="_blank">The Campus Market</a> and <a href="https://blog.thomaskfisher.com/rentsoft" target="_blank">RentSoft</a> there was always a gap between me and the user; I had to go ask someone whether a thing was annoying.</li>
+            <li>Here I am the user. I find the friction the same week I ship it, because I hit it while trying to change a furnace filter.</li>
+            <li>The flip side is that n=1 is a dangerous sample size, and I have to keep reminding myself that "Thomas finds this obvious" is not the same as "this is obvious."</li>
+        </ul>
+        <p>The reminder is the easy part. Knowing what to be reminded about is the hard part.</p>
+        <ul>
+            <li>Scheduling recurring tasks and emailing people about them is not a difficult engineering problem, and I had it working early.</li>
+            <li>But it only helps if you already know the task exists. My original problem was never "I forgot to winterize my sprinklers"; it was "nobody ever told me sprinklers need winterizing."</li>
+            <li>KeepTrack solves the second half of my problem really well and the first half not at all. That gap is still the most interesting thing about the project to me.</li>
+        </ul>
+        <p>A project you touch once a month needs to be written for the version of you who has forgotten everything.</p>
+        <ul>
+            <li>I work on KeepTrack in bursts, and there have been gaps of two or three months between them.</li>
+            <li>The things that saved me every time were boring: a documented design system, a single file with all of the type definitions, and notes to myself about how the pieces fit together.</li>
+            <li>At work I would call that documentation discipline. On a side project it is closer to self defense.</li>
+        </ul>
+
+        <h2 class="blog-header">What's next?</h2>
+        <p>
+            Every other project I have written about here was finished, or at least abandoned, by the time I wrote the post. KeepTrack is not, so instead of telling you how it went I can tell you where it is going. I have a long list and a short amount of free time, so treat all of this as "someday." But these are the ones I actually think about.
+        </p>
+        <h4>Transfers</h4>
+        <p>
+            Say you have been using KeepTrack for your car for four years. You have the manual, the warranty, and every service record and receipt sitting on that asset. Then you sell it, and all of that history, which is genuinely valuable to the buyer, just evaporates.
+        </p>
+        <p>
+            It shouldn't. You should be able to hand the whole record to the new owner's account along with the keys. I think a car with a complete, transferable maintenance history is worth more than one without, and I would like KeepTrack to be the thing that makes that possible.
+        </p>
+        <h4>A DIY assistant</h4>
+        <p>
+            If you are standing in your yard at 8pm in October halfway through winterizing your sprinklers and something isn't going the way the video said it would, you should be able to ask right there. Upload a photo of the valve you are confused about, describe what is happening, and get walked through it. That is a much better experience than putting the project down and going to search for it.
+        </p>
+        <h4>Actually knowing what needs doing</h4>
+        <p>
+            This is the big one, and it is the original problem I never solved. KeepTrack knows a lot about my house: how old it is, how big it is, where it is, and what I have already set up reminders for. It should be able to use that to suggest what I am missing rather than making me guess. Right now the app is only as good as the list of tasks I thought to create, and my list is definitely incomplete. I just don't know which parts.
+        </p>
+        <h4>Services</h4>
+        <p>
+            The longer term thought on making this pay for itself. If you get a reminder that your sprinklers need winterizing and you would rather not do it yourself, KeepTrack already knows what you need and roughly where you are. Surfacing a few local companies who would come do it seems like a natural fit, and a more honest business model than charging people for reminders.
+        </p>
+        <p>
+            None of that is happening on a schedule. This is a side project and it behaves like one. I have never advertised it, never posted about it, and never really tried to get anyone to sign up, so the user base is approximately me.
+        </p>
+        <p>
+            But it is the first side project I have built that I actually use every week, which is more than I can say for most of the things I've made. My sprinklers got winterized on time last year. I stopped ordering the wrong furnace filters. When we needed the sprinkler map, we had the sprinkler map. For a tool built for an audience of one, I would call that a success. And who knows, the problem I built it for isn't a rare one. Every first time homeowner I have talked to has some version of the same story, so maybe at some point I will find out whether it is useful to anyone else.
+        </p>
+
+        <div class="text-center">
+            <img class="img-thumbnail blog-image" src="/assets/keeptrack/landing-cta.png">
+        </div>
+
+        <section id="contact">
+            <div class="container">
+                <div class="row">
+                    <div class="text-center">
+                        <h2>Contact</h2>
+                        <hr>
+                        <p>Send me an email or reach out on LinkedIn</p>
+                    </div>
+                    <div class="col-lg-6 text-center">
+                        <img src="/assets/companies/Gmail.png" class="logo-icon">
+                        <p><a href="mailto:tfisher3035@gmail.com">tfisher3035@gmail.com</a></p>
+                    </div>
+                    <div class="col-lg-6 text-center">
+                        <img src="/assets/companies/Linkedin.png" class="logo-icon">
+                        <p><a href="https://www.linkedin.com/in/thomaskfisher/" target="_blank">Thomas Fisher</a></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+    </div>
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
