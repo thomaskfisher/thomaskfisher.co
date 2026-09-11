@@ -1,0 +1,136 @@
+/* ==========================================================================
+   Pipes.
+
+   Every tile is the same square, and the whole game is which way each one
+   points — so the only things that carry information here are the shape of the
+   pipe and whether it is carrying water. Nothing else is allowed to be loud.
+   ========================================================================== */
+
+.app--pipes {
+  grid-template-rows: auto 1fr auto;
+}
+
+.board {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: 4px 10px 8px;
+}
+
+.pipe-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--cell));
+  grid-template-rows: repeat(var(--rows), var(--cell));
+  /* Nothing here derives a z-index from game state; the stacking context is
+     written in with the container so that stays cheap to be wrong about. */
+  isolation: isolate;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 6px 18px var(--shadow);
+  touch-action: manipulation;
+}
+
+.pipe-grid[data-empty] {
+  visibility: hidden;
+}
+
+.pipe-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--cell);
+  height: var(--cell);
+  padding: 0;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.pipe-cell:active:not(:disabled) {
+  background: var(--glass);
+}
+
+.pipe-grid.is-over .pipe-cell {
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------ pipe */
+
+.pipe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* The spin. Set by the renderer from a counter that only ever climbs, so a
+     tile never whips three quarters backwards on its fourth turn. */
+  transform: rotate(var(--spin, 0deg));
+  transition: transform 0.18s cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+
+.pipe svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.pipe-line {
+  fill: none;
+  stroke: var(--text-dim);
+  /* Proportional to the viewBox rather than to the cell, so a tile drawn at
+     22px and one drawn at 52px look like the same pipework. */
+  stroke-width: 17;
+  stroke-linecap: round;
+  transition: stroke 0.2s ease;
+}
+
+.pipe-hub {
+  fill: var(--text-dim);
+  stroke: none;
+  transition: fill 0.2s ease;
+}
+
+/* The well never changes colour: it is where the water comes from whether or
+   not any has got anywhere, and a source that looked dry would be a lie. */
+.pipe-source {
+  fill: var(--surface);
+  stroke: none;
+}
+
+/* --------------------------------------------------------------- water */
+
+/*
+ * Wet pipework, which is the only feedback in the game and does all the work.
+ *
+ * A tile is lit when the water reaches it, so turning one tile lights up
+ * everything downstream at once — which is the moment the whole game is built
+ * around and the reason nothing else on the board is coloured.
+ */
+.pipe-cell.is-wet .pipe-line {
+  stroke: var(--accent);
+}
+
+.pipe-cell.is-wet .pipe-hub {
+  fill: var(--accent);
+}
+
+.pipe-cell.is-source .pipe-hub {
+  fill: var(--accent);
+}
+
+/* A tap at the end of a run, once the water gets to it. The glow is what makes
+   finishing a branch feel like finishing something. */
+.pipe-cell.is-tap.is-wet .pipe-hub {
+  fill: var(--accent);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 70%, transparent));
+}
+
+.pipe-cell.is-hinted {
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pipe {
+    transition: none;
+  }
+}

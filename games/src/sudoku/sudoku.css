@@ -1,0 +1,282 @@
+/* ==========================================================================
+   Sudoku.
+
+   Four rows rather than three: the grid, then the keypad, then the controls.
+   The keypad is what makes this playable one-handed — a 9x9 grid on a phone
+   has cells around 34px, which is under the tap target anyone can hit reliably,
+   so the digit goes in through a full-width pad in the bottom third instead of
+   by typing into a cell.
+   ========================================================================== */
+
+.app--sudoku {
+  grid-template-rows: auto 1fr auto auto;
+}
+
+.board {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: 4px 10px 6px;
+}
+
+/* ---------------------------------------------------------------- grid */
+
+.sudoku-grid {
+  position: relative;
+  /* Nothing here derives a z-index from game state, so there is currently
+     nothing to contain. It is written in with the container anyway — see the
+     note at the top of render.ts. */
+  isolation: isolate;
+  display: grid;
+  grid-template: repeat(9, var(--cell)) / repeat(9, var(--cell));
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 6px 18px var(--shadow);
+  touch-action: manipulation;
+}
+
+.sudoku-grid[data-empty] {
+  visibility: hidden;
+}
+
+.sq {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--cell);
+  height: var(--cell);
+  padding: 0;
+  border-radius: 3px;
+  color: var(--accent);
+  font-size: calc(var(--cell) * 0.56);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  transition: background 0.12s ease;
+}
+
+/* The thin rules between cells, and the heavy ones between boxes. Drawn as
+   cell borders rather than as an overlay so a heavy line never paints on top
+   of a selection highlight. */
+.sq {
+  box-shadow: inset -1px -1px 0 color-mix(in srgb, var(--text-dim) 22%, transparent);
+}
+
+.sq:nth-child(9n) {
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--text-dim) 22%, transparent);
+}
+
+.sq:nth-child(n + 73) {
+  box-shadow: inset -1px 0 0 color-mix(in srgb, var(--text-dim) 22%, transparent);
+}
+
+.sq:nth-child(9n):nth-child(n + 73) {
+  box-shadow: none;
+}
+
+.sq.edge-left {
+  border-left: 2px solid color-mix(in srgb, var(--text-dim) 55%, transparent);
+}
+
+.sq.edge-top {
+  border-top: 2px solid color-mix(in srgb, var(--text-dim) 55%, transparent);
+}
+
+/* A clue is ink; a digit the player wrote is accent. That difference is the
+   whole reason a sudoku is readable at a glance, so it is carried by weight and
+   colour together rather than by colour alone. */
+.sq.is-given {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.sq-digit {
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------- highlighting */
+
+/*
+ * Softest first: the row, column and box the caret is in.
+ *
+ * The first version of this was 9%, which measured correct — twenty cells lit,
+ * eight in each unit — and was invisible on screen. A highlight nobody can see
+ * is not a highlight, and this one is doing the job the grid lines cannot: it
+ * says which three groups the cell you are about to fill actually belongs to.
+ */
+.sq.is-peer {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* Every other cell holding the same digit. This is the "where are the other
+   sevens" answer, and it is why tapping a given is allowed. */
+.sq.is-same {
+  background: color-mix(in srgb, var(--accent) 36%, transparent);
+}
+
+.sq.is-selected {
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.sq.is-conflict {
+  color: var(--danger);
+}
+
+.sq.is-conflict.is-given {
+  color: var(--danger);
+}
+
+/* The hint's answer, and the cells that justify it. */
+.sq.is-because {
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+.sq.is-hinted {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.sq.is-mistake {
+  background: color-mix(in srgb, var(--danger) 34%, transparent);
+  box-shadow: inset 0 0 0 2px var(--danger);
+}
+
+/* The digit the hint is offering. Faint, so it never reads as an answer the
+   player wrote — and it disappears the moment anything else happens, because
+   every render recomputes it from the current effect. */
+.sq-ghost {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  opacity: 0.55;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+/* -------------------------------------------------------------- notes */
+
+.sq-notes {
+  position: absolute;
+  inset: 1px;
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  pointer-events: none;
+}
+
+.sq-notes i {
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--cell) * 0.25);
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-dim);
+}
+
+/* ------------------------------------------------------------- keypad */
+
+.pad {
+  padding: 2px 12px 0;
+}
+
+.keypad {
+  display: grid;
+  /* Six columns, so a digit key spans two and a mode key spans three. That
+     lays the digits out as the 3x3 phone keypad everyone already has muscle
+     memory for, with Notes and Erase on a full-width row underneath — both in
+     the bottom third, both reachable with one thumb. */
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  width: min(420px, 100%);
+  margin: 0 auto;
+}
+
+.key {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 9px 0 7px;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 0 var(--shadow);
+  transition: transform 0.1s ease, opacity 0.15s ease, background 0.15s ease;
+}
+
+.key:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.key:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+/* How many of this digit are still to be placed. Small, dim, and gone once the
+   digit is finished — a count of zero is worth less than the space it takes. */
+.key-left {
+  position: absolute;
+  top: 3px;
+  right: 6px;
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  line-height: 1;
+}
+
+/* A digit with all nine placed. Faded rather than disabled: it still has to be
+   removable from a cell it was wrongly put in. */
+.key.is-done {
+  opacity: 0.4;
+}
+
+.key--mode {
+  grid-column: span 3;
+  flex-direction: row;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.key--mode svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.key--mode.is-on {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* The nine digits, three to a row. */
+.key:nth-child(-n + 9) {
+  grid-column: span 2;
+}
+
+@media (max-height: 680px) {
+  .key {
+    padding: 6px 0 5px;
+    font-size: 1.1rem;
+  }
+
+  .key--mode {
+    padding: 7px 0;
+  }
+}

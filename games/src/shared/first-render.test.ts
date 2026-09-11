@@ -10,6 +10,10 @@ import { DepotGame } from '../depot/game';
 import { BackgammonGame } from '../backgammon/game';
 import { SolitaireGame } from '../solitaire/game';
 import { SpiderGame } from '../spider/game';
+import { SudokuGame } from '../sudoku/game';
+import { NonogramGame } from '../nonogram/game';
+import { PipesGame } from '../pipes/game';
+import { Twenty48Game } from '../twenty48/game';
 
 /**
  * The first render happens before the save has loaded.
@@ -41,6 +45,10 @@ const games = [
   ['Backgammon', () => new BackgammonGame()],
   ['Solitaire', () => new SolitaireGame()],
   ['Spider', () => new SpiderGame()],
+  ['Sudoku', () => new SudokuGame()],
+  ['Nonogram', () => new NonogramGame()],
+  ['Pipes', () => new PipesGame()],
+  ['2048', () => new Twenty48Game()],
 ] as const;
 
 describe('before start() resolves', () => {

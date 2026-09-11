@@ -16,6 +16,13 @@ in-game currency. Everything is static; all state lives on the player's device.
 | Backgammon | Playable |
 | Solitaire | Playable |
 | Spider | Playable |
+| Sudoku | Playable |
+| Nonogram | Playable |
+| Pipes | Playable |
+| 2048 | Playable |
+| Wordle | Half built — see *Picking Wordle back up* |
+| Mancala | Not started |
+| Mexican Train | Not started |
 
 ## Working on it
 
@@ -29,8 +36,8 @@ npm run icons      # regenerate PWA icons (output is committed)
 
 ## How it works
 
-**Eight of the ten are puzzles. Yahtzee and Backgammon are not, and both bend
-the house rules on purpose.** Everything below about verified levels, measured
+**Twelve of the fourteen are puzzles. Yahtzee and Backgammon are not, and both
+bend the house rules on purpose.** Everything below about verified levels, measured
 difficulty and unlimited undo describes Color Sort, Screw Land, Bus Jam,
 Survival, Gridlock, Depot, Solitaire and Spider. Yahtzee is a game of chance:
 there is no board to verify, no difficulty to curve, and rewinding a throw would
@@ -454,6 +461,109 @@ examples/             reference material for the originals — never deployed
 tools/                calibration harnesses — not built, not in `npm test`
 scripts/make-icons.mjs
 ```
+
+**Sudoku measures work, not technique.** The obvious difficulty signal is the
+hardest technique a grid needs, and it was tried first and is far too coarse:
+across two dozen dug grids, more than half needed nothing above a hidden single,
+so they all collapsed onto one score and the entire easy half of the game was a
+single difficulty. What separates an easy grid from a medium one is not which
+techniques appear but **how much work there is**, so every deduction is priced —
+1 for a naked single, 3 for a hidden one, up to 80 for an XY-wing — and the sum
+is the signal. It spans 25 to about 280 and is mapped logarithmically.
+
+**Sudoku's generator digs, then binary-searches back up.** Every clue removed
+makes a grid weakly harder and every clue restored makes it weakly easier, so
+rather than deal grids and keep the ones that score near the band — the
+generate-and-test loop the other games use — it digs one grid to exhaustion and
+then searches the restore order for the point that lands in the band. Six solver
+runs instead of dozens of rejected candidates. The ladder is bounded by *clue
+count* rather than by the dig; enforcing that inside the measurement instead was
+the first attempt and it broke the search outright, because a too-full grid came
+back as unmeasurable, the search read that as "too hard", and every level of the
+game came out at the maximum clue count and one difficulty.
+
+**Both Sudoku searches refuse a grid whose givens already contradict each
+other.** The search only reasons about empty cells, so two 4s in one box are not
+rejected — they are explored, in full, until every branch is dead, which is an
+exponential proof of something one pass can see. The generator never produces
+such a grid; the *player* does, and without the guard entering a contradiction
+freezes the app.
+
+**Nonogram is solvable one line at a time, which is stronger than unique.** A
+uniquely-solvable nonogram that needs a two-line contradiction to crack is fair
+in principle and miserable on a phone, so a puzzle is discarded unless repeated
+single-line reasoning finishes it. Uniqueness comes free: every cell written was
+the same in *every* arrangement consistent with the line, so the solver cannot
+have ruled a second picture out.
+
+**Nonogram pictures are grown, not dealt.** Independent coin flips produce clue
+lists like `1 1 1 1 2 1` — ugly, unusually hard, and not a picture. Cells are
+seeded at a density and then smoothed into blobs, which gives fewer, longer runs
+and something recognisable at the end.
+
+**Nonogram and Pipes share a difficulty signal, and it is not the obvious one.**
+Both measure *lookahead*: how many lines or tiles the solver had to read before
+one of them yielded something. A board where the next deduction is always beside
+the last is one you run down; one where you sweep half the grid each time is one
+you grind through. For Pipes this replaced "what share of the board is forced",
+which was measured at **1.00 for every width and every tree shape** — a pipes
+board grown from a spanning tree is always fully determined, so that term was a
+constant and difficulty was grid size alone, with every level missing its band.
+
+**Pipes boards are built backwards.** A spanning tree is grown over the grid,
+each tile's stubs are read off the tree edges, and every tile is then given a
+random quarter turn — so turning each one back is a solution by construction and
+there is nothing for a solver to certify. A windier tree is the harder one
+(4.20 lookahead against 3.57 at eight wide), which is the opposite of the
+intuition: long corridors of straight pipe are quick to read off.
+
+**2048's spawns are a pure function of the move number**, lifted straight from
+Yahtzee. That is what makes unlimited undo survivable here: rewinding and
+playing a different direction gets the same tile, because the tile was never a
+property of the move — only where it lands can change. It also makes the game
+fully deterministic, so the verifier plays each level through with a depth-five
+search and a level ships only if it actually got there, and the next-tile
+preview is honest rather than drawn afterwards and shown early.
+
+**2048 stops at 1024, and picks its target from the band rather than the
+pressure.** Reaching 2048 takes around nine hundred moves — half an hour, in one
+sitting — and every level past 50 would be that. Choosing the target is the
+other way round from every other game here because there are only five rungs:
+mapping pressure onto the ladder linearly put level 12 on a 512 scoring 0.86
+against a band topping out at 0.76 and missed four levels in fifteen. Trap rate
+saturates above a 256 — a player with no lookahead essentially never reaches 512,
+and giving the naive player a corner habit moved that from 0.97 to 0.97 — so the
+target carries three quarters of the weight and trap rate separates the bottom.
+
+## Picking Wordle back up
+
+`src/wordle/` has `model.ts`, `solve.ts`, `generate.ts` and a generated
+`words.ts`, and none of it is wired up: there is no `game.ts`, `render.ts`,
+`rules.ts`, stylesheet, `main.ts` or page, no entry in `vite.config.ts`, no
+launcher card, and no icon. It does not ship and cannot be reached.
+
+What is there and believed sound, but **not yet tested or calibrated**:
+
+- `markGuess` scores a guess in two passes, greens first, so a repeated letter
+  cannot claim a copy of itself the answer does not have.
+- `words.ts` is built by `npm run words` from three public sources — a
+  dictionary for what *is* a word, a subtitle frequency list for what people
+  actually say, and two name lists to throw out the `marie`/`berlin`/`harvey`
+  that the subtitle corpus is full of. 2,000 answers and 4.5-6k allowed guesses
+  per length; every realistic opener (`crane`, `slate`, `adieu`, `irate`) is
+  accepted.
+- The hint is the commonest answer still consistent with the board, which is a
+  pure function of the board and so cannot ping-pong.
+- Difficulty blends length, rarity and trap rate, with trap rate weighted
+  heaviest because it is the only term that knows anything about *this word* —
+  `LIGHT` lives in a family with `MIGHT`, `NIGHT`, `RIGHT`, `SIGHT` and `FIGHT`
+  and `PIZZA` does not, and rarity cannot see that.
+
+**Next step is to run `tools/wordle.ts`** (`npx vitest run --config
+tools/vitest.wordle.config.ts --root .`, config not yet written) and check
+section 1 before trusting any of the weights in `score`. Every other game in
+this collection got its first difficulty signal wrong, and three of them got it
+wrong in a way only the probe revealed.
 
 ## Deploying
 

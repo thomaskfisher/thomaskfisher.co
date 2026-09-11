@@ -1,0 +1,284 @@
+/* ==========================================================================
+   Nonogram.
+
+   The board is four boxes in a two-by-two: an empty corner, the column clues
+   along the top, the row clues down the left, and the grid. All four are sized
+   from one `--cell` custom property so the clue gutters always line up with the
+   cells they describe — which is the whole reason the clues are readable.
+   ========================================================================== */
+
+.app--nonogram {
+  grid-template-rows: auto 1fr auto auto;
+}
+
+.board {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: 4px 8px 6px;
+}
+
+/* ---------------------------------------------------------------- frame */
+
+.nono {
+  display: grid;
+  /* The gutters are as wide as the longest clue list needs and no wider, so a
+     puzzle with one four-number row does not indent every row by four numbers. */
+  grid-template-columns: calc(var(--cell) * var(--row-clues) * 0.62) auto;
+  grid-template-rows: calc(var(--cell) * var(--col-clues) * 0.72) auto;
+  /* Nothing here derives a z-index from game state; the stacking context is
+     written in with the container so that stays cheap to be wrong about. */
+  isolation: isolate;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 6px 18px var(--shadow);
+  /* The grid handles its own drag gestures, so the browser must not claim them
+     as a scroll or the first stroke of every level is swallowed. */
+  touch-action: none;
+}
+
+.nono[data-empty] {
+  visibility: hidden;
+}
+
+.nono-corner {
+  grid-area: 1 / 1;
+}
+
+/* ----------------------------------------------------------------- clues */
+
+.nono-cols {
+  grid-area: 1 / 2;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--cell));
+}
+
+.nono-rows {
+  grid-area: 2 / 1;
+  display: grid;
+  grid-template-rows: repeat(var(--rows), var(--cell));
+}
+
+.nono-clue {
+  display: flex;
+  gap: 1px;
+  color: var(--text-dim);
+  font-size: calc(var(--cell) * 0.46);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+/* Column clues read downwards and sit against the grid; row clues read across
+   and sit against it from the left. Both are pushed up to the grid rather than
+   centred, so the last number is always the one next to the line. */
+.nono-clue--col {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 3px;
+}
+
+.nono-clue--row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: calc(var(--cell) * 0.14);
+  padding-right: 4px;
+}
+
+.nono-clue i {
+  font-style: normal;
+}
+
+/* A line whose painted cells already match the picture. Greying it out is the
+   one piece of feedback a paper nonogram cannot give, and it is what stops the
+   endgame being a re-count of every line. */
+.nono-clue.is-done {
+  opacity: 0.33;
+}
+
+/* The line the hint reasoned from. */
+.nono-clue.is-lit {
+  color: var(--accent);
+  opacity: 1;
+}
+
+/* ------------------------------------------------------------------ grid */
+
+.nono-grid {
+  grid-area: 2 / 2;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--cell));
+  grid-template-rows: repeat(var(--rows), var(--cell));
+  border-radius: 4px;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.nc {
+  position: relative;
+  width: var(--cell);
+  height: var(--cell);
+  background: var(--bg);
+  box-shadow: inset -1px -1px 0 color-mix(in srgb, var(--text-dim) 26%, transparent);
+  transition: background 0.1s ease;
+}
+
+/* Every fifth line is heavier, which is what makes a fifteen-wide row countable
+   without putting a finger on the screen. Drawn on the cells and on the clue
+   gutters alike so the two stay visually locked together. */
+.nc.edge-right,
+.nono-clue.edge-right {
+  border-right: 2px solid color-mix(in srgb, var(--text-dim) 50%, transparent);
+}
+
+.nc.edge-bottom,
+.nono-clue.edge-bottom {
+  border-bottom: 2px solid color-mix(in srgb, var(--text-dim) 50%, transparent);
+}
+
+.nc.is-filled {
+  background: var(--accent);
+  box-shadow: none;
+}
+
+/* A cross is drawn rather than coloured: the cell has to stay obviously empty,
+   because "I have ruled this out" and "I have painted this" are the two things
+   a nonogram must never let you confuse at a glance. */
+.nc.is-cross::before,
+.nc.is-cross::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  width: 2px;
+  height: 56%;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--text-dim) 70%, transparent);
+}
+
+.nc.is-cross::before {
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.nc.is-cross::after {
+  transform: translateX(-50%) rotate(-45deg);
+}
+
+.nc.is-hinted {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* The mark the hint is asking for, shown faintly in the cell it belongs in.
+   Faint enough never to read as something the player already did, and gone on
+   the next render because it is recomputed from the current effect. */
+.nc[data-hint='fill']::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+.nc[data-hint='cross']::before,
+.nc[data-hint='cross']::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  width: 2px;
+  height: 56%;
+  border-radius: 1px;
+  background: var(--accent);
+  opacity: 0.55;
+}
+
+.nc[data-hint='cross']::before {
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.nc[data-hint='cross']::after {
+  transform: translateX(-50%) rotate(-45deg);
+}
+
+.nc.is-mistake {
+  background: var(--danger);
+  box-shadow: inset 0 0 0 2px var(--danger);
+}
+
+/* ---------------------------------------------------------------- brush */
+
+.brushes {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 14px 0;
+}
+
+.brush {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 118px;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 2px 0 var(--shadow);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.brush:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.brush:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.brush.is-on {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* The swatch shows what the brush lays down, which is quicker to read than the
+   label and is the part that survives at a glance mid-puzzle. */
+.brush-swatch {
+  position: relative;
+  width: 17px;
+  height: 17px;
+  border-radius: 3px;
+  border: 1.5px solid currentColor;
+}
+
+.brush--fill .brush-swatch {
+  background: currentColor;
+}
+
+.brush--cross .brush-swatch::before,
+.brush--cross .brush-swatch::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 15%;
+  width: 1.8px;
+  height: 70%;
+  background: currentColor;
+}
+
+.brush--cross .brush-swatch::before {
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.brush--cross .brush-swatch::after {
+  transform: translateX(-50%) rotate(-45deg);
+}

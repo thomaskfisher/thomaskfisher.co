@@ -7,11 +7,28 @@ import { RULES as DEPOT } from '../depot/rules';
 import { RULES as SCREWLAND } from '../screwland/rules';
 import { RULES as SOLITAIRE } from '../solitaire/rules';
 import { RULES as SPIDER } from '../spider/rules';
+import { RULES as SUDOKU } from '../sudoku/rules';
+import { RULES as NONOGRAM } from '../nonogram/rules';
+import { RULES as PIPES } from '../pipes/rules';
+import { RULES as TWENTY48 } from '../twenty48/rules';
 import { RULES as SURVIVAL } from '../survival/rules';
 import { shouldAutoShow } from './how-to-play';
 import { defaultSave, migrate } from './progress';
 
-const RULES = [COLORSORT, SCREWLAND, BUSJAM, SURVIVAL, DEPOT, BACKGAMMON, SOLITAIRE, SPIDER];
+const RULES = [
+  COLORSORT,
+  SCREWLAND,
+  BUSJAM,
+  SURVIVAL,
+  DEPOT,
+  BACKGAMMON,
+  SOLITAIRE,
+  SPIDER,
+  SUDOKU,
+  NONOGRAM,
+  PIPES,
+  TWENTY48,
+];
 
 /**
  * The diagrams are strings of SVG assembled by hand, which means a stray

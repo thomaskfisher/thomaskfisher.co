@@ -777,6 +777,257 @@ function drawSpider(size, { maskable }) {
   return encodePng(size, size, canvas.data);
 }
 
+/**
+ * A nine-by-nine reduced to what reads at 48px: the three heavy rules that make
+ * the boxes, and four filled cells. Drawing all eighty-one produces a grey
+ * texture — the box structure is the thing that says "sudoku" rather than
+ * "grid", so it is the thing that survives the shrink.
+ */
+function drawSudoku(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.2 : size * 0.12;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const area = size - inset * 2;
+  const cell = area / 9;
+  const rule = Math.max(1, size * 0.012);
+  const heavy = Math.max(1.5, size * 0.028);
+
+  fillRoundedRect(canvas, inset, inset, area, area, size * 0.04, hex('#1b2a45'));
+
+  // Filled cells go down before the rules, so a rule always reads on top.
+  const filled = [
+    [0, 0, '#4da3ff'],
+    [4, 1, '#f5c518'],
+    [7, 4, '#35b56a'],
+    [2, 6, '#e6394a'],
+    [5, 7, '#4da3ff'],
+  ];
+  for (const [column, row, color] of filled) {
+    fillRoundedRect(
+      canvas,
+      inset + column * cell + cell * 0.12,
+      inset + row * cell + cell * 0.12,
+      cell * 0.76,
+      cell * 0.76,
+      cell * 0.2,
+      hex(color),
+      0.92,
+    );
+  }
+
+  const light = hex('#8fa6c9');
+
+  for (let line = 1; line < 9; line++) {
+    if (line % 3 === 0) continue;
+    const offset = inset + line * cell - rule / 2;
+    fillRoundedRect(canvas, offset, inset, rule, area, 0, light, 0.22);
+    fillRoundedRect(canvas, inset, offset, area, rule, 0, light, 0.22);
+  }
+
+  for (let line = 0; line <= 3; line++) {
+    const offset = inset + line * cell * 3 - heavy / 2;
+    const clamped = Math.min(Math.max(offset, inset - heavy / 2), inset + area - heavy / 2);
+    fillRoundedRect(canvas, clamped, inset, heavy, area, heavy / 2, light, 0.62);
+    fillRoundedRect(canvas, inset, clamped, area, heavy, heavy / 2, light, 0.62);
+  }
+
+  return encodePng(size, size, canvas.data);
+}
+
+/**
+ * A small grid part-painted, with its clue numbers suggested as dashes down the
+ * left and across the top. Numbers do not survive the shrink to 48px, so the
+ * gutters are drawn as marks — enough to say "this grid has clues attached",
+ * which is what separates a nonogram icon from a generic grid one.
+ */
+function drawNonogram(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.2 : size * 0.12;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const area = size - inset * 2;
+  // A quarter of the box is clue gutter, the rest is the grid itself.
+  const gutter = area * 0.26;
+  const gridSize = area - gutter;
+  const cells = 5;
+  const cell = gridSize / cells;
+  const left = inset + gutter;
+  const top = inset + gutter;
+
+  fillRoundedRect(canvas, left, top, gridSize, gridSize, size * 0.03, hex('#1b2a45'));
+
+  // A blocky shape rather than scattered cells: the icon should look like a
+  // picture coming out, which is the point of the game.
+  const painted = [
+    [1, 0], [2, 0],
+    [0, 1], [1, 1], [2, 1], [3, 1],
+    [1, 2], [2, 2], [3, 2], [4, 2],
+    [1, 3], [2, 3],
+    [0, 4], [3, 4],
+  ];
+  for (const [column, row] of painted) {
+    fillRoundedRect(
+      canvas,
+      left + column * cell + cell * 0.1,
+      top + row * cell + cell * 0.1,
+      cell * 0.8,
+      cell * 0.8,
+      cell * 0.18,
+      hex('#4da3ff'),
+    );
+  }
+
+  const light = hex('#8fa6c9');
+  const tick = Math.max(1, size * 0.016);
+
+  // The clue gutters, as marks rather than digits.
+  for (let row = 0; row < cells; row++) {
+    const y = top + row * cell + cell / 2 - tick / 2;
+    const runs = row === 1 || row === 2 ? 2 : 1;
+    for (let run = 0; run < runs; run++) {
+      const width = gutter * (run === 0 ? 0.34 : 0.24);
+      const x = inset + gutter - (run + 1) * (gutter * 0.42);
+      fillRoundedRect(canvas, x, y, width, tick, tick / 2, light, 0.66);
+    }
+  }
+
+  for (let column = 0; column < cells; column++) {
+    const x = left + column * cell + cell / 2 - tick / 2;
+    const runs = column === 1 || column === 2 ? 2 : 1;
+    for (let run = 0; run < runs; run++) {
+      const height = gutter * (run === 0 ? 0.34 : 0.24);
+      const y = inset + gutter - (run + 1) * (gutter * 0.42);
+      fillRoundedRect(canvas, x, y, tick, height, tick / 2, light, 0.66);
+    }
+  }
+
+  return encodePng(size, size, canvas.data);
+}
+
+/**
+ * A short run of pipework with one elbow left turned the wrong way, which is
+ * the whole game in one picture. The lit part is accent and the stray tile is
+ * grey, so even at 48px it reads as "this one needs turning".
+ */
+function drawPipes(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.21 : size * 0.13;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const area = size - inset * 2;
+  const cell = area / 3;
+  const pipe = Math.max(2, cell * 0.26);
+  const half = pipe / 2;
+
+  const wet = hex('#4da3ff');
+  const dry = hex('#6d7f9e');
+
+  // Centre of tile (column, row).
+  const cx = (column) => inset + column * cell + cell / 2;
+  const cy = (row) => inset + row * cell + cell / 2;
+
+  /** A stub from a tile's middle to one of its edges. */
+  const stub = (column, row, side, color) => {
+    const x = cx(column);
+    const y = cy(row);
+    if (side === 'n') fillRoundedRect(canvas, x - half, y - cell / 2, pipe, cell / 2 + half, half, color);
+    if (side === 's') fillRoundedRect(canvas, x - half, y - half, pipe, cell / 2 + half, half, color);
+    if (side === 'w') fillRoundedRect(canvas, x - cell / 2, y - half, cell / 2 + half, pipe, half, color);
+    if (side === 'e') fillRoundedRect(canvas, x - half, y - half, cell / 2 + half, pipe, half, color);
+  };
+
+  const hub = (column, row, color, r) =>
+    fillRoundedRect(canvas, cx(column) - r, cy(row) - r, r * 2, r * 2, r, color);
+
+  // The fed run: a well at the top left, down and across to a tap.
+  stub(0, 0, 's', wet);
+  stub(0, 1, 'n', wet);
+  stub(0, 1, 'e', wet);
+  stub(1, 1, 'w', wet);
+  stub(1, 1, 'e', wet);
+  stub(2, 1, 'w', wet);
+
+  // The stray tile, pointing the wrong way and dry.
+  stub(2, 2, 'n', dry);
+  stub(2, 2, 'w', dry);
+
+  hub(0, 0, wet, cell * 0.2);
+  fillRoundedRect(
+    canvas,
+    cx(0) - cell * 0.1,
+    cy(0) - cell * 0.1,
+    cell * 0.2,
+    cell * 0.2,
+    cell * 0.1,
+    hex('#101a2e'),
+  );
+  hub(2, 1, wet, cell * 0.17);
+  hub(2, 2, dry, cell * 0.13);
+
+  return encodePng(size, size, canvas.data);
+}
+
+/**
+ * Four tiles of the ladder, warm through cool, with the biggest in the corner
+ * where it belongs. The gradient across them is the thing that reads at 48px —
+ * the numbers do not survive the shrink, and they are not what the game looks
+ * like from across a room anyway.
+ */
+function drawTwenty48(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.2 : size * 0.12;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const area = size - inset * 2;
+  const gap = area * 0.06;
+  const cell = (area - gap) / 2;
+
+  // Read as a board rather than as four loose squares.
+  fillRoundedRect(canvas, inset - gap, inset - gap, area + gap * 2, area + gap * 2, size * 0.08, hex('#1b2a45'));
+
+  const tiles = [
+    [0, 0, '#f7c98b'],
+    [1, 0, '#f2874f'],
+    [0, 1, '#d94f52'],
+    [1, 1, '#5c44a8'],
+  ];
+
+  for (const [column, row, color] of tiles) {
+    fillRoundedRect(
+      canvas,
+      inset + column * (cell + gap),
+      inset + row * (cell + gap),
+      cell,
+      cell,
+      cell * 0.16,
+      hex(color),
+    );
+  }
+
+  // Two bars on the largest tile, standing in for the digits it is too small
+  // to carry. Enough to say "there is a number on these".
+  const bigX = inset + cell + gap;
+  const bigY = inset + cell + gap;
+  const bar = Math.max(1, cell * 0.09);
+  fillRoundedRect(canvas, bigX + cell * 0.22, bigY + cell * 0.38, cell * 0.56, bar, bar / 2, hex('#ffffff'), 0.85);
+  fillRoundedRect(canvas, bigX + cell * 0.3, bigY + cell * 0.56, cell * 0.4, bar, bar / 2, hex('#ffffff'), 0.6);
+
+  return encodePng(size, size, canvas.data);
+}
+
 const targets = [
   ['colorsort-180.png', 180, { maskable: false }, drawColorSort],
   ['colorsort-192.png', 192, { maskable: false }, drawColorSort],
@@ -818,6 +1069,22 @@ const targets = [
   ['spider-192.png', 192, { maskable: false }, drawSpider],
   ['spider-512.png', 512, { maskable: false }, drawSpider],
   ['spider-maskable-512.png', 512, { maskable: true }, drawSpider],
+  ['sudoku-180.png', 180, { maskable: false }, drawSudoku],
+  ['sudoku-192.png', 192, { maskable: false }, drawSudoku],
+  ['sudoku-512.png', 512, { maskable: false }, drawSudoku],
+  ['sudoku-maskable-512.png', 512, { maskable: true }, drawSudoku],
+  ['nonogram-180.png', 180, { maskable: false }, drawNonogram],
+  ['nonogram-192.png', 192, { maskable: false }, drawNonogram],
+  ['nonogram-512.png', 512, { maskable: false }, drawNonogram],
+  ['nonogram-maskable-512.png', 512, { maskable: true }, drawNonogram],
+  ['pipes-180.png', 180, { maskable: false }, drawPipes],
+  ['pipes-192.png', 192, { maskable: false }, drawPipes],
+  ['pipes-512.png', 512, { maskable: false }, drawPipes],
+  ['pipes-maskable-512.png', 512, { maskable: true }, drawPipes],
+  ['twenty48-180.png', 180, { maskable: false }, drawTwenty48],
+  ['twenty48-192.png', 192, { maskable: false }, drawTwenty48],
+  ['twenty48-512.png', 512, { maskable: false }, drawTwenty48],
+  ['twenty48-maskable-512.png', 512, { maskable: true }, drawTwenty48],
 ];
 
 for (const [name, size, options, draw] of targets) {

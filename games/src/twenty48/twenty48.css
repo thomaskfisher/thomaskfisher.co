@@ -1,0 +1,187 @@
+/* ==========================================================================
+   2048.
+
+   The board is two stacked layers: a grid of empty wells that never changes,
+   and the tiles floating over it, absolutely positioned from `--x` and `--y`.
+   That split is what lets a tile animate from one cell to another without the
+   grid reflowing under it.
+   ========================================================================== */
+
+.app--twenty48 {
+  grid-template-rows: auto auto 1fr auto;
+}
+
+.board {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: 4px 12px 8px;
+}
+
+/* ------------------------------------------------------------- next tile */
+
+/*
+ * The preview.
+ *
+ * Threes' one genuinely good idea, and the reason it is honest here: the tile
+ * is a function of the move number, so it really has been decided before the
+ * move is made rather than drawn afterwards and shown early.
+ */
+.tf-next {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 2px 14px 6px;
+  color: var(--text-dim);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* `[hidden]` is a user-agent style, so the `display: flex` above outranks it and
+   the row would stay visible while claiming to be hidden. Every element toggled
+   with `.hidden` in this project needs its own rule like this one. */
+.tf-next[hidden] {
+  display: none;
+}
+
+.tf-next-tile {
+  display: grid;
+  place-items: center;
+  min-width: 40px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ----------------------------------------------------------------- board */
+
+.tf-board {
+  position: relative;
+  /* Nothing here derives a z-index from game state — tiles all sit on one
+     layer — but the container gets its own stacking context anyway. */
+  isolation: isolate;
+  --gap: 8px;
+  width: calc(var(--n) * var(--cell) + (var(--n) + 1) * var(--gap));
+  height: calc(var(--n) * var(--cell) + (var(--n) + 1) * var(--gap));
+  padding: var(--gap);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 6px 18px var(--shadow);
+  /* The board owns its own swipes, so the browser must not claim them as a
+     scroll — without this the first swipe of every level is swallowed. */
+  touch-action: none;
+}
+
+.tf-board[data-empty] {
+  visibility: hidden;
+}
+
+.tf-cells {
+  position: absolute;
+  inset: var(--gap);
+  display: grid;
+  grid-template: repeat(var(--n), var(--cell)) / repeat(var(--n), var(--cell));
+  gap: var(--gap);
+}
+
+.tf-cell {
+  border-radius: 9px;
+  background: var(--glass);
+}
+
+.tf-tiles {
+  position: absolute;
+  inset: var(--gap);
+}
+
+/* ------------------------------------------------------------------ tile */
+
+.tf-tile {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: var(--cell);
+  height: var(--cell);
+  /* Placed from the cell index rather than laid out, so two tiles can occupy
+     the same spot for the length of a merge animation. */
+  left: calc(var(--x) * (var(--cell) + var(--gap)));
+  top: calc(var(--y) * (var(--cell) + var(--gap)));
+  border-radius: 9px;
+  font-size: calc(var(--cell) * 0.42);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: #16233c;
+  background: #eef3fb;
+}
+
+/*
+ * The ladder.
+ *
+ * Warm and light at the bottom, cool and dark at the top, so a glance at the
+ * board reads as a gradient rather than as a set of unrelated colours — which
+ * is what makes "is my big tile still in the corner" answerable without
+ * reading a single number.
+ *
+ * The four largest keep white text; everything below is dark on light. That
+ * switch is at the point where the background gets dark enough for the contrast
+ * to flip, not at a round number.
+ */
+.tf-tile--1 { background: #eef3fb; }
+.tf-tile--2 { background: #e3ecf9; }
+.tf-tile--3 { background: #f7c98b; }
+.tf-tile--4 { background: #f5a962; }
+.tf-tile--5 { background: #f2874f; }
+.tf-tile--6 { background: #ea6a4a; color: #fff; }
+.tf-tile--7 { background: #d94f52; color: #fff; }
+.tf-tile--8 { background: #b93d74; color: #fff; }
+.tf-tile--9 { background: #8a3d96; color: #fff; }
+.tf-tile--10 { background: #5c44a8; color: #fff; }
+.tf-tile--11 { background: #2f4fa8; color: #fff; }
+.tf-tile--12 { background: #1f3a7a; color: #fff; }
+
+/* Four digits need more room than two. Stepped rather than scaled smoothly,
+   because a number that changes size as it grows reads as a wobble. */
+.tf-tile--7,
+.tf-tile--8,
+.tf-tile--9 {
+  font-size: calc(var(--cell) * 0.34);
+}
+
+.tf-tile--10,
+.tf-tile--11,
+.tf-tile--12 {
+  font-size: calc(var(--cell) * 0.27);
+}
+
+/* ------------------------------------------------------------------ hint */
+
+.tf-hint {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.tf-hint svg {
+  width: 44%;
+  height: 44%;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 2px 10px rgba(6, 12, 24, 0.5));
+}
+
+/* The arrow is drawn pointing up; the other three are that, turned. */
+.tf-hint--1 svg { transform: rotate(90deg); }
+.tf-hint--2 svg { transform: rotate(180deg); }
+.tf-hint--3 svg { transform: rotate(270deg); }

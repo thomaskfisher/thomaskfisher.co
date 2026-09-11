@@ -9,6 +9,11 @@ so it never runs by accident — these take minutes, not seconds.
 | `probe.ts` | Which (colours, open sinks, buffer, capacity) combinations are solvable often enough to generate at all? |
 | `timing.ts` | How long does one level take to build? The worker has about one level's play; past that the main-thread fallback freezes the board. |
 | `sample.ts` | Prints Survival boards as text, so the gate spread can be looked at rather than trusted. |
+| `sudoku.ts` | What does Sudoku's effort signal reach, and does the dig-then-restore search land in the band? |
+| `nonogram.ts` | What does nonogram lookahead range over, and do size and fill rate predict it? (They do not.) |
+| `pipes.ts` | Same question for Pipes — and it is where "every board is fully forced" was measured, which killed the first difficulty signal outright. |
+| `twenty48.ts` | Trap rate by target, how *long* each target takes to reach, and whether a worker can verify a level in time. |
+| `wordle.ts` | Does trap rate separate `LIGHT` from `PIZZA`? Not yet run — see *Picking Wordle back up* in the games README. |
 | `dice.ts` | How good is Yahtzee's hint? It has no difficulty band to calibrate, but a hint that plays badly is not worth pressing, so this prints what the policy averages over 400 cards and what it prices each box at. |
 
 ```sh
