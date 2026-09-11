@@ -20,9 +20,9 @@ in-game currency. Everything is static; all state lives on the player's device.
 | Nonogram | Playable |
 | Pipes | Playable |
 | 2048 | Playable |
-| Wordle | Half built — see *Picking Wordle back up* |
-| Mancala | Not started |
-| Mexican Train | Not started |
+| Wordle | Playable |
+| Mancala | Playable |
+| Mexican Train | Playable |
 
 ## Working on it
 
@@ -36,16 +36,16 @@ npm run icons      # regenerate PWA icons (output is committed)
 
 ## How it works
 
-**Twelve of the fourteen are puzzles. Yahtzee and Backgammon are not, and both
-bend the house rules on purpose.** Everything below about verified levels, measured
-difficulty and unlimited undo describes Color Sort, Screw Land, Bus Jam,
-Survival, Gridlock, Depot, Solitaire and Spider. Yahtzee is a game of chance:
-there is no board to verify, no difficulty to curve, and rewinding a throw would
-be reading the answer. Backgammon has a second player in it, which takes the
-hint with it and puts a fence around undo. What both keep is everything that
-made this collection worth building — no ads, no servers, no currency, nothing
-locked — and what they put in place of the rest is set out under *Yahtzee* and
-*Backgammon* below.
+**Thirteen of the seventeen are puzzles. Yahtzee, Backgammon, Mancala and
+Mexican Train are not, and all four bend the house rules on purpose.**
+Everything below about verified levels, measured difficulty and unlimited undo
+describes the puzzles. Yahtzee is a game of chance: there is no board to verify,
+no difficulty to curve, and rewinding a throw would be reading the answer. The
+other three have a second person in them, which takes the hint with it and — in
+two of the three — puts a fence around undo. What all four keep is everything
+that made this collection worth building: no ads, no servers, no currency,
+nothing locked. What they put in place of the rest is set out under *Yahtzee*,
+*Backgammon*, *Mancala* and *Mexican Train* below.
 
 **Every level is verified before it is shown.** Levels are dealt at random from
 a seed, then solved. A board the solver cannot finish is discarded, so unlike
@@ -535,35 +535,130 @@ saturates above a 256 — a player with no lookahead essentially never reaches 5
 and giving the naive player a corner habit moved that from 0.97 to 0.97 — so the
 target carries three quarters of the weight and trap rate separates the bottom.
 
-## Picking Wordle back up
+## Wordle
 
-`src/wordle/` has `model.ts`, `solve.ts`, `generate.ts` and a generated
-`words.ts`, and none of it is wired up: there is no `game.ts`, `render.ts`,
-`rules.ts`, stylesheet, `main.ts` or page, no entry in `vite.config.ts`, no
-launcher card, and no icon. It does not ship and cannot be reached.
+**Length is variety, not difficulty — and the measurement says so.** The ladder
+grows the word from five letters to seven, and the plan was for that to *be* the
+difficulty curve. `tools/wordle.txt` says the opposite. Guesses a greedy solver
+needs, by length and by how rare the answer is:
 
-What is there and believed sound, but **not yet tested or calibrated**:
+| rarity rank | 5 letters | 6 letters | 7 letters |
+| --- | --- | --- | --- |
+| 0-200 | 2.98 | 2.63 | 2.60 |
+| 400-700 | 3.80 | 3.40 | 2.90 |
+| 900-1200 | 4.13 | 3.58 | 3.25 |
+| 1500-1900 | 4.30 | 3.85 | 3.23 |
 
-- `markGuess` scores a guess in two passes, greens first, so a repeated letter
-  cannot claim a copy of itself the answer does not have.
-- `words.ts` is built by `npm run words` from three public sources — a
-  dictionary for what *is* a word, a subtitle frequency list for what people
-  actually say, and two name lists to throw out the `marie`/`berlin`/`harvey`
-  that the subtitle corpus is full of. 2,000 answers and 4.5-6k allowed guesses
-  per length; every realistic opener (`crane`, `slate`, `adieu`, `irate`) is
-  accepted.
-- The hint is the commonest answer still consistent with the board, which is a
-  pure function of the board and so cannot ping-pong.
-- Difficulty blends length, rarity and trap rate, with trap rate weighted
-  heaviest because it is the only term that knows anything about *this word* —
-  `LIGHT` lives in a family with `MIGHT`, `NIGHT`, `RIGHT`, `SIGHT` and `FIGHT`
-  and `PIZZA` does not, and rarity cannot see that.
+Longer words are *easier* at every rarity, because every extra letter is another
+constraint and the families that trap a player (`LIGHT`/`MIGHT`/`NIGHT`/`SIGHT`)
+are a five-letter phenomenon. So length contributes nothing to `score`; it is
+there because seven rows of seven letters is a different-looking board, and the
+extra guess the ladder hands out at six letters is a courtesy rather than
+compensation. **Rarity is what the table actually shows moving**, and it is the
+half of the original plan that survived.
 
-**Next step is to run `tools/wordle.ts`** (`npx vitest run --config
-tools/vitest.wordle.config.ts --root .`, config not yet written) and check
-section 1 before trusting any of the weights in `score`. Every other game in
-this collection got its first difficulty signal wrong, and three of them got it
-wrong in a way only the probe revealed.
+**What difficulty is instead: par, with trap rate as a tiebreak.** Par is how
+many guesses a greedy player needs; trap rate is how often a naive one is left
+choosing between words that differ by a letter. Par carries 85% of the weight
+because it is the term that moves — mean trap rate is 0.00-0.03 in every band
+above, and it only separates the handful of words that live in a crowd. It does
+separate those, sharply: `LIGHT` measures 1.00 and `PIZZA` 0.00, which is the
+one thing par and rarity cannot see. That is also why the generator
+short-circuits it: when an answer's par alone puts it inside the band whatever
+the traps do, the rollouts are skipped entirely.
+
+**The word list is ENABLE, not a frequency list.** The first build filtered a
+subtitle corpus against two name lists to throw out `marie` and `berlin`, and
+that filter also threw out `going`, `never`, `police` and `wedding` — ten per
+cent of the answers, including words nobody would call proper nouns. Switching
+the dictionary to ENABLE and keeping the frequency list only for *ordering*
+fixed it at the root: something is a word because a dictionary says so, and
+common because a corpus says so, and those are two different questions.
+
+## Mancala
+
+**Kalah, six pits a side, and the board is one array of fourteen.** Indices 0-5
+are south's pits, 6 is south's store, 7-12 are north's, 13 is north's. Sowing is
+then "step forward, wrapping at fourteen", and the only special case in the
+whole model is skipping the *other* player's store. It also makes the capture
+rule exact arithmetic — the pit facing `i` is always `12 - i`, with nothing that
+depends on whose turn it is.
+
+**Undo is unlimited here, and in Backgammon it is not.** The two games look
+alike and the rule differs, for one reason: there is no randomness in Mancala at
+all. Both players can already see everything, so rewinding tells neither of them
+anything they could not have worked out — where Backgammon's dice make a rewind
+across a hand-over an oracle. For the same reason Restart is a real restart
+rather than a fresh deal: twelve pits of four is the same opening every time, so
+there is nothing to deal.
+
+**The board is drawn on its end.** A mancala board is eight pits wide and two
+deep, which on a portrait phone leaves six pits sharing three hundred pixels and
+seeds too small to count — and counting seeds is the game. Turned ninety
+degrees it is two wide and eight deep, which is the shape of the screen. The lap
+survives the turn, each player's store still ends up nearest them, and the two
+pits joined by the capture rule land side by side in the same row.
+
+**Seeds are laid on a grid, not scattered.** The first version placed them on
+rings, which looked right and sliced a third of them in half against the edge of
+the bowl — a ring wide enough to spread eight seeds across a pit is taller than
+the pit is. The grid also has the property the scatter was chosen for: seed *n*
+is always in the same slot, so dropping another one moves nothing that was
+already there, which is what makes a bowl countable during the move it matters.
+
+## Mexican Train
+
+**A double-nine set, one tile a turn, and a round is a level.** The traditional
+game lays a whole train on the first turn and runs thirteen rounds off a
+double-twelve set — a pleasant evening at a table and an unpleasant hour on a
+phone. Kept is everything that makes it Mexican Train: your own train, the
+communal one, trains that fall open when their owner cannot play, and doubles
+that stop the board until somebody answers them. Round one runs off the double
+nine and each round steps down a pip, and the score is the pips left in your
+hand, added up across rounds, lowest wins.
+
+**Hands are eight tiles, because larger ones end the round blocked.** The first
+guess was fourteen for two players down to nine for four, reasoning that a
+smaller table wants a bigger hand. Three hundred rounds a setting said the
+opposite — the share of rounds that end with everybody stuck and nobody out
+(`tools/dominoes.ts`):
+
+| hand | 2 players | 3 players | 4 players |
+| --- | --- | --- | --- |
+| 14 | 53% | 70% | 58% |
+| 12 | 45% | 50% | 57% |
+| 10 | 41% | 30% | 41% |
+| 8 | 33% | 24% | 18% |
+| 6 | 32% | 15% | 8% |
+
+A big hand does not make a longer round, it makes a blocked one: the tile that
+would have unstuck somebody is sitting in a hand rather than on a train. A
+blocked round is a real ending and still scores, but half of them ending in a
+shrug is not a game. Six blocks less again and is where the trade stops being
+free — a hand that size is four or five turns each and the round is over before
+anybody's train has anywhere to go.
+
+Trimming the boneyard instead was measured too and runs the wrong way: capping
+it at ten tiles cuts a two-player round from 45 turns to 24 and pushes blocked
+rounds from 33% back up to 67%, because blocking is precisely what happens once
+the boneyard is empty.
+
+**The curtain is the privacy model, and it withholds rather than hides.** This
+is the only game here with something to conceal from the person you are handing
+the phone to. Between turns the hand is not in the view at all — `game.ts`
+returns an empty hand while the phase is `handover` — so there is nothing in the
+DOM to find. The curtain sits over the tray and not over the board, because the
+trains are public at a real table and stay public here: the player taking the
+phone can study the layout before they see their own tiles.
+
+**Nothing ends a turn on the player's behalf except a tile that fits.** Drawing
+and failing does not, and neither does laying a double you cannot answer. Both
+leave the player holding the board until they tap Pass. It costs a tap and buys
+the only moment in the game in which somebody can look at the tile they just
+drew — which is theirs alone, so the curtain must not come down on its own
+before they have seen it. Undo is fenced by the same fact, and the fence is in
+the model: it sits above the start of the turn and above every draw, because
+undoing a draw would let a player peek at the boneyard and put it back.
 
 ## Deploying
 
@@ -775,6 +870,15 @@ them; they belong in later as optional modifiers, not as load-bearing rules.
   and found two. The ghost now sets its own `className` outright rather than
   inheriting one. **Anything cloned out of the board is not part of the board
   and should stop looking like it immediately.**
+- **`[hidden]` is a user-agent rule and any `display` in a game's own
+  stylesheet outranks it.** Mexican Train's curtain is `display: flex`, so
+  `curtain.hidden = true` set the attribute, changed nothing on screen, and left
+  the privacy model failing silently: `hidden` reported true, the tray reported
+  the hand, and the next player was looking at the last one's tiles. Every
+  element toggled with `.hidden` in this project needs its own
+  `.thing[hidden] { display: none }`. Two other games already carried that rule
+  and a comment saying why; the third was written without reading them. Caught
+  by a browser pass, not by a test — the DOM was correct and the pixels were not.
 - **Clearing a highlight has to happen before the early return, not after.**
   The same bug's second half: `paintLot` skipped the rest of the loop body for a
   bus that had left, and the `is-hinted` removal was in the part it skipped. A
@@ -892,8 +996,19 @@ them; they belong in later as optional modifiers, not as load-bearing rules.
   keeps the score and reopening cannot count it twice.
 - **The shared chrome takes a few opt-outs.** `showTimer`, `showShapes`,
   `levelNoun` and `progressLine` on the settings sheet. All default to the puzzle
-  behaviour, so the other four call sites are unchanged. Offering a row that does
-  nothing is worse than not offering it.
+  behaviour, so the other call sites are unchanged. Offering a row that does
+  nothing is worse than not offering it. `extraRows` is the escape hatch: the
+  caller builds the row and this file drops it in, because the alternative is a
+  schema here for every row any game might ever want. Mexican Train's *Players*
+  is the only one so far.
+- **The two-player tallies ride in `stats` too.** Backgammon has `whiteWins` and
+  `redWins`; Mancala and Mexican Train share `seatScores`, an array in seat
+  order whose numbers mean whatever the game says they mean — games won in one,
+  points against you in the other. Backgammon's pair predates the array and is
+  left alone rather than migrated, because folding it in would rewrite every
+  existing Backgammon save for a tidier field list. Mexican Train resets its
+  array when the table changes size: a running total against a different set of
+  people is not a running total.
 - **Saves are per-device.** iOS can evict local storage under disk pressure or
   when Safari data is cleared, and nothing follows the player to a new phone.
   Settings → *Copy save code* is the backup; it is the reason a server is not

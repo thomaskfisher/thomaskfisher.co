@@ -1,0 +1,258 @@
+/* ==========================================================================
+   Mancala.
+
+   The board is drawn on its end: two columns of six pits with a store across
+   each end, which is a mancala board turned ninety degrees. See the header of
+   render.ts for why — the short version is that six pits across a portrait
+   phone leaves seeds too small to count, and counting seeds is the game.
+
+   Everything is sized in CSS. The rows are `1fr` and the seeds are positioned
+   in percentages of the pit they sit in, so there is nothing here for JavaScript
+   to measure and no window in which the board is laid out against stale
+   numbers. The one exception is `--seed`, which main.ts solves for: a seed has
+   to be a fixed size rather than a fraction of its pit, or a pit holding twenty
+   would draw them larger than a pit holding two.
+   ========================================================================== */
+
+.app--mancala {
+  grid-template-rows: auto 1fr auto auto;
+}
+
+:root {
+  --mc-board: #253a5f;
+  --mc-pit: #16233c;
+  --mc-pit-edge: rgba(233, 240, 255, 0.1);
+  --mc-store: #1a2a47;
+  --mc-seed-a: #e8c27a;
+  --mc-seed-b: #d6a85c;
+  --mc-seed-c: #c8e0a8;
+  --mc-seed-d: #efdcb4;
+  --mc-seed-edge: rgba(20, 14, 4, 0.38);
+}
+
+:root[data-theme='light'] {
+  --mc-board: #c5d1e6;
+  --mc-pit: #e7edf7;
+  --mc-pit-edge: rgba(22, 35, 60, 0.12);
+  --mc-store: #dde5f2;
+  --mc-seed-a: #b8843a;
+  --mc-seed-b: #9d6d2c;
+  --mc-seed-c: #7d9a52;
+  --mc-seed-d: #cba765;
+  --mc-seed-edge: rgba(20, 14, 4, 0.3);
+}
+
+.board {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: 4px 10px 2px;
+}
+
+/* ----------------------------------------------------------------- frame */
+
+.mc-frame {
+  display: grid;
+  /* Two columns of pits; a store across each end. Eight rows, six of which are
+     pits and share whatever height is left. */
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto repeat(6, minmax(0, 1fr)) auto;
+  gap: 6px;
+  width: min(100%, 420px);
+  height: 100%;
+  padding: 8px;
+  border-radius: 20px;
+  background: var(--mc-board);
+  box-shadow: inset 0 1px 0 var(--glass), 0 10px 26px var(--shadow);
+}
+
+.board.is-loading .mc-frame {
+  visibility: hidden;
+}
+
+/* ------------------------------------------------------------------ pits */
+
+.mc-pit {
+  position: relative;
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  /* The pit itself is the bowl; this element is only the tap target, and it
+     stretches to fill its grid cell so there is no dead strip between pits. */
+}
+
+.mc-bowl {
+  position: absolute;
+  inset: 0;
+  /*
+   * Rounded, not a pill.
+   *
+   * A full pill on a bowl this shape puts a cap half the pit's height on each
+   * end, and the seeds laid in the outer columns of the grid then sit outside
+   * the curve and get sliced by it. Twenty-six still reads as scooped and
+   * leaves the grid somewhere to put them.
+   */
+  border-radius: 26px;
+  background: var(--mc-pit);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.4), inset 0 -1px 0 var(--glass);
+  border: 1px solid var(--mc-pit-edge);
+  /* `filter` and `transform` are animated on this element when seeds are sown;
+     giving it the containing block keeps that off the tap target. */
+  overflow: hidden;
+}
+
+/* The pits the player to move may pick up. This is the whole of what a hint
+   would have been, and it costs nothing to read — see the header of game.ts. */
+.mc-pit.can-play .mc-bowl {
+  border-color: var(--accent);
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.4),
+    0 0 0 2px var(--accent-soft);
+}
+
+.mc-pit.can-play:active:not(:disabled) .mc-bowl {
+  background: color-mix(in srgb, var(--accent) 22%, var(--mc-pit));
+}
+
+.mc-pit:disabled {
+  cursor: default;
+}
+
+/* ---------------------------------------------------------------- stores */
+
+.mc-store {
+  position: relative;
+  grid-column: 1 / -1;
+  min-height: 52px;
+  /* Taller than a pit, because a store ends up holding most of the seeds. */
+  height: 13%;
+}
+
+.mc-bowl--store {
+  border-radius: 26px;
+  background: var(--mc-store);
+}
+
+/*
+ * Whose turn it is, said on the board rather than only in the status line.
+ *
+ * Two people passing one phone need to know where to look before they read
+ * anything, so the store of the player to move is lit. It is the store rather
+ * than the six pits because a lit store is one shape changing at one end of the
+ * board — six lit pits would compete with the marks that say which pits are
+ * playable, which mean something else entirely.
+ */
+.mc-frame[data-turn='south'] .mc-store--south .mc-bowl,
+.mc-frame[data-turn='north'] .mc-store--north .mc-bowl {
+  background: color-mix(in srgb, var(--accent) 26%, var(--mc-store));
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.mc-frame.is-over .mc-store .mc-bowl {
+  background: var(--mc-store);
+  box-shadow: none;
+}
+
+.mc-store-name {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* --------------------------------------------------------------- numerals */
+
+/*
+ * The count, on every pit and every store.
+ *
+ * Not a fallback for seeds too small to see: players count pits before every
+ * move, and a game where the only way to plan is to count twelve dots twice is
+ * a game about eyesight. The seeds say how full a pit looks; the numeral says
+ * what it holds.
+ */
+.mc-count {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.78rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.mc-count.is-zero {
+  color: var(--text-dim);
+  text-shadow: none;
+  opacity: 0.5;
+}
+
+.mc-count--store {
+  right: 16px;
+  font-size: 1.5rem;
+}
+
+/* ----------------------------------------------------------------- seeds */
+
+.mc-seed {
+  position: absolute;
+  width: var(--seed, 11px);
+  height: var(--seed, 11px);
+  margin-left: calc(var(--seed, 11px) / -2);
+  margin-top: calc(var(--seed, 11px) / -2);
+  border-radius: 50%;
+  border: 1px solid var(--mc-seed-edge);
+  background: var(--mc-seed-a);
+  box-shadow: inset 0 -1px 1px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+}
+
+/* Four tints, cycled by index. Seeds from the same bag are not the same seed,
+   and a pit of identical discs reads as a pattern rather than a handful. An
+   attribute rather than a custom property: matching on a custom property would
+   mean matching on how the browser chose to serialise the style attribute. */
+.mc-seed[data-tint='1'] {
+  background: var(--mc-seed-b);
+}
+.mc-seed[data-tint='2'] {
+  background: var(--mc-seed-c);
+}
+.mc-seed[data-tint='3'] {
+  background: var(--mc-seed-d);
+}
+
+/* ------------------------------------------------------------ the message */
+
+.mc-status {
+  padding: 6px 16px 0;
+  text-align: center;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  min-height: 1.4em;
+}
+
+.mc-status.is-alert {
+  color: var(--danger);
+}
+
+@media (max-height: 640px) {
+  .mc-store {
+    min-height: 44px;
+  }
+  .mc-count--store {
+    font-size: 1.25rem;
+  }
+}

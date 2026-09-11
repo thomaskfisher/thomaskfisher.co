@@ -11,6 +11,9 @@ import { RULES as SUDOKU } from '../sudoku/rules';
 import { RULES as NONOGRAM } from '../nonogram/rules';
 import { RULES as PIPES } from '../pipes/rules';
 import { RULES as TWENTY48 } from '../twenty48/rules';
+import { RULES as WORDLE } from '../wordle/rules';
+import { RULES as MANCALA } from '../mancala/rules';
+import { RULES as DOMINOES } from '../dominoes/rules';
 import { RULES as SURVIVAL } from '../survival/rules';
 import { shouldAutoShow } from './how-to-play';
 import { defaultSave, migrate } from './progress';
@@ -28,6 +31,9 @@ const RULES = [
   NONOGRAM,
   PIPES,
   TWENTY48,
+  WORDLE,
+  MANCALA,
+  DOMINOES,
 ];
 
 /**

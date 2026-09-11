@@ -1,0 +1,233 @@
+/* ==========================================================================
+   Wordle.
+
+   Four rows: the top bar, the grid, the keyboard, and the controls. The
+   keyboard is not a convenience — a phone's own keyboard would cover half the
+   board every time it opened, and the letter colours are half the information
+   in the game.
+   ========================================================================== */
+
+.app--wordle {
+  grid-template-rows: auto 1fr auto auto;
+}
+
+.board {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: 4px 10px 6px;
+}
+
+/* ------------------------------------------------------------------ grid */
+
+.wd-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  /* Nothing here derives a z-index from game state; the stacking context is
+     written in with the container so that stays cheap to be wrong about. */
+  isolation: isolate;
+}
+
+.wd-grid[data-empty] {
+  visibility: hidden;
+}
+
+.wd-row {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), var(--cell));
+  gap: 5px;
+}
+
+.wd-cell {
+  display: grid;
+  place-items: center;
+  width: var(--cell);
+  height: var(--cell);
+  border-radius: 5px;
+  border: 2px solid var(--glass);
+  font-size: calc(var(--cell) * 0.5);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text);
+  /* The flip turns these over; without a perspective they scale instead of
+     rotating and the reveal reads as a blink. */
+  transform-style: preserve-3d;
+  transition: border-color 0.1s ease;
+}
+
+/* A letter typed but not yet submitted. The border is the only feedback — no
+   colour, because colour here means something the board has told you. */
+.wd-cell.is-typed {
+  border-color: var(--glass-edge);
+}
+
+/* ----------------------------------------------------------- the colours */
+
+/*
+ * Green, yellow, grey.
+ *
+ * These are the one place in this collection where a specific hue carries a
+ * rule, so they are literal rather than themed — the accent blue would read as
+ * "selected" rather than "right", and every player already knows what green
+ * means here. They are also the reason Settings offers the shape overlay: see
+ * the note in main.ts.
+ */
+.wd-cell.is-correct,
+.wd-key.is-correct {
+  background: #3aa757;
+  border-color: #3aa757;
+  color: #fff;
+}
+
+.wd-cell.is-present,
+.wd-key.is-present {
+  background: #d4a72c;
+  border-color: #d4a72c;
+  color: #fff;
+}
+
+.wd-cell.is-absent,
+.wd-key.is-absent {
+  background: color-mix(in srgb, var(--text-dim) 38%, transparent);
+  border-color: transparent;
+  color: var(--text);
+}
+
+/*
+ * The colour-blind overlay: a shape in the corner of every coloured tile.
+ *
+ * Green and yellow are the one pair this game genuinely cannot tell apart for a
+ * red-green colour-blind player, and they are the pair that matters most. A
+ * filled dot for "right place", a ring for "wrong place", nothing for absent.
+ */
+:root[data-shapes='on'] .wd-cell.is-correct::after,
+:root[data-shapes='on'] .wd-key.is-correct::after,
+:root[data-shapes='on'] .wd-cell.is-present::after,
+:root[data-shapes='on'] .wd-key.is-present::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+}
+
+:root[data-shapes='on'] .wd-cell.is-correct::after,
+:root[data-shapes='on'] .wd-key.is-correct::after {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+:root[data-shapes='on'] .wd-cell,
+:root[data-shapes='on'] .wd-key {
+  position: relative;
+}
+
+/* -------------------------------------------------------------- keyboard */
+
+.pad {
+  padding: 2px 5px 0;
+}
+
+.wd-pad {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(500px, 100%);
+  margin: 0 auto;
+}
+
+.wd-keyrow {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.wd-key {
+  flex: 1 1 0;
+  min-width: 0;
+  /* Tall enough to hit with a thumb without looking. Below about 44px the
+     middle row starts costing mistyped guesses, which this game charges for. */
+  height: 48px;
+  border-radius: 6px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.wd-key:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
+.wd-key--wide {
+  flex: 1.5 1 0;
+  font-size: 0.7rem;
+}
+
+.wd-key svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.wd-pad.is-over .wd-key {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+@media (max-height: 700px) {
+  .wd-key {
+    height: 42px;
+  }
+}
+
+/* ----------------------------------------------------------------- toast */
+
+/*
+ * The one-line message over the board — "Not in the word list", and nothing
+ * else. Positioned against `.board` rather than the viewport so it sits over
+ * the grid instead of over the top bar.
+ */
+.board {
+  position: relative;
+}
+
+.toast {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 9px 15px;
+  border-radius: 10px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+  animation: fade-in 0.14s ease both;
+}
+
+/* --------------------------------------------------------------- the word */
+
+/* Shown on the loss sheet only. Large, because it is the one thing anybody
+   wants from that sheet. */
+.wd-answer {
+  margin: 2px 0 14px;
+  text-align: center;
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}

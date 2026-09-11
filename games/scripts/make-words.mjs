@@ -7,15 +7,22 @@
  *
  * **Three public sources, each doing one job:**
  *
- *  - `words_alpha` decides what *is* a word. It is huge and indiscriminate,
- *    which is right for validating a guess and hopeless for picking an answer.
+ *  - **ENABLE** decides what *is* a word. It is the open word-game list, and the
+ *    reason it is used rather than a plain dictionary dump is that **it holds no
+ *    proper nouns at all**. The first version of this used `words_alpha`, which
+ *    does, and duly served up `ARABIA`, `THAMES` and `YAMATO` as answers. The
+ *    obvious patch — filter against a list of place names — was measured and
+ *    thrown away: a world cities file contains villages called Going, Never,
+ *    Police and Wedding, so it removed a tenth of every answer list including
+ *    most of the best words in it.
  *  - an English frequency list (from film and television subtitles) decides
  *    which of those words people actually use. Subtitles are a better fit here
  *    than a book corpus: the answers should be words somebody says, not words
  *    somebody writes.
- *  - two name lists decide what to throw out. The subtitle corpus is full of
- *    lowercased proper nouns — `marie`, `berlin`, `harvey` — and an answer
- *    nobody could have deduced is the one thing a word game must not do.
+ *  - two name lists throw out what ENABLE legitimately keeps but nobody would
+ *    deduce. `MOLLY` is a fish and `BERLIN` is a carriage, so a word-game
+ *    dictionary is right to hold them and this game is right not to ask for
+ *    them.
  *
  * The output is two strings per length, each a run of fixed-width words with no
  * separators. That is the most compact form that still indexes in constant time,
@@ -29,7 +36,7 @@ import { fileURLToPath } from 'node:url';
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'wordle', 'words.ts');
 
 const SOURCES = {
-  dictionary: 'https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt',
+  dictionary: 'https://raw.githubusercontent.com/dolph/dictionary/master/enable1.txt',
   frequency:
     'https://raw.githubusercontent.com/hermitdave/FrequencyWords/master/content/2018/en/en_50k.txt',
   firstNames: 'https://raw.githubusercontent.com/dominictarr/random-name/master/first-names.txt',

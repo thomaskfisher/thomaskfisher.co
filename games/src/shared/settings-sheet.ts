@@ -60,6 +60,18 @@ export interface SettingsSheetOptions<M> {
    */
   shapesLabel?: string;
   shapesDescription?: string;
+
+  /**
+   * Rows of the game's own, dropped in below the shared ones and above How to
+   * play.
+   *
+   * Mexican Train is what wanted this: how many people are playing is a real
+   * setting, it belongs next to the theme and the sound, and it is meaningless
+   * everywhere else. Built by the caller rather than described to this file,
+   * because the alternative is a schema here for every row any game might ever
+   * want — and `ui.ts` already exports the row builders.
+   */
+  extraRows?: HTMLElement[];
 }
 
 export function openSettings<M>(options: SettingsSheetOptions<M>): void {
@@ -113,6 +125,8 @@ export function openSettings<M>(options: SettingsSheetOptions<M>): void {
         options.onSettingsChange({ sound });
       }),
     );
+
+    for (const row of options.extraRows ?? []) sheet.content.append(row);
 
     if (options.onHowToPlay) sheet.content.append(buildHowToPlayRow(options.onHowToPlay));
 

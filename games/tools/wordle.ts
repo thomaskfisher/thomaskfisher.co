@@ -102,7 +102,7 @@ describe('wordle calibration', () => {
   it('prints the curve the generator delivers', () => {
     log('## 3. The curve');
     log();
-    log('level  band          difficulty  len  tries  rarity  trap  answer   ms');
+    log('level  band          difficulty  len  tries  rarity  par  trap  answer   ms');
 
     for (const level of [1, 2, 3, 5, 8, 12, 16, 20, 25, 30, 40, 50, 65, 80, 120]) {
       const rng = createRng(hashSeed(SEED, GAME_ID, level));
@@ -121,6 +121,7 @@ describe('wordle calibration', () => {
           `${String(lengthForPressure(pressure)).padStart(3)}  ` +
           `${String(generated.tries).padStart(5)}  ` +
           `${String(generated.rarity).padStart(6)}  ` +
+          `${String(generated.par).padStart(3)}  ` +
           `${fixed(generated.trapRate).padStart(4)}  ` +
           `${generated.answer.padEnd(7)}  ${String(elapsed).padStart(4)}${inBand}`,
       );

@@ -1,0 +1,423 @@
+/* ==========================================================================
+   Mexican Train.
+
+   Four rows: the top bar, the trains, the status line, and the tray that holds
+   your hand and the controls. The trains scroll vertically if a four-player
+   table needs more room than the screen has; each individual train scrolls
+   nowhere — it clips at the left with its open end pinned to the right edge,
+   because the far end of a train is history. See the header of render.ts.
+
+   Everything is sized from `--dm-half`, the side of one half of a tile. It is
+   a fixed length rather than a fraction of anything: a domino has to be the
+   same size on every train or the pips stop being countable, which is the only
+   thing a pip is for.
+   ========================================================================== */
+
+/*
+ * Five rows: the top bar, the trains, the status line, the tray, the controls.
+ *
+ * The tray takes the height its tiles need and no more, and the trains take
+ * everything left over. Sharing the slack between the two was tried and is
+ * worse: a hand centred in a tray twice its height leaves a band of nothing
+ * between the status line and the tiles, which reads as a screen that failed
+ * to finish loading. Spare height above and below the trains reads as margin,
+ * because that is what it is.
+ */
+.app--dominoes {
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+}
+
+:root {
+  --dm-tile: #f2f5fb;
+  --dm-tile-edge: #b9c6de;
+  --dm-pip: #16233c;
+  --dm-rail: #1b2a45;
+  --dm-rail-edge: rgba(233, 240, 255, 0.09);
+  --dm-half: 22px;
+}
+
+:root[data-theme='light'] {
+  --dm-tile: #ffffff;
+  --dm-tile-edge: #9aa9c4;
+  --dm-pip: #16233c;
+  --dm-rail: #e3e9f4;
+  --dm-rail-edge: rgba(22, 35, 60, 0.1);
+}
+
+.board {
+  min-height: 0;
+  overflow: hidden;
+  padding: 2px 8px;
+}
+
+.dm-frame {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  min-height: 0;
+}
+
+.board.is-loading .dm-frame {
+  visibility: hidden;
+}
+
+/* ---------------------------------------------------------------- tiles */
+
+.dm-tile {
+  display: inline-grid;
+  grid-template-columns: var(--dm-half) var(--dm-half);
+  flex: 0 0 auto;
+  border-radius: 4px;
+  background: var(--dm-tile);
+  border: 1px solid var(--dm-tile-edge);
+}
+
+/*
+ * The bar down the middle of a domino.
+ *
+ * An inset shadow on the left half rather than a border on it: a border would
+ * take a pixel out of that half and shift its pips off centre against the
+ * other one's. The first attempt put the shadow on the tile with an offset the
+ * width of a half, which does not draw a line at all — an inset shadow fills
+ * everything the offset moves it *off*, so it painted the whole left half a
+ * shade darker and the tiles read as two-tone.
+ */
+.dm-half:first-child {
+  box-shadow: inset -1px 0 0 var(--dm-tile-edge);
+}
+
+/*
+ * A double, marked rather than turned.
+ *
+ * On a table a double is laid crosswise, which is how everybody knows one has
+ * to be answered. Turned crosswise here it would be the one tile on the row
+ * taller than the row, so the rule gets a colour instead — and the accent is
+ * the right one to spend it on, because an unanswered double is the only thing
+ * in the game that can stop every player at once.
+ */
+.dm-tile--double {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.dm-tile--double .dm-half:first-child {
+  box-shadow: inset -1px 0 0 var(--accent);
+}
+
+.dm-half {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  width: var(--dm-half);
+  height: var(--dm-half);
+  padding: calc(var(--dm-half) * 0.14);
+  gap: calc(var(--dm-half) * 0.04);
+}
+
+.dm-half i {
+  place-self: center;
+  width: calc(var(--dm-half) * 0.2);
+  height: calc(var(--dm-half) * 0.2);
+  border-radius: 50%;
+  background: var(--dm-pip);
+}
+
+/* --------------------------------------------------------------- engine */
+
+.dm-engine {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 4px 2px 2px;
+}
+
+.dm-engine-label {
+  flex: 1 0 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: right;
+}
+
+.dm-engine-label--right {
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* --------------------------------------------------------------- trains */
+
+.dm-trains {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  /*
+   * The rows share whatever height is going, up to a cap, and the block of
+   * them sits in the middle of what is left.
+   *
+   * A three-player table is four rows of fifty pixels in six hundred, and
+   * pinned to the top that reads as a screen that failed to load the rest of
+   * itself. Growing the rows instead buys tap targets — the whole row is the
+   * target — and the cap stops a two-player table drawing two rails the size
+   * of a hand of cards.
+   */
+  justify-content: center;
+  gap: 8px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 2px;
+}
+
+.dm-train {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  align-items: center;
+  flex: 1 1 auto;
+  min-height: 52px;
+  max-height: 96px;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--dm-rail-edge);
+  border-radius: 12px;
+  background: var(--dm-rail);
+  text-align: left;
+  color: var(--text);
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+
+.dm-train b {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.dm-train-note {
+  display: block;
+  font-size: 0.64rem;
+  color: var(--text-dim);
+}
+
+/* Your own train, which you may always use. */
+.dm-train.is-mine {
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+/* Somebody's train that fell open. The one visible cost of not being able to
+   play, so it is marked on the rail rather than only in the small print. */
+.dm-train.is-open {
+  background: color-mix(in srgb, var(--accent) 10%, var(--dm-rail));
+}
+
+.dm-train.is-open .dm-train-note {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Where the selected tile may be laid. */
+.dm-train.is-target {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 22%, var(--dm-rail));
+}
+
+.dm-train.is-target:active {
+  background: color-mix(in srgb, var(--accent) 34%, var(--dm-rail));
+}
+
+/* The train holding an unanswered double: the only square on the board. */
+.dm-train.is-pending {
+  border-color: var(--danger);
+}
+
+.dm-train:disabled {
+  cursor: default;
+}
+
+/*
+ * The tiles themselves, pinned to the right.
+ *
+ * `row-reverse` with the tiles written in order is what pins the open end to
+ * the right edge and clips the old end off the left. `direction` would do it
+ * too and would take the punctuation of every label with it.
+ */
+.dm-train-line {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.dm-empty {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+/* ------------------------------------------------------------ the message */
+
+.dm-status {
+  padding: 4px 16px 0;
+  text-align: center;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  min-height: 1.4em;
+}
+
+.dm-status.is-alert {
+  color: var(--danger);
+}
+
+/* ----------------------------------------------------------------- tray */
+
+.dm-tray {
+  position: relative;
+  display: grid;
+  align-content: center;
+  /* The floor is the curtain's own height: it is positioned out of flow, so
+     without this the tray collapses to nothing the moment the hand is withheld
+     and the curtain hangs off the bottom of the screen. */
+  min-height: 128px;
+  padding: 6px 10px 0;
+}
+
+.dm-hand {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: flex-start;
+  gap: 6px;
+  --dm-half: 28px;
+}
+
+.dm-pick {
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 5px;
+  /*
+   * Dimmed, not hidden. A tile with nowhere to go this turn is still a tile
+   * you are counting the round out with, so it has to stay readable — the two
+   * thirds here is the point at which the pips are still countable and the
+   * playable tiles still jump out.
+   */
+  opacity: 0.62;
+  transition: opacity 0.14s ease, transform 0.12s ease;
+}
+
+/* The tiles with somewhere to go. This is the whole of what a hint would have
+   been, and it costs the player nothing to read — see the header of game.ts. */
+.dm-pick.can-play {
+  opacity: 1;
+}
+
+.dm-pick.is-selected {
+  transform: translateY(-5px);
+}
+
+.dm-pick.is-selected .dm-tile {
+  border-color: var(--accent);
+  /* Heavier than the ring a double already carries, because the two would
+     otherwise be the same mark meaning two different things. */
+  box-shadow:
+    0 0 0 3px var(--accent),
+    0 5px 12px var(--shadow);
+}
+
+.dm-pick:disabled {
+  cursor: default;
+}
+
+/* -------------------------------------------------------------- curtain */
+
+/*
+ * What sits over the tray between turns.
+ *
+ * It is over the tray and not over the board on purpose: the trains are public
+ * at a real table and stay public here, so the player about to take the phone
+ * can look at the layout and think before they see their own tiles. The hand
+ * behind this is not merely covered — the view carries no tiles at all while it
+ * is up, so there is nothing underneath to find.
+ */
+.dm-curtain {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 22px;
+  background: var(--bg);
+  z-index: 4;
+}
+
+/* `[hidden]` is a user-agent style, so the `display: flex` above outranks it and
+   the curtain would stay up while claiming to be down — which is the whole
+   privacy model failing quietly. Every element toggled with `.hidden` in this
+   project needs its own rule like this one. */
+.dm-curtain[hidden] {
+  display: none;
+}
+
+.dm-curtain-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.dm-curtain-line {
+  margin: 0 0 4px;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+/* ------------------------------------------------------------- results */
+
+/* The round's card. One row per player: what they were left holding, and what
+   that has added up to. */
+.dm-scores {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 4px 14px;
+  align-items: center;
+  margin: 6px 0 14px;
+  font-size: 0.9rem;
+}
+
+.dm-scores span {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.dm-scores b {
+  font-weight: 700;
+}
+
+.dm-scores .is-leader {
+  color: var(--accent);
+}
+
+.dm-scores-head {
+  font-size: 0.66rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+@media (max-height: 680px) {
+  :root {
+    --dm-half: 18px;
+  }
+  .dm-hand {
+    --dm-half: 23px;
+  }
+  .dm-tray {
+    min-height: 112px;
+  }
+}

@@ -1028,6 +1028,215 @@ function drawTwenty48(size, { maskable }) {
   return encodePng(size, size, canvas.data);
 }
 
+/**
+ * Two rows of a board mid-guess: a green, a yellow, and the greys around them.
+ * No letters — they do not survive the shrink — because the colours alone are
+ * what anybody recognises this game by.
+ */
+function drawWordle(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.2 : size * 0.13;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const area = size - inset * 2;
+  const gap = area * 0.05;
+  const cell = (area - gap * 2) / 3;
+
+  // Green in place, yellow adrift, grey for the rest — the three colours in the
+  // order a real board tends to show them.
+  const rows = [
+    ['#3aa757', '#4a5a7d', '#d4a72c'],
+    ['#4a5a7d', '#3aa757', '#4a5a7d'],
+    ['#3aa757', '#3aa757', '#3aa757'],
+  ];
+
+  for (let row = 0; row < rows.length; row++) {
+    for (let column = 0; column < 3; column++) {
+      fillRoundedRect(
+        canvas,
+        inset + column * (cell + gap),
+        inset + row * (cell + gap),
+        cell,
+        cell,
+        cell * 0.14,
+        hex(rows[row][column]),
+      );
+    }
+  }
+
+  return encodePng(size, size, canvas.data);
+}
+
+/**
+ * A board with its pits and a store, and seeds in the pits.
+ *
+ * Six pits a side do not survive the shrink — at 48px they are a row of grey
+ * dust — so the icon draws three, which is what the shape means rather than
+ * what it counts. The seeds are the only warm colour in the set and are what
+ * makes this read as mancala rather than as another grid.
+ */
+function drawMancala(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.2 : size * 0.12;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const area = size - inset * 2;
+  const boardHeight = area * 0.74;
+  const boardTop = inset + (area - boardHeight) / 2;
+  fillRoundedRect(canvas, inset, boardTop, area, boardHeight, area * 0.13, hex('#253a5f'));
+
+  const pad = area * 0.07;
+  const innerTop = boardTop + pad;
+  const innerHeight = boardHeight - pad * 2;
+
+  // The store takes the right end, the three pit columns share the rest.
+  const storeWidth = innerHeight * 0.42;
+  const storeX = inset + area - pad - storeWidth;
+  fillRoundedRect(canvas, storeX, innerTop, storeWidth, innerHeight, storeWidth / 2, hex('#16233c'));
+
+  const pitArea = storeX - (inset + pad) - pad * 0.6;
+  const gap = pitArea * 0.07;
+  const pit = Math.min((pitArea - gap * 2) / 3, (innerHeight - gap) / 2);
+  const pitsTop = innerTop + (innerHeight - (pit * 2 + gap)) / 2;
+
+  const SEEDS = [hex('#e8c27a'), hex('#d6a85c'), hex('#c8e0a8'), hex('#efdcb4')];
+  const seed = pit * 0.3;
+
+  let tint = 0;
+  for (let row = 0; row < 2; row++) {
+    for (let column = 0; column < 3; column++) {
+      const x = inset + pad + column * (pit + gap);
+      const y = pitsTop + row * (pit + gap);
+      fillRoundedRect(canvas, x, y, pit, pit, pit / 2, hex('#16233c'));
+
+      // Two seeds per pit, offset so they read as loose rather than as a mark.
+      const spots = [
+        [0.34, 0.38],
+        [0.6, 0.6],
+      ];
+      for (const [fx, fy] of spots) {
+        fillRoundedRect(
+          canvas,
+          x + pit * fx - seed / 2,
+          y + pit * fy - seed / 2,
+          seed,
+          seed,
+          seed / 2,
+          SEEDS[tint++ % SEEDS.length],
+        );
+      }
+    }
+  }
+
+  // The store is where the game is won, so it is the fullest thing on the icon.
+  const storeSeed = storeWidth * 0.34;
+  const stack = [
+    [0.5, 0.22],
+    [0.32, 0.4],
+    [0.68, 0.42],
+    [0.46, 0.58],
+    [0.62, 0.76],
+    [0.36, 0.78],
+  ];
+  for (const [fx, fy] of stack) {
+    fillRoundedRect(
+      canvas,
+      storeX + storeWidth * fx - storeSeed / 2,
+      innerTop + innerHeight * fy - storeSeed / 2,
+      storeSeed,
+      storeSeed,
+      storeSeed / 2,
+      SEEDS[tint++ % SEEDS.length],
+    );
+  }
+
+  return encodePng(size, size, canvas.data);
+}
+
+/**
+ * Two dominoes, one of them a double laid crosswise.
+ *
+ * The crosswise tile is the whole reason this is the icon it is: a domino on
+ * its own says dominoes, and a domino with another one across it says a train
+ * with a double sitting in it, which is this game and not the other one.
+ */
+function drawDominoes(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.21 : size * 0.14;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const area = size - inset * 2;
+  const half = area * 0.36;
+  const pip = half * 0.15;
+  const face = hex('#f2f5fb');
+  const ink = hex('#16233c');
+  const bar = hex('#b9c6de');
+
+  // Pip layouts, in a three-by-three grid of cells. Same arrangement the game
+  // itself draws; see PIPS in src/dominoes/render.ts.
+  const layouts = {
+    2: [
+      [0, 0],
+      [2, 2],
+    ],
+    3: [
+      [0, 0],
+      [1, 1],
+      [2, 2],
+    ],
+    5: [
+      [0, 0],
+      [0, 2],
+      [1, 1],
+      [2, 0],
+      [2, 2],
+    ],
+  };
+
+  const drawHalf = (x, y, value) => {
+    const cell = half / 3;
+    for (const [row, column] of layouts[value]) {
+      fillRoundedRect(
+        canvas,
+        x + (column + 0.5) * cell - pip / 2,
+        y + (row + 0.5) * cell - pip / 2,
+        pip,
+        pip,
+        pip / 2,
+        ink,
+      );
+    }
+  };
+
+  // The tile lying along the train.
+  const flatX = inset;
+  const flatY = inset + area * 0.56;
+  fillRoundedRect(canvas, flatX, flatY, half * 2, half, half * 0.12, face);
+  fillRoundedRect(canvas, flatX + half - area * 0.008, flatY, area * 0.016, half, 0, bar);
+  drawHalf(flatX, flatY, 3);
+  drawHalf(flatX + half, flatY, 5);
+
+  // The double across it, in accent blue — the one tile that stops the board.
+  const crossX = inset + area - half;
+  const crossY = inset;
+  fillRoundedRect(canvas, crossX, crossY, half, half * 2, half * 0.12, face);
+  fillRoundedRect(canvas, crossX, crossY + half - area * 0.008, half, area * 0.016, 0, bar);
+  fillRoundedRect(canvas, crossX, crossY, half, half * 2, half * 0.12, hex('#4da3ff'), 0.22);
+  drawHalf(crossX, crossY, 2);
+  drawHalf(crossX, crossY + half, 2);
+
+  return encodePng(size, size, canvas.data);
+}
+
 const targets = [
   ['colorsort-180.png', 180, { maskable: false }, drawColorSort],
   ['colorsort-192.png', 192, { maskable: false }, drawColorSort],
@@ -1085,6 +1294,18 @@ const targets = [
   ['twenty48-192.png', 192, { maskable: false }, drawTwenty48],
   ['twenty48-512.png', 512, { maskable: false }, drawTwenty48],
   ['twenty48-maskable-512.png', 512, { maskable: true }, drawTwenty48],
+  ['wordle-180.png', 180, { maskable: false }, drawWordle],
+  ['wordle-192.png', 192, { maskable: false }, drawWordle],
+  ['wordle-512.png', 512, { maskable: false }, drawWordle],
+  ['wordle-maskable-512.png', 512, { maskable: true }, drawWordle],
+  ['mancala-180.png', 180, { maskable: false }, drawMancala],
+  ['mancala-192.png', 192, { maskable: false }, drawMancala],
+  ['mancala-512.png', 512, { maskable: false }, drawMancala],
+  ['mancala-maskable-512.png', 512, { maskable: true }, drawMancala],
+  ['dominoes-180.png', 180, { maskable: false }, drawDominoes],
+  ['dominoes-192.png', 192, { maskable: false }, drawDominoes],
+  ['dominoes-512.png', 512, { maskable: false }, drawDominoes],
+  ['dominoes-maskable-512.png', 512, { maskable: true }, drawDominoes],
 ];
 
 for (const [name, size, options, draw] of targets) {

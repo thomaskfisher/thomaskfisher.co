@@ -13,7 +13,8 @@ so it never runs by accident — these take minutes, not seconds.
 | `nonogram.ts` | What does nonogram lookahead range over, and do size and fill rate predict it? (They do not.) |
 | `pipes.ts` | Same question for Pipes — and it is where "every board is fully forced" was measured, which killed the first difficulty signal outright. |
 | `twenty48.ts` | Trap rate by target, how *long* each target takes to reach, and whether a worker can verify a level in time. |
-| `wordle.ts` | Does trap rate separate `LIGHT` from `PIZZA`? Not yet run — see *Picking Wordle back up* in the games README. |
+| `wordle.ts` | Does trap rate separate `LIGHT` from `PIZZA`, and does a longer word take more guesses? (It takes fewer.) |
+| `dominoes.ts` | How often does a Mexican Train round end blocked, and how long does one run? It is what set the hand size, the opposite way round from the intuition. |
 | `dice.ts` | How good is Yahtzee's hint? It has no difficulty band to calibrate, but a hint that plays badly is not worth pressing, so this prints what the policy averages over 400 cards and what it prices each box at. |
 
 ```sh
@@ -22,6 +23,7 @@ npx vitest run --config tools/vitest.probe.config.ts     --root .   # -> tools/p
 npx vitest run --config tools/vitest.timing.config.ts    --root .   # -> tools/timing.txt
 npx vitest run --config tools/vitest.sample.config.ts    --root .   # -> tools/sample.txt
 npx vitest run --config tools/vitest.dice.config.ts      --root .   # -> tools/dice.txt
+npx vitest run --config tools/vitest.dominoes.config.ts  --root .   # -> tools/dominoes.txt
 ```
 
 **Run `calibrate` and `timing` after any change to a shape function.** Reading

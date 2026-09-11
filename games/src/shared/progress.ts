@@ -27,6 +27,15 @@ export interface Settings {
   sound: boolean;
   /** Run the clock. Off by default; see `shared/timer.ts`. */
   timed: boolean;
+  /**
+   * Mexican Train only: how many people are round the table, 2 to 4.
+   *
+   * A setting rather than a prompt at the start of every round, because the
+   * answer changes about as often as the theme does — and it is optional here
+   * for the same reason the two-player tallies in `stats` are: every other game
+   * would have to carry a field that means nothing to it.
+   */
+  players?: number;
 }
 
 export interface SaveData<M> {
@@ -69,6 +78,18 @@ export interface SaveData<M> {
      */
     whiteWins?: number;
     redWins?: number;
+    /**
+     * Mancala and Mexican Train, which arrived after Backgammon and are the
+     * same shape of problem generalised: a running tally per seat, in seat
+     * order. What a number means is the game's business — games won in
+     * Mancala, points against you in Mexican Train — because the only thing
+     * this file has to do with it is carry it in the save code so an evening's
+     * score survives a cleared browser.
+     *
+     * Backgammon's pair above predates this and is left alone: folding it in
+     * would rewrite every existing Backgammon save for a tidier field list.
+     */
+    seatScores?: number[];
   };
 }
 

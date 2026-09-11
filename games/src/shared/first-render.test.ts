@@ -14,6 +14,9 @@ import { SudokuGame } from '../sudoku/game';
 import { NonogramGame } from '../nonogram/game';
 import { PipesGame } from '../pipes/game';
 import { Twenty48Game } from '../twenty48/game';
+import { WordleGame } from '../wordle/game';
+import { MancalaGame } from '../mancala/game';
+import { DominoesGame } from '../dominoes/game';
 
 /**
  * The first render happens before the save has loaded.
@@ -49,6 +52,9 @@ const games = [
   ['Nonogram', () => new NonogramGame()],
   ['Pipes', () => new PipesGame()],
   ['2048', () => new Twenty48Game()],
+  ['Wordle', () => new WordleGame()],
+  ['Mancala', () => new MancalaGame()],
+  ['Mexican Train', () => new DominoesGame()],
 ] as const;
 
 describe('before start() resolves', () => {
