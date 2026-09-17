@@ -290,17 +290,31 @@ function headFor(train: Train, view: GameView, mine: boolean): string {
 }
 
 /**
- * The tiles on a train, in the order they were laid.
+ * The tiles on a train, newest first.
  *
- * The row is right-aligned in CSS and clips at the left, so this always writes
- * the whole train and lets the layout decide how much of it fits. An empty
- * train shows the end it would start from instead, which is the engine.
+ * **Written backwards on purpose.** The row is `row-reverse` in CSS, which is
+ * what pins the open end to the right edge and throws the overflow off the left
+ * (see `.dm-train-line`), and `row-reverse` lays the first child out rightmost.
+ * So the last tile laid has to be written first, or the train renders in
+ * reverse: the engine end pinned to the right, the end you can actually play on
+ * clipped off the left, and — the thing you notice — every tile's open pip
+ * against the *next* tile's open pip rather than against the one it matched.
+ * Written this way the train reads left to right in the order it was laid and
+ * each pair of touching halves carries the same number, which is the whole
+ * point of a train.
+ *
+ * This always writes the whole train and lets the layout decide how much of it
+ * fits. An empty train shows the end it would start from instead, which is the
+ * engine.
  */
 function lineFor(train: Train, position: Position): string {
   if (train.tiles.length === 0) {
     return `<span class="dm-empty">starts at ${position.engine}</span>`;
   }
-  return train.tiles.map((placed) => tileHtml(placed.tile, placed.from)).join('');
+  return train.tiles
+    .map((placed) => tileHtml(placed.tile, placed.from))
+    .reverse()
+    .join('');
 }
 
 function labelFor(train: Train, index: number, view: GameView): string {

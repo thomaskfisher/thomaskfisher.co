@@ -240,16 +240,22 @@
 /*
  * The tiles themselves, pinned to the right.
  *
- * `row-reverse` with the tiles written in order is what pins the open end to
- * the right edge and clips the old end off the left. `direction` would do it
- * too and would take the punctuation of every label with it.
+ * `row-reverse` is what pins the open end to the right edge and clips the old
+ * end off the left. `direction` would do it too and would take the punctuation
+ * of every label with it. It only works with the tiles written newest first,
+ * because `row-reverse` puts the first child rightmost — `lineFor` reverses
+ * them for exactly this, and the two have to stay in step.
+ *
+ * No gap: the halves that match are the halves that touch, so a join between
+ * two tiles reads as one number carried across, the way it looks on a table. A
+ * gap here puts a slot of rail between the pair you are meant to read together
+ * and the train stops being a chain.
  */
 .dm-train-line {
   display: flex;
   flex-direction: row-reverse;
   justify-content: flex-start;
   align-items: center;
-  gap: 2px;
   min-width: 0;
   overflow: hidden;
 }
