@@ -108,6 +108,54 @@
         transform: scale(0.97);
       }
 
+      li {
+        position: relative;
+      }
+
+      /* Pin. A sibling of the card rather than inside it, because a button
+         nested in a link is invalid and taps would fall through to the game.
+         Top-left, since top-right already belongs to the two-player badge. */
+      .pin {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        border: 0;
+        border-radius: 999px;
+        background: none;
+        color: var(--text-dim);
+        opacity: 0.45;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .pin svg {
+        width: 19px;
+        height: 19px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linejoin: round;
+      }
+
+      .pin[aria-pressed='true'] {
+        color: var(--accent);
+        opacity: 1;
+      }
+
+      .pin[aria-pressed='true'] svg {
+        fill: currentColor;
+      }
+
+      .pin:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: -4px;
+      }
+
       a.card img {
         width: 64px;
         height: 64px;
@@ -257,6 +305,82 @@
         </a>
       </li>
     </ul>
+
+    <script>
+      // Pinned games float to the top, in the grid's own order. Runs before
+      // first paint so a pinned card never visibly jumps into place. The list
+      // is a device-local preference, so localStorage alone is enough here —
+      // losing it costs a few taps, not progress.
+      (function () {
+        var KEY = 'tf-games:pinned';
+        var STAR =
+          '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+          '<path d="M12 3.2l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 17l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></svg>';
+
+        var list = document.querySelector('ul');
+        var items = Array.prototype.slice.call(list.children);
+
+        function load() {
+          try {
+            var saved = JSON.parse(localStorage.getItem(KEY) || '[]');
+            return Array.isArray(saved) ? saved : [];
+          } catch (e) {
+            return [];
+          }
+        }
+
+        function save(pinned) {
+          try {
+            localStorage.setItem(KEY, JSON.stringify(pinned));
+          } catch (e) {
+            // Private mode or a full quota: the pin still holds until reload.
+          }
+        }
+
+        var pinned = load();
+
+        function slugOf(li) {
+          return li.querySelector('a.card').getAttribute('href').replace(/^\.\/|\/$/g, '');
+        }
+
+        function render() {
+          var top = [];
+          var rest = [];
+          items.forEach(function (li) {
+            var on = pinned.indexOf(slugOf(li)) !== -1;
+            var button = li.querySelector('.pin');
+            button.setAttribute('aria-pressed', String(on));
+            button.setAttribute('aria-label', (on ? 'Unpin ' : 'Pin ') + li.querySelector('b').textContent);
+            (on ? top : rest).push(li);
+          });
+          top.concat(rest).forEach(function (li) {
+            list.appendChild(li);
+          });
+        }
+
+        items.forEach(function (li) {
+          var button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'pin';
+          button.innerHTML = STAR;
+          button.addEventListener('click', function () {
+            var slug = slugOf(li);
+            var at = pinned.indexOf(slug);
+            if (at === -1) pinned.push(slug);
+            else pinned.splice(at, 1);
+            save(pinned);
+            // Animate the reshuffle where supported, so it reads as the card
+            // moving rather than the grid changing under the finger.
+            if (document.startViewTransition) document.startViewTransition(render);
+            else render();
+          });
+          li.appendChild(button);
+          li.style.viewTransitionName = 'game-' + slugOf(li);
+        });
+
+        render();
+      })();
+    </script>
 
     <script>
       // Inline and dependency-free on purpose: the launcher emits no JS chunk,
