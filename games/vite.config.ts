@@ -41,6 +41,7 @@ export default defineConfig({
         wordle: 'wordle/index.html',
         mancala: 'mancala/index.html',
         dominoes: 'dominoes/index.html',
+        simon: 'simon/index.html',
       },
     },
   },

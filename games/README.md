@@ -23,6 +23,7 @@ in-game currency. Everything is static; all state lives on the player's device.
 | Wordle | Playable |
 | Mancala | Playable |
 | Mexican Train | Playable |
+| Simon | Playable |
 
 ## Working on it
 
@@ -36,8 +37,8 @@ npm run icons      # regenerate PWA icons (output is committed)
 
 ## How it works
 
-**Thirteen of the seventeen are puzzles. Yahtzee, Backgammon, Mancala and
-Mexican Train are not, and all four bend the house rules on purpose.**
+**Thirteen of the eighteen are puzzles. Yahtzee, Backgammon, Mancala, Mexican
+Train and Simon are not, and all five bend the house rules on purpose.**
 Everything below about verified levels, measured difficulty and unlimited undo
 describes the puzzles. Yahtzee is a game of chance: there is no board to verify,
 no difficulty to curve, and rewinding a throw would be reading the answer. The
@@ -45,7 +46,8 @@ other three have a second person in them, which takes the hint with it and — i
 two of the three — puts a fence around undo. What all four keep is everything
 that made this collection worth building: no ads, no servers, no currency,
 nothing locked. What they put in place of the rest is set out under *Yahtzee*,
-*Backgammon*, *Mancala* and *Mexican Train* below.
+*Backgammon*, *Mancala*, *Mexican Train* and *Simon* below. Simon is a memory
+game: undo and a hint would both be the answer.
 
 **Every level is verified before it is shown.** Levels are dealt at random from
 a seed, then solved. A board the solver cannot finish is discarded, so unlike
@@ -454,6 +456,9 @@ src/backgammon/       board, legal, model, render, game, main, rules — no
                       what legal.ts searches is one turn rather than a level.
                       fixtures.ts builds a position from a sparse map and is
                       imported only by the tests
+src/simon/            model, render, game, main, rules — no generate and no
+                      solve: a game is one seeded stream of pads, and round n
+                      shows the first n of it
 public/               icons, per-game manifest, a two-line sw.js per game,
                       game-sw (the shared worker body) and warm (downloads every
                       game from any page) — copied verbatim, never bundled
@@ -659,6 +664,29 @@ drew — which is theirs alone, so the curtain must not come down on its own
 before they have seen it. Undo is fenced by the same fact, and the fence is in
 the model: it sits above the start of the turn and above every draw, because
 undoing a draw would let a player peek at the boneyard and put it back.
+
+## Simon
+
+**Four pads, one more each round, and one wrong tap ends the game.** Losing
+ending the game is the one house rule this bends furthest, and it is the game:
+what "never back to level 1" becomes here is that nothing is lost *by* losing.
+The best run rides in `stats.bestScore`, every game is a fresh seeded sequence
+rather than a replay of the one that just beat you, and a game in progress
+survives the app being closed — it comes back at the start of the round it was
+on, waiting for a tap. No undo and no hint, because either is the answer. The
+original's per-tap time limit is left out: it is pressure rather than play.
+
+**The controller owns no timers.** Showing a sequence is a chain of them, so
+they live in `render.ts`, all in one set that `cancel()` clears. The controller
+hands out a `showId` with every showing and ignores a "finished showing" report
+carrying any other id — so a new game, a reload or a sheet opening mid-show can
+never be finished by the playback it interrupted. Any sheet, and backgrounding
+the app, pauses the round back to its first pad.
+
+**The pad count is a parameter.** Four ships; `sequenceFor` and the model take
+any number, so a harder mode with more colours is a renderer change (a ring of
+segments instead of quadrants), not a rules change. The flashes speed up at
+rounds 6, 14 and 22, as the original does.
 
 ## Deploying
 

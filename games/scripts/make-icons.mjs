@@ -1237,6 +1237,65 @@ function drawDominoes(size, { maskable }) {
   return encodePng(size, size, canvas.data);
 }
 
+/**
+ * The Simon board: four quarter-circle pads round a dark hub, one of them lit.
+ *
+ * Drawn per pixel rather than from rounded rectangles, because a quarter
+ * circle is not one. The lit pad is what makes it read as the game rather than
+ * as a pie chart.
+ */
+function drawSimon(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.18 : size * 0.09;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const centre = size / 2;
+  const outer = centre - inset;
+  const hub = outer * 0.34;
+  const gap = outer * 0.06;
+  const ring = hex('#0a1222');
+
+  // Top left, top right, bottom right, bottom left; the top right is lit.
+  const pads = [
+    [hex('#35b56a'), 0.55],
+    [hex('#e6394a'), 1],
+    [hex('#2b7fe8'), 0.55],
+    [hex('#f5c518'), 0.55],
+  ];
+
+  for (let py = 0; py < size; py++) {
+    for (let px = 0; px < size; px++) {
+      let ringHits = 0;
+      const padHits = [0, 0, 0, 0];
+      for (let sy = 0; sy < 3; sy++) {
+        for (let sx = 0; sx < 3; sx++) {
+          const x = px + (sx + 0.5) / 3 - centre;
+          const y = py + (sy + 0.5) / 3 - centre;
+          const distance = Math.hypot(x, y);
+          if (distance > outer) continue;
+          ringHits++;
+          if (distance < hub + gap * 0.5 || distance > outer - gap) continue;
+          if (Math.abs(x) < gap / 2 || Math.abs(y) < gap / 2) continue;
+          const index = y < 0 ? (x < 0 ? 0 : 1) : x < 0 ? 3 : 2;
+          padHits[index]++;
+        }
+      }
+      if (ringHits > 0) canvas.set(px, py, ring, ringHits / 9);
+      padHits.forEach((hits, index) => {
+        if (hits === 0) return;
+        const [colour, level] = pads[index];
+        const shaded = colour.map((channel) => Math.round(channel * level + 10 * (1 - level)));
+        canvas.set(px, py, shaded, hits / 9);
+      });
+    }
+  }
+
+  return encodePng(size, size, canvas.data);
+}
+
 const targets = [
   ['colorsort-180.png', 180, { maskable: false }, drawColorSort],
   ['colorsort-192.png', 192, { maskable: false }, drawColorSort],
@@ -1306,6 +1365,10 @@ const targets = [
   ['dominoes-192.png', 192, { maskable: false }, drawDominoes],
   ['dominoes-512.png', 512, { maskable: false }, drawDominoes],
   ['dominoes-maskable-512.png', 512, { maskable: true }, drawDominoes],
+  ['simon-180.png', 180, { maskable: false }, drawSimon],
+  ['simon-192.png', 192, { maskable: false }, drawSimon],
+  ['simon-512.png', 512, { maskable: false }, drawSimon],
+  ['simon-maskable-512.png', 512, { maskable: true }, drawSimon],
 ];
 
 for (const [name, size, options, draw] of targets) {

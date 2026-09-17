@@ -17,6 +17,7 @@ import { Twenty48Game } from '../twenty48/game';
 import { WordleGame } from '../wordle/game';
 import { MancalaGame } from '../mancala/game';
 import { DominoesGame } from '../dominoes/game';
+import { SimonGame } from '../simon/game';
 
 /**
  * The first render happens before the save has loaded.
@@ -55,6 +56,7 @@ const games = [
   ['Wordle', () => new WordleGame()],
   ['Mancala', () => new MancalaGame()],
   ['Mexican Train', () => new DominoesGame()],
+  ['Simon', () => new SimonGame()],
 ] as const;
 
 describe('before start() resolves', () => {

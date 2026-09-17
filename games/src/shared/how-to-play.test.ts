@@ -14,6 +14,7 @@ import { RULES as TWENTY48 } from '../twenty48/rules';
 import { RULES as WORDLE } from '../wordle/rules';
 import { RULES as MANCALA } from '../mancala/rules';
 import { RULES as DOMINOES } from '../dominoes/rules';
+import { RULES as SIMON } from '../simon/rules';
 import { RULES as SURVIVAL } from '../survival/rules';
 import { shouldAutoShow } from './how-to-play';
 import { defaultSave, migrate } from './progress';
@@ -34,6 +35,7 @@ const RULES = [
   WORDLE,
   MANCALA,
   DOMINOES,
+  SIMON,
 ];
 
 /**

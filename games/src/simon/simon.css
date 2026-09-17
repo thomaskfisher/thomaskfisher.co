@@ -1,0 +1,181 @@
+/* ==========================================================================
+   Simon.
+
+   A round board of four quarter-circle pads with a hub in the middle. The
+   board is square and solved for in CSS alone: `.board` is a size container,
+   and the frame takes the smaller of its width and height, so it always fits
+   without scrolling and there is nothing for JavaScript to measure.
+   ========================================================================== */
+
+.app--simon {
+  grid-template-rows: auto 1fr auto auto;
+}
+
+:root {
+  --sm-ring: #0a1222;
+  --sm-dim: 0.42;
+}
+
+:root[data-theme='light'] {
+  --sm-ring: #26344f;
+  --sm-dim: 0.5;
+}
+
+.board {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: 8px 16px;
+  container-type: size;
+}
+
+.board.is-loading .sm-frame {
+  visibility: hidden;
+}
+
+/* ----------------------------------------------------------------- frame */
+
+.sm-frame {
+  position: relative;
+  /* Its own stacking context: the lit pad's glow and the hub are layered with
+     z-index, and none of that may compete with the sheets. */
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 3.2%;
+  width: min(100cqw, 100cqh, 460px);
+  aspect-ratio: 1;
+  padding: 4%;
+  border-radius: 50%;
+  background: var(--sm-ring);
+  box-shadow: 0 14px 34px var(--shadow), inset 0 1px 0 var(--glass);
+}
+
+/* ------------------------------------------------------------------ pads */
+
+.sm-pad {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: var(--pad);
+  box-shadow: inset 0 -6px 0 var(--pad-shade);
+  opacity: var(--sm-dim);
+  touch-action: manipulation;
+  transition: opacity 0.12s ease, filter 0.12s ease;
+}
+
+/* Round only the outer corner, fully, so the four together make a circle.
+   Placed explicitly: the pads are numbered clockwise, and auto-placement would
+   put the third one bottom left rather than bottom right. */
+.sm-pad--tl { grid-area: 1 / 1; border-radius: 100% 10% 10% 10%; }
+.sm-pad--tr { grid-area: 1 / 2; border-radius: 10% 100% 10% 10%; }
+.sm-pad--br { grid-area: 2 / 2; border-radius: 10% 10% 100% 10%; }
+.sm-pad--bl { grid-area: 2 / 1; border-radius: 10% 10% 10% 100%; }
+
+.sm-pad.is-lit {
+  opacity: 1;
+  filter: brightness(1.18) saturate(1.1);
+  box-shadow:
+    inset 0 -6px 0 var(--pad-shade),
+    0 0 28px color-mix(in srgb, var(--pad) 70%, transparent);
+  z-index: 1;
+  /* Lights instantly and fades out: an eased-in flash reads as late. */
+  transition: none;
+}
+
+.sm-pad:disabled {
+  cursor: default;
+}
+
+/* Pads the player can press are a shade brighter than while watching, which is
+   the whole of the "your turn" cue that is not words. */
+.sm-frame[data-phase='input'] .sm-pad:not(.is-lit) {
+  opacity: calc(var(--sm-dim) + 0.14);
+}
+
+.sm-pad.is-wrong {
+  opacity: 1;
+  filter: grayscale(0.85) brightness(0.7);
+}
+
+/* ------------------------------------------------------------ the shapes */
+
+.sm-glyph {
+  display: none;
+  width: 32%;
+  height: 32%;
+  fill: rgba(10, 16, 30, 0.55);
+  pointer-events: none;
+}
+
+.sm-frame.show-shapes .sm-glyph {
+  display: block;
+}
+
+/* -------------------------------------------------------------------- hub */
+
+.sm-hub {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  width: 36%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sm-ring);
+  box-shadow: 0 0 0 5px var(--sm-ring), inset 0 1px 0 var(--glass);
+  color: #eef3fb;
+}
+
+.sm-hub b {
+  font-size: clamp(1.6rem, 9cqmin, 2.8rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.sm-hub b.sm-hub-go {
+  font-size: clamp(1.1rem, 6cqmin, 1.6rem);
+}
+
+.sm-hub span {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #93a4c4;
+}
+
+.sm-hub:not(:disabled) {
+  cursor: pointer;
+}
+
+.sm-frame[data-phase='ready'] .sm-hub,
+.sm-frame[data-phase='over'] .sm-hub {
+  box-shadow: 0 0 0 5px var(--sm-ring), inset 0 0 0 2px var(--accent);
+}
+
+.sm-hub:active:not(:disabled) {
+  transform: translate(-50%, -50%) scale(0.96);
+}
+
+/* ------------------------------------------------------------ the message */
+
+.sm-status {
+  margin: 0;
+  padding: 6px 16px 0;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  min-height: 1.6em;
+}

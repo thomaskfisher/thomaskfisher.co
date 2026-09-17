@@ -86,6 +86,20 @@ export const sfx = {
     tone({ frequency: 150, glideTo: 110, duration: 0.1, type: 'sawtooth', gain: 0.05 });
   },
 
+  /**
+   * A held note, for games whose sound is the information — Simon's pads each
+   * have a pitch, and the tune is half of how the sequence is remembered.
+   * Softer attack than the clicks above, so a run of them reads as notes.
+   */
+  note(frequency: number, duration: number): void {
+    tone({ frequency, duration, type: 'triangle', gain: 0.13 });
+  },
+
+  /** A game lost. Longer and lower than `reject`, which is only a refused tap. */
+  lose(): void {
+    tone({ frequency: 130, glideTo: 82, duration: 0.55, type: 'sawtooth', gain: 0.06 });
+  },
+
   /** Level cleared. */
   win(): void {
     [523.25, 659.25, 783.99, 1046.5].forEach((frequency, i) => {
