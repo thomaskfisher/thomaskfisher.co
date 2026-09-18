@@ -15,6 +15,7 @@ so it never runs by accident — these take minutes, not seconds.
 | `twenty48.ts` | Trap rate by target, how *long* each target takes to reach, and whether a worker can verify a level in time. |
 | `wordle.ts` | Does trap rate separate `LIGHT` from `PIZZA`, and does a longer word take more guesses? (It takes fewer.) |
 | `dominoes.ts` | How often does a Mexican Train round end blocked, and how long does one run? It is what set the hand size, the opposite way round from the intuition. |
+| `artillery.ts` | What does a battlefield cost to generate, how findable is a hit on it, and how many volleys does a match run? |
 | `dice.ts` | How good is Yahtzee's hint? It has no difficulty band to calibrate, but a hint that plays badly is not worth pressing, so this prints what the policy averages over 400 cards and what it prices each box at. |
 
 ```sh
@@ -24,6 +25,7 @@ npx vitest run --config tools/vitest.timing.config.ts    --root .   # -> tools/t
 npx vitest run --config tools/vitest.sample.config.ts    --root .   # -> tools/sample.txt
 npx vitest run --config tools/vitest.dice.config.ts      --root .   # -> tools/dice.txt
 npx vitest run --config tools/vitest.dominoes.config.ts  --root .   # -> tools/dominoes.txt
+npx vitest run --config tools/vitest.artillery.config.ts --root .   # -> tools/artillery.txt
 ```
 
 **Run `calibrate` and `timing` after any change to a shape function.** Reading
@@ -111,4 +113,30 @@ is true about it.
 
 ```bash
 npx vitest run --config tools/vitest.spider.config.ts --root .
+```
+
+## artillery.ts
+
+Measurement for Artillery. There is no difficulty to curve — the opponent is the
+person holding the other end of the phone — so what it measures is whether a
+battlefield is a game at all. Three sections: what generation costs, how many
+(angle, power) settings actually connect, and how many volleys a match runs when
+both sides are played by a policy that ranges in the way a person does.
+
+**Section 2 is the one that changed the design.** The lowest power that connects
+came out at a mean of 86 with a tenth percentile of 79 — meaning ninety-one
+positions on the power dial and about twenty of them did anything. Raising the
+muzzle speed from 1.55 to 2.0 moved that to a mean of 67, roughly doubled the
+number of connecting settings, and removed the one battlefield in eighty where
+a coarse sweep found no shot at all. It is also where `MIN_REACH_SETTINGS` came
+from: this harness sweeps a finer grid than the generator's own check and found
+a side where exactly one coarse setting connected and the finer sweep found
+none, which is a needle rather than a band.
+
+Section 3 is the sanity check on the damage numbers rather than a dial: a median
+of ten volleys means a match is decided inside the eight weapons each side
+drafts, which is what makes the draft worth thinking about.
+
+```bash
+npx vitest run --config tools/vitest.artillery.config.ts --root .
 ```

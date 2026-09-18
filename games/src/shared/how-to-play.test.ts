@@ -16,6 +16,7 @@ import { RULES as MANCALA } from '../mancala/rules';
 import { RULES as DOMINOES } from '../dominoes/rules';
 import { RULES as SIMON } from '../simon/rules';
 import { RULES as SURVIVAL } from '../survival/rules';
+import { RULES as ARTILLERY } from '../artillery/rules';
 import { shouldAutoShow } from './how-to-play';
 import { defaultSave, migrate } from './progress';
 
@@ -36,6 +37,7 @@ const RULES = [
   MANCALA,
   DOMINOES,
   SIMON,
+  ARTILLERY,
 ];
 
 /**

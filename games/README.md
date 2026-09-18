@@ -24,6 +24,7 @@ in-game currency. Everything is static; all state lives on the player's device.
 | Mancala | Playable |
 | Mexican Train | Playable |
 | Simon | Playable |
+| Artillery | Playable |
 
 ## Working on it
 
@@ -37,17 +38,18 @@ npm run icons      # regenerate PWA icons (output is committed)
 
 ## How it works
 
-**Thirteen of the eighteen are puzzles. Yahtzee, Backgammon, Mancala, Mexican
-Train and Simon are not, and all five bend the house rules on purpose.**
-Everything below about verified levels, measured difficulty and unlimited undo
-describes the puzzles. Yahtzee is a game of chance: there is no board to verify,
-no difficulty to curve, and rewinding a throw would be reading the answer. The
-other three have a second person in them, which takes the hint with it and — in
-two of the three — puts a fence around undo. What all four keep is everything
-that made this collection worth building: no ads, no servers, no currency,
-nothing locked. What they put in place of the rest is set out under *Yahtzee*,
-*Backgammon*, *Mancala*, *Mexican Train* and *Simon* below. Simon is a memory
-game: undo and a hint would both be the answer.
+**Thirteen of the nineteen are puzzles. Yahtzee, Backgammon, Mancala, Mexican
+Train, Simon and Artillery are not, and all six bend the house rules on
+purpose.** Everything below about verified levels, measured difficulty and
+unlimited undo describes the puzzles. Yahtzee is a game of chance: there is no
+board to verify, no difficulty to curve, and rewinding a throw would be reading
+the answer. Four of the others have a second person in them, which takes the
+hint with it and — in three of the four — puts a fence around undo. What all
+six keep is everything that made this collection worth building: no ads, no
+servers, no currency, nothing locked. What they put in place of the rest is set
+out under *Yahtzee*, *Backgammon*, *Mancala*, *Mexican Train*, *Simon* and
+*Artillery* below. Simon is a memory game: undo and a hint would both be the
+answer.
 
 **Every level is verified before it is shown.** Levels are dealt at random from
 a seed, then solved. A board the solver cannot finish is discarded, so unlike
@@ -459,6 +461,13 @@ src/backgammon/       board, legal, model, render, game, main, rules — no
 src/simon/            model, render, game, main, rules — no generate and no
                       solve: a game is one seeded stream of pads, and round n
                       shows the first n of it
+src/artillery/        terrain, weapons, physics, model, generate, render, game,
+                      main, rules — no solve: there is nothing to solve with two
+                      players, and what generate.ts verifies instead is that
+                      both tanks can reach each other. terrain.ts is the
+                      heightmap and its blast operations; physics.ts is one
+                      shell under gravity, and the only frame loop in the
+                      collection walks the path it returns
 public/               icons, per-game manifest, a two-line sw.js per game,
                       game-sw (the shared worker body) and warm (downloads every
                       game from any page) — copied verbatim, never bundled
@@ -687,6 +696,99 @@ the app, pauses the round back to its first pad.
 any number, so a harder mode with more colours is a renderer change (a ring of
 segments instead of quadrants), not a rules change. The flashes speed up at
 rounds 6, 14 and 22, as the original does.
+
+## Artillery
+
+**Pocket Tanks: two tanks, one hill, and a hundred life points each.** A turn is
+a few columns of movement, an angle, a power and one shot; a blast takes life
+and rearranges the ground it lands on. Before the first shot the two players
+take turns emptying a shop of sixteen weapons, and each drafted weapon fires
+once.
+
+**The ground is one integer height per column, and that decision carries the
+game.** A bitmap of solid pixels — which the original uses — buys overhangs and
+tunnels, and costs a fast collision test, a compact save and any simple answer
+to "where does a tank sit". The heightmap gives all three: collision is one
+interpolation, the whole battlefield is 96 bytes, and a tank's height *is* its
+column's height. What it gives up is roofs, so the one weapon that wants them —
+a shell that tunnels — gets an open shaft instead, which plays the same because
+what a shaft is for is dropping the ground out from under somebody.
+
+**There is no solver, and the promise it makes is kept by a different check.**
+With two players there is nothing to solve, but a battlefield dealt from noise
+can still be a fortress: put a tank in a bowl behind a forty-unit wall and no
+angle and no power reaches the other side. So `generate.ts` fires at every
+candidate before it ships. Both sides must have a plain shell that lands close
+enough to do damage — and not just one, because the probe found a side where a
+single coarse setting connected and a finer sweep found none at all. A lone hit
+is a needle, so a battlefield has to offer a band of them.
+
+**Three battlefields in four block the line of sight, and both halves are
+checked.** The straight line between the two turrets has to pass through the
+ground, because if you can point at your opponent there is nothing to work out.
+The fourth is an open field on purpose, and it is *built* open rather than
+searched for: requiring cover and merely hoping for the opposite gave 99% cover
+over 200 matches, since a battlefield with a hill, a plateau or twin peaks in
+the middle of it blocks the line whether or not anybody asked. An open field
+gets the dip and flatter ground.
+
+**The muzzle speed was measured, and the first guess wasted most of the dial.**
+It started where full power at forty-five degrees carried a shade further than
+the field is wide, which sounds right and is not: the tanks start about 150
+units apart, so `tools/artillery.ts` measured the lowest power that connects at
+a mean of 86 with a tenth percentile of 79. Ninety-one positions on the power
+dial and about twenty of them did anything. At the current setting a crossing
+sits around 67, full power reaches a little under twice the width of the field,
+and the trade the game is about — less power flatter against more power steeper
+— can actually be expressed. Full power going off the far edge is the cost of
+having somewhere to go above the shot you need.
+
+**A match in progress is saved as its position, not as its history.** Every
+other game here stores a move list and replays it, which works because their
+rules are integer arithmetic. This one is floating-point ballistics, and
+replaying it would mean trusting that `Math.sin` returns the same double it
+returned last week — a promise no engine makes, whose failure would be a saved
+match reopening with the craters slightly out of place. The heightmap makes the
+alternative cheap: a complete snapshot is about three hundred characters.
+
+**Undo stops at the trigger, and the turn's moves ride in the save.** Where a
+shell lands is the unknown here, so an undo across a shot would let a player
+fire, read the arc off the screen, take it back and fire again knowing the
+answer — free ranging rather than a kindness, which is Backgammon's argument
+about the dice. Moving and aiming are yours to take back for as long as the turn
+is. Which is why the columns the tank has already stood in are part of the
+snapshot: ten bytes at most, and without them moving, putting the phone down and
+picking it up again left a player looking at a move they could no longer undo.
+
+**The only frame loop in the collection is in this game, and it is a camera.**
+An artillery game cannot render on state change alone: the arc *is* the
+feedback, and a shot that teleports to its crater teaches nobody how to correct
+the next one. So the model resolves a whole shot first — every shell's flight,
+the craters, the damage — and the renderer then walks a path it has already been
+handed. It decides nothing, it is cancelled on reset, and the state changes once,
+when it reports back. Drop every frame and the outcome is identical. The page
+reports for it when hidden mid-flight, because a backgrounded tab stops
+delivering frames and the turn would otherwise never end.
+
+**Each drafted weapon fires once, and the plain shell never runs out.** That is
+what keeps the draft the decision of the match rather than a menu nobody reads
+after turn three — and the unlimited shell is what stops a long match becoming a
+stalemate between two empty arsenals. Picks snake rather than alternate: with
+one plainly best weapon in the pool, strict alternation is a coin flip decided
+before anybody has aimed. The player who picks second fires first, which pays
+back the rest of it.
+
+**It is the first game here to decline the shape overlay.** The overlay exists
+where colour is the only thing telling two pieces apart. These two seats never
+swap ends, so position says everything colour does, and every number, gauge and
+control belonging to a seat sits on that seat's side of the screen.
+
+**And a warning for the next game that hides a row of its shell:** a
+`display: none` grid child does not hold its track. The weapon shop hides the
+life strip and the shot report, which slid the battlefield onto an `auto` row
+and handed the `1fr` to a one-line paragraph — the shop sat at its content
+height with a hand's width of dead space under it, and the board looked half the
+size it is. Every row of `.app--artillery` names its own `grid-row`.
 
 ## Deploying
 

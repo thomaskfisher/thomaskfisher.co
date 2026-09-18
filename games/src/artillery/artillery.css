@@ -1,0 +1,686 @@
+/*
+ * Artillery.
+ *
+ * Four rows: the top bar, a life strip, the battlefield, and the controls. The
+ * life strip is its own row rather than crammed into the top bar because it is
+ * the number both players watch, and two hundred-point bars need the width.
+ *
+ * The two seats never swap ends, so `--left` and `--right` identify them by
+ * position as much as by colour, and nothing in this game is distinguishable
+ * *only* by hue. That is why Settings offers no shape overlay here — see
+ * `main.ts`.
+ */
+
+.app--artillery {
+  /* Top bar, life strip, battlefield, shot report, controls. */
+  grid-template-rows: auto auto 1fr auto auto;
+}
+
+/*
+ * Each row named explicitly, because a `display: none` grid child does not
+ * hold its track — it is removed from the flow and everything after it moves
+ * up one. The weapon shop hides the life strip and the shot report, which
+ * silently slid the battlefield onto an `auto` row and handed the `1fr` to a
+ * one-line paragraph: the shop then sat at its content height with a hand's
+ * width of dead space under it, and the board looked half the size it is.
+ */
+.app--artillery > .topbar {
+  grid-row: 1;
+}
+
+.app--artillery > .ar-life {
+  grid-row: 2;
+}
+
+.app--artillery > .board {
+  grid-row: 3;
+}
+
+.app--artillery > .ar-status {
+  grid-row: 4;
+}
+
+.app--artillery > .controls {
+  grid-row: 5;
+}
+
+:root {
+  --left: #4da3ff;
+  --right: #ff9147;
+  --ground: #2f6b45;
+  --ground-edge: #57c483;
+  --sky: rgba(9, 16, 32, 0.55);
+}
+
+:root[data-theme='light'] {
+  --left: #1f6feb;
+  --right: #e2670d;
+  --ground: #49906a;
+  --ground-edge: #2f6b45;
+  --sky: rgba(255, 255, 255, 0.5);
+}
+
+/* ------------------------------------------------------------- life strip */
+
+.ar-life {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 2px 14px 6px;
+}
+
+.ar-gauge {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ar-gauge-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.ar-gauge--right .ar-gauge-head {
+  flex-direction: row-reverse;
+}
+
+.ar-gauge-hp {
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  color: var(--text);
+}
+
+.ar-gauge-bar {
+  position: relative;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--glass);
+  overflow: hidden;
+}
+
+.ar-gauge-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--hp, 100%);
+  border-radius: 99px;
+  background: var(--left);
+  transition: width 0.3s ease;
+}
+
+.ar-gauge--right .ar-gauge-bar::after {
+  inset: 0 0 0 auto;
+  background: var(--right);
+}
+
+/* The tank on the move is named in the strip too, so there is never a doubt
+   about whose turn it is when the phone changes hands. */
+.ar-gauge.is-active .ar-gauge-head {
+  color: var(--text);
+}
+
+.ar-gauge.is-active .ar-gauge-bar {
+  box-shadow: 0 0 0 1.5px var(--glass-edge);
+}
+
+/* ------------------------------------------------------------ battlefield */
+
+.app--artillery .board {
+  display: grid;
+  /* Stretched rather than centred: the shop fills this row, and the field
+     centres itself inside its own host. Centring here instead left the shop
+     sized to its content with a hand's width of empty board under it. */
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  padding: 0 8px;
+  /* Its own stacking context. Nothing here sets z-index from game state, but
+     the sheets sit at 20 and a board that can paint over a menu is a bug
+     nobody finds until they open one. */
+  isolation: isolate;
+}
+
+/* The host fills the board row so the field inside it has a width to be a
+   percentage of. Without it the `1fr` row, the centred grid item and a
+   `width: 100%` child resolve against each other and the field collapses. */
+.ar-field-host {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* Fills the board row rather than holding a 3:2 box: the renderer anchors the
+   world to the bottom edge, so the height left over becomes sky that a high
+   shot can actually be seen in. */
+.ar-field {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, var(--bg-glow) 0%, transparent 70%),
+    var(--sky);
+  overflow: hidden;
+}
+
+.ar-ground {
+  fill: var(--ground);
+}
+
+.ar-surface {
+  fill: none;
+  stroke: var(--ground-edge);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+
+/* The remembered shot from each side. Faint, because it is a note rather than
+   a thing on the battlefield. */
+.ar-trail {
+  fill: none;
+  stroke-width: 0.7;
+  stroke-dasharray: 2.5 3;
+  stroke-linecap: round;
+  opacity: 0.45;
+}
+
+.ar-trail--left {
+  stroke: var(--left);
+}
+
+.ar-trail--right {
+  stroke: var(--right);
+}
+
+.ar-trail.is-empty {
+  display: none;
+}
+
+/* The shot happening now. */
+.ar-arc {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 0.8;
+  stroke-linecap: round;
+  opacity: 0.6;
+}
+
+.ar-shell {
+  fill: var(--text);
+}
+
+/* -------------------------------------------------------------- the tanks */
+
+.ar-hull,
+.ar-turret {
+  fill: var(--left);
+}
+
+.ar-barrel {
+  stroke: var(--left);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.ar-tank--right .ar-hull,
+.ar-tank--right .ar-turret {
+  fill: var(--right);
+}
+
+.ar-tank--right .ar-barrel {
+  stroke: var(--right);
+}
+
+.ar-marker {
+  fill: var(--text);
+  opacity: 0;
+}
+
+.ar-tank.is-active .ar-marker {
+  opacity: 0.85;
+  animation: ar-bob 1.1s ease-in-out infinite;
+}
+
+.ar-tank.is-out {
+  opacity: 0.3;
+}
+
+.ar-tank.is-out .ar-barrel {
+  stroke-dasharray: 1.5 1.5;
+}
+
+@keyframes ar-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(1.6px);
+  }
+}
+
+/* ---------------------------------------------------------------- bursts */
+
+.ar-burst {
+  fill: var(--danger);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ar-burst var(--burst-ms, 450ms) ease-out forwards;
+}
+
+.ar-burst--dirt,
+.ar-burst--fill {
+  fill: var(--ground-edge);
+}
+
+@keyframes ar-burst {
+  0% {
+    transform: scale(0.15);
+    opacity: 0.95;
+  }
+  55% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.1);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ar-tank.is-active .ar-marker {
+    animation: none;
+  }
+
+  /* The burst still has to appear and go, or the crater arrives with no
+     explanation — but it does it without growing. */
+  .ar-burst {
+    animation: ar-burst-still var(--burst-ms, 450ms) linear forwards;
+  }
+
+  @keyframes ar-burst-still {
+    0%,
+    70% {
+      opacity: 0.8;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}
+
+/* --------------------------------------------------------------- status */
+
+.ar-status {
+  min-height: 1.15rem;
+  margin: 0;
+  padding: 0 14px;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.ar-status.is-alert {
+  color: var(--danger);
+}
+
+/* ------------------------------------------------------------- controls */
+
+.app--artillery .controls {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.ar-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+/* A stepper: label, minus, value, plus. The value is tabular so it does not
+   shuffle as the digits change under a thumb that is holding the button down. */
+.ar-dial {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 6px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 2px 0 var(--shadow);
+}
+
+.ar-dial-label {
+  flex: 1;
+  padding-left: 4px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.ar-dial-value {
+  min-width: 2.6ch;
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.ar-step {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 11px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ar-step:active:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.ar-step:disabled {
+  opacity: 0.35;
+}
+
+/* Move, with the budget between the arrows — the number is what runs out, so
+   it belongs where the thumb already is. */
+.ar-move {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 6px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 2px 0 var(--shadow);
+}
+
+.ar-move-value {
+  min-width: 3.4ch;
+  text-align: center;
+}
+
+.ar-move-value b {
+  display: block;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+
+.ar-move-value span {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* The weapon button. Wide, because the name is the thing being read. */
+.ar-weapon {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  box-shadow: 0 2px 0 var(--shadow);
+}
+
+.ar-weapon-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ar-weapon-name small {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.ar-weapon-count {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ar-fire {
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  box-shadow: 0 3px 0 var(--shadow);
+}
+
+.ar-fire:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.ar-fire:disabled {
+  opacity: 0.4;
+}
+
+/* The seat on the move tints its own controls, which is the cheapest possible
+   reminder of whose hands the phone is in. */
+.controls.is-right .ar-fire {
+  background: var(--right);
+}
+
+.controls.is-right .ar-weapon-count {
+  background: rgba(255, 145, 71, 0.18);
+  color: var(--right);
+}
+
+.controls.is-right .ar-step:active:not(:disabled) {
+  background: rgba(255, 145, 71, 0.18);
+}
+
+.ar-secondary {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* --------------------------------------------------------- weapon sheet */
+
+.ar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.ar-pick {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-raised);
+  color: var(--text);
+  text-align: left;
+}
+
+.ar-pick[aria-pressed='true'] {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+.ar-pick b {
+  display: block;
+  font-size: 0.88rem;
+}
+
+.ar-pick small {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+
+.ar-pick-uses {
+  flex: none;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------- weapon shop */
+
+.ar-shop {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  padding: 0 4px;
+}
+
+.ar-shop-turn {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.ar-shop-turn span {
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+/* The rows share the height rather than sitting at the top of it. Left to
+   their content they packed into the upper half and left a hand's width of
+   nothing above the tally, which read as a layout fault rather than as space. */
+.ar-pool {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ar-chip {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  padding: 6px 8px;
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+}
+
+.ar-chip b {
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.ar-chip span {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A weapon that has gone keeps its name legible and its seat's colour, because
+   who took what is the whole of the information in this screen. */
+.ar-chip.is-taken {
+  background: var(--glass);
+  opacity: 0.62;
+}
+
+.ar-chip.is-taken b {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+
+.ar-chip.is-taken--left b {
+  color: var(--left);
+}
+
+.ar-chip.is-taken--right b {
+  color: var(--right);
+}
+
+.ar-shop-tally {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  padding: 0 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+.ar-shop-tally b {
+  font-variant-numeric: tabular-nums;
+}
+
+.ar-shop-tally .ar-shop-left b {
+  color: var(--left);
+}
+
+.ar-shop-tally .ar-shop-right b {
+  color: var(--right);
+}
+
+/* `[hidden]` is a user-agent rule, so any `display` set above outranks it and
+   the element stays on screen while claiming to be hidden. */
+.ar-shop[hidden],
+.ar-life[hidden],
+.ar-row[hidden],
+.ar-field-host[hidden],
+.ar-secondary[hidden] {
+  display: none;
+}

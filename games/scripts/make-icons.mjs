@@ -152,6 +152,25 @@ function fillTriangle(canvas, [ax, ay], [bx, by], [cx, cy], color, alpha = 1) {
   }
 }
 
+
+/**
+ * A thick line, as two triangles.
+ *
+ * Artillery wanted this: a tank barrel and a shell's arc are both strokes, and
+ * everything else in this file is a rounded rectangle or a triangle because
+ * nothing had needed one before. Same sampling, same compositing.
+ */
+function fillLine(canvas, [ax, ay], [bx, by], width, color, alpha = 1) {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const length = Math.hypot(dx, dy) || 1;
+  const px = (-dy / length) * (width / 2);
+  const py = (dx / length) * (width / 2);
+
+  fillTriangle(canvas, [ax + px, ay + py], [ax - px, ay - py], [bx - px, by - py], color, alpha);
+  fillTriangle(canvas, [ax + px, ay + py], [bx - px, by - py], [bx + px, by + py], color, alpha);
+}
+
 const hex = (value) => [
   parseInt(value.slice(1, 3), 16),
   parseInt(value.slice(3, 5), 16),
@@ -1296,6 +1315,95 @@ function drawSimon(size, { maskable }) {
   return encodePng(size, size, canvas.data);
 }
 
+
+/**
+ * A tank on the left, a hill in the middle, and the arc that clears it.
+ *
+ * The arc is the whole game, so it gets the strongest mark on the tile: at
+ * 48px the hill and the dotted curve over it read as "lob something over
+ * that", which is exactly what the game asks you to do.
+ */
+function drawArtillery(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.18 : size * 0.09;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const GROUND = hex('#2f6b45');
+  const EDGE = hex('#57c483');
+  const TANK = hex('#4da3ff');
+  const SHELL = hex('#ff9147');
+  // The arc is pale rather than green: in the ground's own colour it read as a
+  // second piece of terrain floating over the first.
+  const ARC = hex('#cdd9ee');
+
+  // Everything below is in percent of the tile, so it scales at every size.
+  const u = size / 100;
+  const at = (value) => value * u;
+
+  // Ground: a flat base with one hill, drawn per pixel so the surface can carry
+  // a lit edge of its own.
+  const surface = (x) => 80 - 30 * Math.exp(-(((x - 60) / 15) ** 2));
+
+  for (let py = 0; py < size; py++) {
+    for (let px = 0; px < size; px++) {
+      let below = 0;
+      let edge = 0;
+      for (let sy = 0; sy < 2; sy++) {
+        for (let sx = 0; sx < 2; sx++) {
+          const x = ((px + (sx + 0.5) / 2) / size) * 100;
+          const y = ((py + (sy + 0.5) / 2) / size) * 100;
+          const top = surface(x);
+          if (y < top) continue;
+          below++;
+          if (y < top + 3) edge++;
+        }
+      }
+      if (below > 0) canvas.set(px, py, GROUND, below / 4);
+      if (edge > 0) canvas.set(px, py, EDGE, edge / 4);
+    }
+  }
+
+  // The arc, dashed. A quadratic through the tank, over the hill, and down the
+  // far side.
+  const arc = (t) => {
+    const p0 = [22, 67];
+    const p1 = [54, 3];
+    // Lands *on* the ground on the far side. Ending it in mid-air drew a shot
+    // that had not happened yet.
+    const p2 = [86, 77];
+    const m = 1 - t;
+    return [
+      m * m * p0[0] + 2 * m * t * p1[0] + t * t * p2[0],
+      m * m * p0[1] + 2 * m * t * p1[1] + t * t * p2[1],
+    ];
+  };
+
+  const STEPS = 44;
+  for (let i = 0; i < STEPS; i++) {
+    // Two on, one off — a dashed line without having to measure arc length.
+    if (i % 3 === 2) continue;
+    const [x0, y0] = arc(i / STEPS);
+    const [x1, y1] = arc((i + 1) / STEPS);
+    fillLine(canvas, [at(x0), at(y0)], [at(x1), at(y1)], at(3), ARC, 0.8);
+  }
+
+  // The shell, on its way up.
+  const [sx, sy] = arc(0.34);
+  fillRoundedRect(canvas, at(sx) - at(4), at(sy) - at(4), at(8), at(8), at(4), SHELL);
+
+  // The tank, on the flat to the left of the hill.
+  const base = surface(18);
+  fillLine(canvas, [at(18), at(base - 11)], [at(27), at(base - 20)], at(4), TANK);
+  fillRoundedRect(canvas, at(11), at(base - 9), at(14), at(6), at(2.2), TANK);
+  fillRoundedRect(canvas, at(18) - at(3.2), at(base - 11) - at(3.2), at(6.4), at(6.4), at(3.2), TANK);
+
+  void inset;
+  return encodePng(size, size, canvas.data);
+}
+
 const targets = [
   ['colorsort-180.png', 180, { maskable: false }, drawColorSort],
   ['colorsort-192.png', 192, { maskable: false }, drawColorSort],
@@ -1369,6 +1477,10 @@ const targets = [
   ['simon-192.png', 192, { maskable: false }, drawSimon],
   ['simon-512.png', 512, { maskable: false }, drawSimon],
   ['simon-maskable-512.png', 512, { maskable: true }, drawSimon],
+  ['artillery-180.png', 180, { maskable: false }, drawArtillery],
+  ['artillery-192.png', 192, { maskable: false }, drawArtillery],
+  ['artillery-512.png', 512, { maskable: false }, drawArtillery],
+  ['artillery-maskable-512.png', 512, { maskable: true }, drawArtillery],
 ];
 
 for (const [name, size, options, draw] of targets) {

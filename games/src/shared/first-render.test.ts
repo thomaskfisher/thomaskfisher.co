@@ -18,6 +18,7 @@ import { WordleGame } from '../wordle/game';
 import { MancalaGame } from '../mancala/game';
 import { DominoesGame } from '../dominoes/game';
 import { SimonGame } from '../simon/game';
+import { ArtilleryGame } from '../artillery/game';
 
 /**
  * The first render happens before the save has loaded.
@@ -57,6 +58,7 @@ const games = [
   ['Mancala', () => new MancalaGame()],
   ['Mexican Train', () => new DominoesGame()],
   ['Simon', () => new SimonGame()],
+  ['Artillery', () => new ArtilleryGame()],
 ] as const;
 
 describe('before start() resolves', () => {
