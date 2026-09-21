@@ -103,7 +103,8 @@ Per game you write: `model.ts`, `solve.ts`, `generate.ts`, `render.ts`,
 `<game>/index.html`, `public/<game>/manifest.webmanifest`, `public/<game>/sw.js`.
 The worker is a two-line stub — copy another game's and change the slug; the
 body is shared in `public/game-sw.js`. `<game>/index.html` needs
-`<script src="/warm.js" defer>` alongside its module script.
+`<script src="/warm.js" defer>` and `<script src="/visit.js" defer>` (the
+anonymous daily count) alongside its module script.
 
 Wiring points, all easy to forget: a `vite.config.ts` entry, a launcher card in
 `games/index.html`, a `draw<Game>` function in `scripts/make-icons.mjs`, and the

@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Game Stats</title>
+    <!--
+      Reads the anonymous daily counts that /visit.js adds to, and draws them.
+
+      Plain HTML copied verbatim by the build, like /warm.js: no chunk, no
+      dependency, and not linked from the launcher. The counts are public in
+      the database anyway — they are only totals — so this page has nothing to
+      hide, it just has no reason to be found.
+    -->
+    <style>
+      :root {
+        color-scheme: light;
+        --page: #f9f9f7;
+        --surface: #fcfcfb;
+        --ink: #0b0b0b;
+        --ink-2: #52514e;
+        --muted: #898781;
+        --grid: #e1e0d9;
+        --axis: #c3c2b7;
+        --ring: rgba(11, 11, 11, 0.1);
+        --s1: #2a78d6;
+        --s2: #eb6834;
+        --s3: #1baf7a;
+        --s4: #eda100;
+        --s5: #e87ba4;
+        --s6: #008300;
+        --s7: #4a3aa7;
+        --other: #b5b4ad;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: dark;
+          --page: #0d0d0d;
+          --surface: #1a1a19;
+          --ink: #ffffff;
+          --ink-2: #c3c2b7;
+          --muted: #898781;
+          --grid: #2c2c2a;
+          --axis: #383835;
+          --ring: rgba(255, 255, 255, 0.1);
+          --s1: #3987e5;
+          --s2: #d95926;
+          --s3: #199e70;
+          --s4: #c98500;
+          --s5: #d55181;
+          --s6: #008300;
+          --s7: #9085e9;
+          --other: #5f5e59;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--page);
+        color: var(--ink);
+        font: 15px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 24px 16px 48px;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0 0 4px;
+      }
+      .sub {
+        color: var(--ink-2);
+        margin: 0 0 20px;
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--ring);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .tile {
+        margin: 0;
+      }
+      .tile dt {
+        color: var(--ink-2);
+        font-size: 13px;
+      }
+      .tile dd {
+        margin: 2px 0 0;
+        font-size: 28px;
+        font-weight: 600;
+      }
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .bar h2 {
+        font-size: 15px;
+        margin: 0;
+      }
+      .range {
+        display: inline-flex;
+        border: 1px solid var(--ring);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .range button {
+        font: inherit;
+        font-size: 13px;
+        background: none;
+        color: var(--ink-2);
+        border: 0;
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+      .range button[aria-pressed='true'] {
+        background: var(--grid);
+        color: var(--ink);
+        font-weight: 600;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 16px;
+        margin: 0 0 12px;
+        padding: 0;
+        list-style: none;
+        font-size: 13px;
+        color: var(--ink-2);
+      }
+      .legend i {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        margin-right: 6px;
+        vertical-align: -1px;
+      }
+      .chart {
+        position: relative;
+      }
+      svg {
+        display: block;
+        width: 100%;
+        height: 280px;
+        overflow: visible;
+      }
+      svg text {
+        fill: var(--muted);
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+      }
+      .hit {
+        fill: transparent;
+      }
+      svg path,
+      svg line,
+      svg text,
+      svg rect:not(.hit) {
+        pointer-events: none;
+      }
+      .hit:hover,
+      .hit.on {
+        fill: var(--grid);
+        opacity: 0.5;
+      }
+      .tip {
+        position: absolute;
+        pointer-events: none;
+        background: var(--surface);
+        border: 1px solid var(--ring);
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 13px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        min-width: 160px;
+        display: none;
+        z-index: 1;
+      }
+      .tip b {
+        display: block;
+        margin-bottom: 4px;
+      }
+      .tip div {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        color: var(--ink-2);
+      }
+      .tip div span:last-child {
+        color: var(--ink);
+        font-variant-numeric: tabular-nums;
+      }
+      .tip .total {
+        border-top: 1px solid var(--grid);
+        margin-top: 4px;
+        padding-top: 4px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 6px 4px;
+        border-bottom: 1px solid var(--grid);
+      }
+      th {
+        color: var(--ink-2);
+        font-weight: 500;
+        font-size: 13px;
+      }
+      td.n,
+      th.n {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      .note {
+        color: var(--ink-2);
+        font-size: 13px;
+      }
+      .note label {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        cursor: pointer;
+        color: var(--ink);
+      }
+      .empty {
+        color: var(--ink-2);
+        padding: 40px 0;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Who's playing</h1>
+      <p class="sub">
+        Anonymous counts. Each device counts once per day for the site and once per game it opens.
+        No names, IDs or cookies are stored.
+      </p>
+
+      <dl class="tiles">
+        <div class="card tile"><dt>Visitors today</dt><dd id="today">–</dd></div>
+        <div class="card tile"><dt>Average visitors per day</dt><dd id="avg">–</dd></div>
+        <div class="card tile"><dt>Most played game</dt><dd id="top">–</dd></div>
+      </dl>
+
+      <section class="card">
+        <div class="bar">
+          <h2>Players per game, per day</h2>
+          <div class="range" role="group" aria-label="Date range">
+            <button type="button" data-days="14">14 days</button>
+            <button type="button" data-days="30">30 days</button>
+            <button type="button" data-days="90">90 days</button>
+          </div>
+        </div>
+        <ul class="legend" id="legend"></ul>
+        <div class="chart" id="chart"><p class="empty">Loading…</p></div>
+      </section>
+
+      <section class="card">
+        <div class="bar"><h2 id="table-title">Totals</h2></div>
+        <table>
+          <thead>
+            <tr><th>Game</th><th class="n">Player-days</th><th class="n">Days played</th></tr>
+          </thead>
+          <tbody id="table"></tbody>
+        </table>
+      </section>
+
+      <p class="note">
+        <label><input type="checkbox" id="optout" /> Don't count this device</label>
+        — tick this on your own phone and computer so the numbers show other people.
+      </p>
+    </main>
+
+    <script>
+      (function () {
+        var DB = 'https://thomaskfisher-d6a4e-default-rtdb.firebaseio.com';
+        var OPT_OUT = 'tf-games:dont-count';
+        var RANGE = 'tf-games:stats-range';
+        var SLOTS = 7; // named series; everything past this folds into "Other"
+        var COLORS = ['--s1', '--s2', '--s3', '--s4', '--s5', '--s6', '--s7'];
+
+        var names = {}; // slug -> display name, read from the launcher's cards
+        var visits = {}; // day -> { site: n, <slug>: n }
+        var days = read(RANGE, '30');
+
+        function read(key, fallback) {
+          try {
+            return localStorage.getItem(key) || fallback;
+          } catch (e) {
+            return fallback;
+          }
+        }
+        function write(key, value) {
+          try {
+            if (value == null) localStorage.removeItem(key);
+            else localStorage.setItem(key, value);
+          } catch (e) {}
+        }
+
+        function iso(d) {
+          return (
+            d.getFullYear() +
+            '-' +
+            String(d.getMonth() + 1).padStart(2, '0') +
+            '-' +
+            String(d.getDate()).padStart(2, '0')
+          );
+        }
+        function dayList(n) {
+          var out = [];
+          var d = new Date();
+          d.setHours(12, 0, 0, 0);
+          d.setDate(d.getDate() - (n - 1));
+          for (var i = 0; i < n; i++) {
+            out.push(iso(d));
+            d.setDate(d.getDate() + 1);
+          }
+          return out;
+        }
+        function label(dayStr) {
+          var p = dayStr.split('-');
+          var d = new Date(+p[0], +p[1] - 1, +p[2]);
+          return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        }
+        function nameOf(slug) {
+          return names[slug] || slug;
+        }
+        function esc(s) {
+          return String(s).replace(/[&<>"]/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+          });
+        }
+
+        // --- the opt-out checkbox --------------------------------------------
+        var optout = document.getElementById('optout');
+        optout.checked = read(OPT_OUT, '') === '1';
+        optout.addEventListener('change', function () {
+          write(OPT_OUT, optout.checked ? '1' : null);
+        });
+
+        // --- range buttons ---------------------------------------------------
+        var buttons = document.querySelectorAll('.range button');
+        buttons.forEach(function (b) {
+          b.addEventListener('click', function () {
+            days = b.getAttribute('data-days');
+            write(RANGE, days);
+            render();
+          });
+        });
+
+        // --- load ------------------------------------------------------------
+        var since = dayList(90)[0];
+        Promise.all([
+          fetch('/index.html')
+            .then(function (r) {
+              return r.text();
+            })
+            .then(function (html) {
+              var doc = new DOMParser().parseFromString(html, 'text/html');
+              doc.querySelectorAll('a.card').forEach(function (a) {
+                var slug = a.getAttribute('href').replace(/^\.\/|\/$/g, '');
+                names[slug] = a.querySelector('b').textContent.trim();
+              });
+            })
+            .catch(function () {}),
+          fetch(DB + '/visits.json?orderBy="$key"&startAt="' + since + '"')
+            .then(function (r) {
+              if (!r.ok) throw new Error(r.status);
+              return r.json();
+            })
+            .then(function (data) {
+              visits = data || {};
+            }),
+        ])
+          .then(render)
+          .catch(function () {
+            document.getElementById('chart').innerHTML =
+              '<p class="empty">Couldn’t load the counts. Try again in a moment.</p>';
+          });
+
+        // --- render ----------------------------------------------------------
+        function render() {
+          buttons.forEach(function (b) {
+            b.setAttribute('aria-pressed', String(b.getAttribute('data-days') === days));
+          });
+
+          var list = dayList(+days);
+
+          // Rank games by total in the window, so colours go to the ones that
+          // matter here. A game keeps its colour for as long as its rank holds.
+          var totals = {};
+          var played = {};
+          var siteTotal = 0;
+          list.forEach(function (day) {
+            var row = visits[day] || {};
+            Object.keys(row).forEach(function (k) {
+              if (k === 'site') {
+                siteTotal += row[k];
+                return;
+              }
+              totals[k] = (totals[k] || 0) + row[k];
+              played[k] = (played[k] || 0) + 1;
+            });
+          });
+          var ranked = Object.keys(totals).sort(function (a, b) {
+            return totals[b] - totals[a] || nameOf(a).localeCompare(nameOf(b));
+          });
+          var named = ranked.length > SLOTS + 1 ? ranked.slice(0, SLOTS) : ranked.slice(0, SLOTS + 1);
+          var series = named.map(function (slug, i) {
+            return { key: slug, name: nameOf(slug), color: 'var(' + (COLORS[i] || '--other') + ')' };
+          });
+          var hasOther = ranked.length > named.length;
+          if (hasOther) series.push({ key: '*other', name: 'Other', color: 'var(--other)' });
+
+          function value(row, s) {
+            if (s.key !== '*other') return row[s.key] || 0;
+            var sum = 0;
+            ranked.slice(named.length).forEach(function (k) {
+              sum += row[k] || 0;
+            });
+            return sum;
+          }
+
+          // Tiles
+          var todayRow = visits[iso(new Date())] || {};
+          document.getElementById('today').textContent = String(todayRow.site || 0);
+          document.getElementById('avg').textContent = (siteTotal / list.length).toFixed(1);
+          document.getElementById('top').textContent = ranked.length ? nameOf(ranked[0]) : '–';
+
+          // Legend
+          document.getElementById('legend').innerHTML = series
+            .map(function (s) {
+              return '<li><i style="background:' + s.color + '"></i>' + esc(s.name) + '</li>';
+            })
+            .join('');
+
+          // Chart
+          var chart = document.getElementById('chart');
+          if (!ranked.length && !siteTotal) {
+            chart.innerHTML = '<p class="empty">No visits counted in this range yet.</p>';
+          } else {
+            drawChart(chart, list, series, value);
+          }
+
+          // Table
+          document.getElementById('table-title').textContent = 'Totals, last ' + days + ' days';
+          var rows = ranked.map(function (k) {
+            return (
+              '<tr><td>' +
+              esc(nameOf(k)) +
+              '</td><td class="n">' +
+              totals[k] +
+              '</td><td class="n">' +
+              played[k] +
+              '</td></tr>'
+            );
+          });
+          rows.push(
+            '<tr><td><b>Whole site</b></td><td class="n"><b>' +
+              siteTotal +
+              '</b></td><td class="n"></td></tr>',
+          );
+          document.getElementById('table').innerHTML = rows.join('');
+        }
+
+        function niceMax(n) {
+          if (n <= 4) return 4;
+          var step = Math.pow(10, Math.floor(Math.log10(n)));
+          var options = [1, 2, 2.5, 5, 10];
+          for (var i = 0; i < options.length; i++) {
+            if (options[i] * step * 4 >= n) return options[i] * step * 4;
+          }
+          return 40 * step;
+        }
+
+        function drawChart(chart, list, series, value) {
+          var W = Math.max(320, chart.clientWidth || 600);
+          var H = 280;
+          var left = 32;
+          var right = 4;
+          var top = 18;
+          var bottom = 24;
+          var plotW = W - left - right;
+          var plotH = H - top - bottom;
+
+          var stacks = list.map(function (day) {
+            var row = visits[day] || {};
+            var parts = series.map(function (s) {
+              return value(row, s);
+            });
+            var sum = parts.reduce(function (a, b) {
+              return a + b;
+            }, 0);
+            return { day: day, row: row, parts: parts, sum: sum };
+          });
+          var max = niceMax(
+            Math.max.apply(
+              null,
+              stacks.map(function (s) {
+                return Math.max(s.sum, s.row.site || 0);
+              }),
+            ),
+          );
+          var band = plotW / list.length;
+          var barW = Math.min(24, Math.max(3, band * 0.7));
+          var y = function (v) {
+            return top + plotH - (v / max) * plotH;
+          };
+
+          var out = [];
+          var hits = []; // drawn under the bars, so the hover wash sits behind them
+          // Grid + y ticks
+          for (var t = 0; t <= 4; t++) {
+            var v = (max / 4) * t;
+            var yy = y(v);
+            out.push(
+              '<line x1="' + left + '" x2="' + (W - right) + '" y1="' + yy + '" y2="' + yy +
+                '" stroke="var(' + (t === 0 ? '--axis' : '--grid') + ')" stroke-width="1"/>',
+              '<text x="' + (left - 6) + '" y="' + (yy + 4) + '" text-anchor="end">' + v + '</text>',
+            );
+          }
+
+          // X labels: aim for about seven, always including today.
+          var every = Math.max(1, Math.ceil(list.length / 7));
+          list.forEach(function (day, i) {
+            if ((list.length - 1 - i) % every) return;
+            out.push(
+              '<text x="' + (left + band * i + band / 2) + '" y="' + (H - 6) +
+                '" text-anchor="middle">' + label(day) + '</text>',
+            );
+          });
+
+          // Stacks: 2px surface gap between segments, rounded top only.
+          stacks.forEach(function (s, i) {
+            var x = left + band * i + (band - barW) / 2;
+            var base = 0;
+            var lastIdx = -1;
+            s.parts.forEach(function (p, j) {
+              if (p) lastIdx = j;
+            });
+            s.parts.forEach(function (p, j) {
+              if (!p) return;
+              var y0 = y(base);
+              var y1 = y(base + p);
+              base += p;
+              var h = Math.max(1, y0 - y1 - (j === lastIdx ? 0 : 2));
+              var yTop = y0 - h;
+              if (j === lastIdx) {
+                var r = Math.min(4, h, barW / 2);
+                out.push(
+                  '<path fill="' + series[j].color + '" d="M' + x + ',' + y0 + 'V' + (yTop + r) +
+                    'Q' + x + ',' + yTop + ' ' + (x + r) + ',' + yTop + 'H' + (x + barW - r) +
+                    'Q' + (x + barW) + ',' + yTop + ' ' + (x + barW) + ',' + (yTop + r) +
+                    'V' + y0 + 'Z"/>',
+                );
+              } else {
+                out.push(
+                  '<rect fill="' + series[j].color + '" x="' + x + '" y="' + yTop +
+                    '" width="' + barW + '" height="' + h + '"/>',
+                );
+              }
+            });
+            // Hit target: the whole column, so empty days still answer.
+            hits.push(
+              '<rect class="hit" data-i="' + i + '" x="' + (left + band * i) + '" y="' + top +
+                '" width="' + band + '" height="' + plotH + '"/>',
+            );
+          });
+
+          chart.innerHTML =
+            '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Stacked daily players per game">' +
+            hits.join('') +
+            out.join('') +
+            '</svg><div class="tip" id="tip"></div>';
+
+          var tip = chart.querySelector('#tip');
+          var svg = chart.querySelector('svg');
+          function show(el) {
+            chart.querySelectorAll('.hit.on').forEach(function (h) {
+              h.classList.remove('on');
+            });
+            el.classList.add('on');
+            var s = stacks[+el.getAttribute('data-i')];
+            var lines = series
+              .map(function (ser, j) {
+                return s.parts[j]
+                  ? '<div><span><i style="display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;background:' +
+                      ser.color + '"></i>' + esc(ser.name) + '</span><span>' + s.parts[j] + '</span></div>'
+                  : '';
+              })
+              .join('');
+            tip.innerHTML =
+              '<b>' + label(s.day) + '</b>' + (lines || '<div><span>No game opened</span></div>') +
+              '<div class="total"><span>Visitors to the site</span><span>' + (s.row.site || 0) + '</span></div>';
+            tip.style.display = 'block';
+            var scale = svg.clientWidth / W;
+            var cx = (+el.getAttribute('x') + band / 2) * scale;
+            var tw = tip.offsetWidth;
+            var lx = cx + 12 + tw > chart.clientWidth ? cx - 12 - tw : cx + 12;
+            tip.style.left = Math.max(0, lx) + 'px';
+            tip.style.top = '8px';
+          }
+          chart.querySelectorAll('.hit').forEach(function (el) {
+            el.addEventListener('mouseenter', function () {
+              show(el);
+            });
+            el.addEventListener('click', function () {
+              show(el);
+            });
+          });
+          svg.addEventListener('mouseleave', function () {
+            tip.style.display = 'none';
+            chart.querySelectorAll('.hit.on').forEach(function (h) {
+              h.classList.remove('on');
+            });
+          });
+        }
+
+        var resizeTimer;
+        window.addEventListener('resize', function () {
+          clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(render, 150);
+        });
+      })();
+    </script>
+  </body>
+</html>

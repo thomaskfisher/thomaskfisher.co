@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Ad-free, offline-first puzzle games. No servers, no tracking, no currency.",
+  "description": "Ad-free, offline-first puzzle games. No accounts, no tracking, no currency.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

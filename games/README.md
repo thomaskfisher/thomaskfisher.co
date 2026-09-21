@@ -1,8 +1,10 @@
 # Games
 
 Ad-free replicas of a few mobile puzzle games, served from
-`games.thomaskfisher.com`. No ads, no accounts, no tracking, no servers, and no
-in-game currency. Everything is static; all state lives on the player's device.
+`games.thomaskfisher.com`. No ads, no accounts, no tracking, and no in-game
+currency. Everything is static; all game state lives on the player's device.
+
+The one thing that leaves it is an anonymous daily count (see *Usage counts*).
 
 | Game | Status |
 | --- | --- |
@@ -937,6 +939,28 @@ holes, and is careless about a tenth of the time. It deliberately does not use
 hold, does not tuck or spin, and does not read the preview, because all three
 would flatter the bag into looking harmless. `tools/tetris.ts` sweeps it with the
 level pinned, so the bag can be measured with gravity held out of the picture.
+
+## Usage counts
+
+`public/visit.js`, loaded by every page next to `/warm.js`, adds one to
+`visits/<day>/site` and `visits/<day>/<game>` in the project's Firebase Realtime
+Database: at most once per device per game per calendar day. The device keeps
+track of what it has already counted in its own localStorage. Nothing identifying is
+sent or stored: no cookie, no ID, no fingerprint. Clearing site data only means
+that device counts again. Offline, the request fails, nothing is marked, and the
+next online load that day counts it.
+
+`database.rules.json` (repo root) makes the counters public to read and
+refuses every write except a +1 to a well-formed day and a lowercase slug.
+Setting a value, deleting, or incrementing by more than one is denied. It deploys
+with `firebase deploy --only database`, separately from hosting.
+
+`/stats/` (`public/stats/index.html`, plain HTML like `warm.js`) charts the counts
+as stacked daily columns: the top seven games by name, the rest as *Other*, with a
+totals table under the chart. It reads game names from the launcher's cards, so a new
+game needs no extra wiring beyond the usual `<script src="/visit.js" defer>`.
+It has a *Don't count this device* switch, which is how the owner's own phones stay
+out of the numbers. It is not linked from the launcher.
 
 ## Deploying
 
