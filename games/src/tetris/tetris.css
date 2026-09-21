@@ -1,7 +1,8 @@
 /* ==========================================================================
    Tetris.
 
-   A ten-by-twenty well, a tray of what is coming, and a pad of seven keys.
+   A ten-by-twenty well and a tray of what is coming. No pad: the well takes
+   taps and swipes, so it gets the height the keys used to have.
 
    The well is solved for in CSS alone: `.tt-board` is a size container and the
    frame takes the smaller of the width available and half the height, so it
@@ -11,7 +12,7 @@
    ========================================================================== */
 
 .app--tetris {
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto auto 1fr;
 }
 
 /* Every row names its own track. A `display: none` grid child does not hold
@@ -21,7 +22,6 @@
 .app--tetris > .topbar { grid-row: 1; }
 .app--tetris > .tt-tray { grid-row: 2; }
 .app--tetris > .tt-board { grid-row: 3; }
-.app--tetris > .tt-pad { grid-row: 4; }
 
 :root {
   --tt-well-bg: #0a1222;
@@ -87,6 +87,19 @@
   background: var(--tt-slot);
 }
 
+/* The hold slot is a button: tapping it holds. */
+.tt-slot--hold {
+  border: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.tt-slot--hold:disabled {
+  cursor: default;
+}
+
 /* The hold slot dims once it has been used for this piece, which is the whole
    of how "once per piece" is communicated. */
 .tt-slot.is-spent {
@@ -114,8 +127,15 @@
   display: grid;
   place-items: center;
   min-height: 0;
-  padding: 0 16px;
+  padding: 0 16px calc(12px + env(safe-area-inset-bottom));
   container-type: size;
+  /* The board is the controller. Without these a swipe scrolls or bounces the
+     page, a quick double tap zooms it, and a long press opens the
+     text-selection loupe over the well. */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .tt-board.is-loading .tt-frame {
@@ -130,7 +150,7 @@
      so this is insurance rather than load-bearing, and it costs nothing. */
   isolation: isolate;
   /* Ten wide by twenty tall, plus the frame's own padding on each side. */
-  width: min(100cqw, calc((100cqh - 12px) / 2), 320px);
+  width: min(100cqw, calc((100cqh - 12px) / 2), 360px);
   aspect-ratio: 10 / 20;
   padding: 5px;
   border-radius: 12px;
@@ -219,85 +239,7 @@
   display: none !important;
 }
 
-/* -------------------------------------------------------------------- pad */
-
-.tt-pad {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-  gap: 8px;
-  max-width: 420px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 8px 14px calc(12px + env(safe-area-inset-bottom));
-}
-
-.tt-key {
-  display: grid;
-  place-items: center;
-  min-height: 46px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: 0 2px 0 var(--shadow);
-  /* Without this a fast double tap on a key zooms the page, and a long press
-     opens the text-selection loupe over the board. */
-  touch-action: none;
-  -webkit-user-select: none;
-  user-select: none;
-  transition: transform 0.1s ease, opacity 0.15s ease;
-}
-
-.tt-key:active:not(:disabled) {
-  transform: translateY(2px);
-  box-shadow: none;
-}
-
-.tt-key:disabled {
-  opacity: 0.38;
-  cursor: default;
-}
-
-.tt-key svg {
-  width: 23px;
-  height: 23px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.9;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-/* Hold's glyph is two solid blocks rather than a line drawing. */
-.tt-key--hold svg {
-  fill: currentColor;
-  stroke: none;
-}
-
-.tt-key--ccw { grid-area: 1 / 1; }
-.tt-key--cw { grid-area: 1 / 2; }
-.tt-key--hold { grid-area: 1 / 3; }
-
-/* Drop spans both rows on the outside edge: it is the key pressed most and the
-   one that must never be missed, so it gets the biggest target. */
-.tt-key--drop {
-  grid-area: 1 / 4 / 3 / 5;
-  background: var(--accent);
-  color: #0a1222;
-}
-
-.tt-key--left { grid-area: 2 / 1; }
-.tt-key--down { grid-area: 2 / 2; }
-.tt-key--right { grid-area: 2 / 3; }
-
-/* On a short screen the pad gives up its height before the well does. */
 @media (max-height: 680px) {
-  .tt-key {
-    min-height: 40px;
-  }
-
   .tt-slot {
     width: 38px;
     height: 29px;

@@ -3,9 +3,9 @@
  *
  * What differs from the other games follows from this being real-time:
  *
- *   - **No Undo and no Hint.** See the header of `game.ts`. The footer is the
- *     control pad instead, and New game moves up to the top bar beside the
- *     other two icons.
+ *   - **No Undo and no Hint.** See the header of `game.ts`. There is no footer
+ *     at all — the well takes gestures (see `render.ts`), so it gets the
+ *     height — and New game moves up to the top bar beside the other two icons.
  *   - **Any sheet opening over the board stops the clock**, and so does the tab
  *     being hidden or the page going away. Play resumes on a tap on the well,
  *     never on its own: a piece that started falling behind a menu is a piece
@@ -74,18 +74,16 @@ topbar.append(scoreBlock, topbarActions);
 
 const trayEl = el('div', { class: 'tt-tray' });
 const boardEl = el('main', { class: 'tt-board', 'aria-label': 'Tetris well' });
-const padEl = el('footer', { class: 'tt-pad', 'aria-label': 'Controls' });
 
-app.append(topbar, trayEl, boardEl, padEl);
+app.append(topbar, trayEl, boardEl);
 app.classList.add('app--tetris');
 
 /* -------------------------------------------------------------------- game */
 
 const game = new TetrisGame();
 
-const renderer = new BoardRenderer(boardEl, trayEl, padEl, {
+const renderer = new BoardRenderer(boardEl, trayEl, {
   onPress: (action) => game.press(action),
-  onSoftDrop: (down) => game.setSoftDrop(down),
   onResume: () => game.begin(),
 });
 

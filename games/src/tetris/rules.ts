@@ -2,7 +2,9 @@
  * Tetris's rules sheet. See `shared/how-to-play.ts`.
  *
  * Three steps, and the test each one had to pass is "would somebody lose
- * without being told". The ghost outline goes in because a player who has not
+ * without being told". The gestures go in because there is nothing on screen
+ * to discover them from — a well does not look like it takes swipes. The ghost
+ * outline goes in because a player who has not
  * noticed it is aiming blind and will read the game as imprecise; the four-row
  * bonus goes in because it is the only reason to build a well rather than keep
  * the stack flat, and nobody discovers a scoring rule by tapping; the top of
@@ -10,8 +12,8 @@
  *
  * Deliberately absent: hold, which the dimmed slot explains better than a
  * sentence would; that the bag gets meaner with the level, which is felt and
- * would only make the opening read as a trick; and every word about the
- * controls, which are seven labelled buttons in the bottom third of the screen.
+ * would only make the opening read as a trick; and swiping up to hold, which
+ * the slot itself also does when tapped.
  */
 
 import { artCross, type GameRules } from '../shared/how-to-play';
@@ -115,8 +117,8 @@ export const RULES: GameRules = {
   goal: 'Clear rows for as long as you can.',
   steps: [
     {
-      title: 'Turn and slide the piece',
-      text: 'The outline shows where it will land.',
+      title: 'Tap to turn, swipe to slide',
+      text: 'Swipe down to drop it where the outline shows.',
       art: STEP_ONE,
     },
     {

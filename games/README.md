@@ -805,6 +805,16 @@ size it is. Every row of `.app--artillery` names its own `grid-row`.
 rotation with the full kick tables, hold, a three-deep preview and a ghost
 showing where the piece will land.
 
+**The well is the controller.** Tap turns the piece clockwise, a swipe left or
+right moves it one column, a swipe down hard-drops it, and a swipe up (or a tap
+on the Hold slot) holds. It shipped with a seven-key pad under the well, which
+cost a fifth of the screen and put the player's eyes and thumbs in different
+places. One swipe is one column on purpose: a drag that walked the piece would
+overshoot on glass, and several flicks are easier to count than a distance. A
+swipe fires as soon as it has travelled 24px rather than on lift, and a tap
+anywhere on the board turns the piece, because the piece itself is a few
+millimetres across. There is no soft drop on touch; the keyboard keeps it.
+
 It shipped briefly as *Stack*, on the reasoning that the name belongs to
 somebody. It is called Tetris because that is what it is, and because a name
 nobody recognises is a game nobody opens — which is the only test that matters

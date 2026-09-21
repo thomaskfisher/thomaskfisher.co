@@ -1,5 +1,5 @@
 /**
- * Tetris's board: the well, the tray above it, and the pad below.
+ * Tetris's board: the well and the tray above it. The well is the controller.
  *
  * Built once and updated in place. A redraw walks the 200 visible cells and
  * writes only the ones whose contents actually changed — at a hundred
@@ -12,12 +12,10 @@
  * smaller of its width and half its height. That is the whole of it, and it
  * cannot go stale the way a hardcoded copy of a padding value does.
  *
- * **This file owns the input repeat timers and nothing else.** Holding left
- * should walk the piece across, which is a timer, and it is presentation in the
- * sense that matters: it turns one gesture into a series of ordinary actions
- * the controller already understands. Every handle is in one set, `cancel()`
- * clears the lot, and the pad releases on `pointercancel` and `pointerleave` as
- * well as `pointerup` — a thumb that slides off a button has let go of it.
+ * **Input is gestures on the well, turned into ordinary actions** the
+ * controller already understands — see `listen`. There are no repeat timers:
+ * one swipe is one step, so the only deferred thing here is the clear flash,
+ * and `cancel()` clears it.
  */
 
 import { paint } from '../shared/palette';
@@ -43,82 +41,28 @@ import {
  */
 const PIECE_PAINTS = [6, 3, 4, 2, 0, 1, 5] as const;
 
-/** Milliseconds a finger must hold before a direction starts repeating. */
-const REPEAT_DELAY_MS = 170;
-/** And how fast it walks after that. */
-const REPEAT_RATE_MS = 55;
+/** How far a finger must travel, in pixels, before a touch is a swipe. */
+const SWIPE_PX = 24;
+/** A touch that lasts longer than this and goes nowhere is not a tap. */
+const TAP_MS = 350;
 /** How long the well flashes after a clear. */
 const FLASH_MS = 220;
 
 export interface RendererOptions {
   onPress: (action: Action) => void;
-  onSoftDrop: (down: boolean) => void;
   /** The board was tapped while stopped — start, or carry on. */
   onResume: () => void;
 }
 
-/** One button on the pad. */
-interface PadSpec {
-  action: Action | 'resume';
-  label: string;
-  icon: string;
-  /** Holding it repeats the action. */
-  repeats?: boolean;
-  /** Holding it is soft drop, which is a clock change rather than a repeat. */
-  soft?: boolean;
-  className?: string;
+/** A finger on the well, from the moment it lands. */
+interface Gesture {
+  pointer: number;
+  x: number;
+  y: number;
+  at: number;
+  /** It has already been read as a swipe, and does nothing more until lifted. */
+  spent: boolean;
 }
-
-const arrow = (d: string): string =>
-  `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
-
-const PAD: PadSpec[] = [
-  {
-    action: 'ccw',
-    label: 'Turn left',
-    className: 'tt-key--ccw',
-    icon: arrow('M7.5 9.5A6 6 0 1 1 6 14M7.5 4.5v5h5'),
-  },
-  {
-    action: 'cw',
-    label: 'Turn right',
-    className: 'tt-key--cw',
-    icon: arrow('M16.5 9.5A6 6 0 1 0 18 14M16.5 4.5v5h-5'),
-  },
-  {
-    action: 'hold',
-    label: 'Hold',
-    className: 'tt-key--hold',
-    icon: arrow('M6 5h5v14H6zM14 8.5h4v7h-4z'),
-  },
-  {
-    action: 'hard',
-    label: 'Drop',
-    className: 'tt-key--drop',
-    icon: arrow('M12 4v11M7 11l5 5 5-5M5.5 20h13'),
-  },
-  {
-    action: 'left',
-    label: 'Left',
-    repeats: true,
-    className: 'tt-key--left',
-    icon: arrow('M14.5 6l-6 6 6 6'),
-  },
-  {
-    action: 'soft',
-    label: 'Down',
-    soft: true,
-    className: 'tt-key--down',
-    icon: arrow('M12 5.5v11M7.5 12l4.5 4.5 4.5-4.5'),
-  },
-  {
-    action: 'right',
-    label: 'Right',
-    repeats: true,
-    className: 'tt-key--right',
-    icon: arrow('M9.5 6l6 6-6 6'),
-  },
-];
 
 export class BoardRenderer {
   private readonly well: HTMLDivElement;
@@ -126,24 +70,33 @@ export class BoardRenderer {
   /** What each cell was last told to be, so a redraw writes only differences. */
   private readonly painted: string[] = [];
 
-  private readonly holdSlot: HTMLDivElement;
+  private readonly holdSlot: HTMLButtonElement;
   private readonly nextSlots: HTMLDivElement[] = [];
   private readonly resumeButton: HTMLButtonElement;
-  private readonly keys = new Map<string, HTMLButtonElement>();
 
   private readonly timers = new Set<number>();
-  /** The direction currently repeating, so a second finger cannot start a second. */
-  private repeating: number | null = null;
+  /** The finger currently on the well. One at a time: a second is ignored. */
+  private gesture: Gesture | null = null;
+  /** The clock is running, so gestures act. Set by `render`. */
+  private live = false;
 
   constructor(
     private readonly root: HTMLElement,
     private readonly tray: HTMLElement,
-    private readonly pad: HTMLElement,
     private readonly options: RendererOptions,
   ) {
     /* ------------------------------------------------------------ tray */
 
-    this.holdSlot = el('div', { class: 'tt-slot tt-slot--hold' });
+    // The hold slot is itself the hold control, as well as swiping up. A
+    // button, so it is the one control a player can find by looking.
+    this.holdSlot = el('button', {
+      class: 'tt-slot tt-slot--hold',
+      type: 'button',
+    }) as HTMLButtonElement;
+    this.holdSlot.addEventListener('pointerdown', (event) => {
+      event.preventDefault();
+      if (this.live) this.options.onPress('hold');
+    });
     const holdWrap = el('div', { class: 'tt-tray-group' });
     holdWrap.append(el('span', { class: 'tt-tray-label' }, 'Hold'), this.holdSlot);
 
@@ -177,66 +130,70 @@ export class BoardRenderer {
     frame.append(this.well, this.resumeButton);
     this.root.append(frame);
 
-    this.buildPad();
+    this.listen(this.root);
   }
 
   /* -------------------------------------------------------------- input */
 
-  private buildPad(): void {
-    for (const spec of PAD) {
-      const button = el('button', {
-        class: `tt-key ${spec.className ?? ''}`,
-        type: 'button',
-        'aria-label': spec.label,
-      }, spec.icon) as HTMLButtonElement;
-
-      // pointerdown rather than click: this is played at speed, and click waits
-      // for the finger to lift, which is a whole gravity step at level twelve.
-      button.addEventListener('pointerdown', (event) => {
-        event.preventDefault();
-        if (button.disabled) return;
-        if (spec.soft) {
-          this.options.onSoftDrop(true);
-          this.options.onPress('soft');
-        } else if (spec.repeats) {
-          this.startRepeat(spec.action as Action);
-        } else {
-          this.options.onPress(spec.action as Action);
-        }
-      });
-
-      // Every way a finger can stop pressing. `pointerleave` matters most:
-      // sliding off the button is the commonest way to let go of one on glass,
-      // and without it the piece keeps walking after the thumb has moved on.
-      for (const type of ['pointerup', 'pointercancel', 'pointerleave'] as const) {
-        button.addEventListener(type, () => {
-          if (spec.soft) this.options.onSoftDrop(false);
-          else if (spec.repeats) this.stopRepeat();
-        });
+  /**
+   * Tap to turn, swipe to slide, swipe down to drop, swipe up to hold.
+   *
+   * Listened for on the whole board area rather than the well, so a thumb
+   * that lands in the gutter beside a narrow well still counts. A tap anywhere
+   * turns the piece rather than only a tap on it: the piece is four cells of a
+   * few millimetres each, and missing it would read as the game ignoring you.
+   *
+   * **One swipe is one step.** A swipe is read the moment it has travelled
+   * `SWIPE_PX`, not when the finger lifts, because at speed the lift is a
+   * gravity step late — and after that the gesture is spent until the finger
+   * comes up. Crossing the well is several flicks, never one long drag that
+   * overshoots. Down is the hard drop rather than a soft one, because a single
+   * flick of soft drop moves the piece one row and nobody means that.
+   */
+  private listen(target: HTMLElement): void {
+    target.addEventListener('pointerdown', (event) => {
+      if (!this.live || this.gesture) return;
+      event.preventDefault();
+      this.gesture = {
+        pointer: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+        at: event.timeStamp,
+        spent: false,
+      };
+      // Guarded: capture throws if the pointer has already gone by the time
+      // this runs, which a very fast flick can manage.
+      try {
+        target.setPointerCapture(event.pointerId);
+      } catch {
+        /* the move and up events still arrive while the finger is over the board */
       }
+    });
 
-      this.keys.set(spec.label, button);
-      this.pad.append(button);
-    }
-  }
+    target.addEventListener('pointermove', (event) => {
+      const gesture = this.gesture;
+      if (!gesture || gesture.pointer !== event.pointerId || gesture.spent) return;
+      const dx = event.clientX - gesture.x;
+      const dy = event.clientY - gesture.y;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_PX) return;
 
-  private startRepeat(action: Action): void {
-    this.stopRepeat();
-    this.options.onPress(action);
-    const handle = this.later(() => {
-      const tick = window.setInterval(() => this.options.onPress(action), REPEAT_RATE_MS);
-      this.timers.add(tick);
-      this.repeating = tick;
-    }, REPEAT_DELAY_MS);
-    this.repeating = handle;
-  }
+      gesture.spent = true;
+      if (!this.live) return;
+      if (Math.abs(dx) > Math.abs(dy)) this.options.onPress(dx < 0 ? 'left' : 'right');
+      else this.options.onPress(dy > 0 ? 'hard' : 'hold');
+    });
 
-  private stopRepeat(): void {
-    if (this.repeating === null) return;
-    window.clearTimeout(this.repeating);
-    window.clearInterval(this.repeating);
-    this.timers.delete(this.repeating);
-    this.repeating = null;
+    target.addEventListener('pointerup', (event) => {
+      const gesture = this.gesture;
+      if (!gesture || gesture.pointer !== event.pointerId) return;
+      this.gesture = null;
+      if (gesture.spent || !this.live) return;
+      if (event.timeStamp - gesture.at <= TAP_MS) this.options.onPress('cw');
+    });
+
+    target.addEventListener('pointercancel', (event) => {
+      if (this.gesture?.pointer === event.pointerId) this.gesture = null;
+    });
   }
 
   /* ------------------------------------------------------------- drawing */
@@ -293,12 +250,13 @@ export class BoardRenderer {
     this.resumeButton.hidden = !stopped;
     this.resumeButton.textContent = view.run.placed > 0 || view.run.score > 0 ? 'Tap to go on' : 'Start';
 
-    const live = view.phase === 'playing';
-    for (const key of this.keys.values()) key.disabled = !live;
+    this.live = view.phase === 'playing';
+    if (!this.live) this.gesture = null;
+    this.holdSlot.disabled = !this.live;
   }
 
   /** One mini-piece in the tray. `spent` dims a hold that cannot be used again. */
-  private paintSlot(slot: HTMLDivElement, type: number | null, spent: boolean): void {
+  private paintSlot(slot: HTMLElement, type: number | null, spent: boolean): void {
     const token = type === null ? 'empty' : `${type}${spent ? 's' : ''}`;
     if (slot.dataset.piece === token) return;
     slot.dataset.piece = token;
@@ -359,7 +317,7 @@ export class BoardRenderer {
   }
 
   /**
-   * Stops everything pending and lets go of every button.
+   * Stops everything pending and forgets any finger on the well.
    *
    * Called on any reset. Anything deferred here assumes the board it was
    * started against, and a new game replaces that board.
@@ -370,9 +328,8 @@ export class BoardRenderer {
       window.clearInterval(handle);
     }
     this.timers.clear();
-    this.repeating = null;
+    this.gesture = null;
     this.well.classList.remove('is-clearing');
-    this.options.onSoftDrop(false);
   }
 
   private later(fn: () => void, ms: number): number {
