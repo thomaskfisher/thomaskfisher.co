@@ -149,7 +149,8 @@ Work in this order. It front-loads the risk.
    not in your own voice and trimmed later.
 7. **Verify in a real browser** (below). Not optional — both real bugs found so
    far were invisible to the unit tests.
-8. **Ship** — `npm run build`, then `firebase deploy --only hosting:games`.
+8. **Ship** — `npm run icons` *then* `npm run build` (that order; see
+   *Finishing*), then `firebase deploy --only hosting:games`.
 
 ## Lessons that cost real time. Do not relearn these.
 
@@ -309,7 +310,26 @@ passed is not evidence.
 
 ## Finishing
 
-- Run `npm test`, `npm run build`, regenerate icons.
+- Run `npm test`, then `npm run icons`, then `npm run build` — **in that
+  order**. Vite copies `public/` into `dist/` as part of the build, so icons
+  regenerated afterwards land in `public/icons` and never reach `dist`. The
+  launcher then ships a card pointing at an icon that was never uploaded, and
+  nothing complains: the build is silent, and a broken `<img>` in a card is just
+  an empty square. This instruction used to read "build, regenerate icons" and
+  that is exactly how Tetris went live with a missing tile.
+  `ls dist/icons | wc -l` and `ls public/icons | wc -l` must agree.
+- **Let the suite finish before running anything else.** `npm run icons`
+  renders eighty PNGs pixel by pixel in pure JS, and starting it on top of a
+  running `npm test` took the suite from 67 seconds to 3821 and failed seven
+  tests on their time budgets. Nothing was wrong with any of them. A slow run
+  with timeout failures in generator tests is contention until proven
+  otherwise — re-run it alone before believing a single one of them.
+- **Regenerating icons rewrites all of them, and that is usually noise.** A
+  different Node version's zlib compresses the same pixels to different bytes,
+  so `git status` shows every icon modified. Check before committing: decode and
+  compare rather than assume either way. If only the bytes moved,
+  `git checkout games/public/icons/` reverts the churn and leaves the new
+  game's untracked icons alone.
 - **Changing generation rewrites every in-progress board.** Levels are a pure
   function of `(profileSeed, level, difficultyOffset)`, so touching the shape
   function means anyone mid-level gets different geometry than they left; their

@@ -1317,6 +1317,80 @@ function drawSimon(size, { maskable }) {
 
 
 /**
+ * A well with three pieces in it: an S wedged over a gap, an I bar coming down.
+ *
+ * The tile has to say "falling blocks" at 48px, and a full ten-by-twenty well
+ * at that size is a grey smear. So it is drawn as a five-wide well with four
+ * fat cells — the shapes are recognisable, the gap under the S reads as the
+ * problem, and the bar above reads as the thing about to solve it.
+ */
+function drawTetris(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.2 : size * 0.12;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const WELL = hex('#0a1222');
+  // The four classic colours that read most distinctly at icon size.
+  const CYAN = hex('#24c8d8');
+  const GREEN = hex('#35b56a');
+  const ORANGE = hex('#f47b20');
+  const BLUE = hex('#2b7fe8');
+
+  // Five columns by five rows inside the well, with a little breathing room.
+  const wellSize = size - inset * 2;
+  fillRoundedRect(canvas, inset, inset, wellSize, wellSize, size * 0.07, WELL);
+
+  const pad = wellSize * 0.07;
+  const cell = (wellSize - pad * 2) / 5;
+  const gap = Math.max(1, cell * 0.08);
+
+  const block = (col, row, colour) => {
+    fillRoundedRect(
+      canvas,
+      inset + pad + col * cell + gap / 2,
+      inset + pad + row * cell + gap / 2,
+      cell - gap,
+      cell - gap,
+      cell * 0.2,
+      colour,
+    );
+    // A lighter lip along the top, which is what keeps a flat square from
+    // reading as a hole in the well rather than a brick in it.
+    fillRoundedRect(
+      canvas,
+      inset + pad + col * cell + gap / 2,
+      inset + pad + row * cell + gap / 2,
+      cell - gap,
+      (cell - gap) * 0.22,
+      cell * 0.12,
+      hex('#ffffff'),
+      0.22,
+    );
+  };
+
+  // The bar, still falling.
+  for (let col = 1; col < 5; col++) block(col, 0, CYAN);
+
+  // An S resting on the stack, with the gap it leaves under its left half.
+  block(1, 3, GREEN);
+  block(2, 3, GREEN);
+  block(0, 4, GREEN);
+  block(1, 4, GREEN);
+
+  // The floor either side of it.
+  block(2, 4, ORANGE);
+  block(3, 4, BLUE);
+  block(3, 3, BLUE);
+  block(4, 4, ORANGE);
+
+  return encodePng(size, size, canvas.data);
+}
+
+
+/**
  * A tank on the left, a hill in the middle, and the arc that clears it.
  *
  * The arc is the whole game, so it gets the strongest mark on the tile: at
@@ -1477,6 +1551,10 @@ const targets = [
   ['simon-192.png', 192, { maskable: false }, drawSimon],
   ['simon-512.png', 512, { maskable: false }, drawSimon],
   ['simon-maskable-512.png', 512, { maskable: true }, drawSimon],
+  ['tetris-180.png', 180, { maskable: false }, drawTetris],
+  ['tetris-192.png', 192, { maskable: false }, drawTetris],
+  ['tetris-512.png', 512, { maskable: false }, drawTetris],
+  ['tetris-maskable-512.png', 512, { maskable: true }, drawTetris],
   ['artillery-180.png', 180, { maskable: false }, drawArtillery],
   ['artillery-192.png', 192, { maskable: false }, drawArtillery],
   ['artillery-512.png', 512, { maskable: false }, drawArtillery],

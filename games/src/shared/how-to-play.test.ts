@@ -17,6 +17,7 @@ import { RULES as DOMINOES } from '../dominoes/rules';
 import { RULES as SIMON } from '../simon/rules';
 import { RULES as SURVIVAL } from '../survival/rules';
 import { RULES as ARTILLERY } from '../artillery/rules';
+import { RULES as TETRIS } from '../tetris/rules';
 import { shouldAutoShow } from './how-to-play';
 import { defaultSave, migrate } from './progress';
 
@@ -38,6 +39,7 @@ const RULES = [
   DOMINOES,
   SIMON,
   ARTILLERY,
+  TETRIS,
 ];
 
 /**

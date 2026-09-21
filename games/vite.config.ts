@@ -42,6 +42,7 @@ export default defineConfig({
         mancala: 'mancala/index.html',
         dominoes: 'dominoes/index.html',
         simon: 'simon/index.html',
+        tetris: 'tetris/index.html',
         artillery: 'artillery/index.html',
       },
     },

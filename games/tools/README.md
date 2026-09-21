@@ -16,6 +16,7 @@ so it never runs by accident — these take minutes, not seconds.
 | `wordle.ts` | Does trap rate separate `LIGHT` from `PIZZA`, and does a longer word take more guesses? (It takes fewer.) |
 | `dominoes.ts` | How often does a Mexican Train round end blocked, and how long does one run? It is what set the hand size, the opposite way round from the intuition. |
 | `artillery.ts` | What does a battlefield cost to generate, how findable is a hit on it, and how many volleys does a match run? |
+| `tetris.ts` | Does Tetris's biased bag actually make a run shorter, by how much, and where does the speed ramp stop carrying the difficulty? |
 | `dice.ts` | How good is Yahtzee's hint? It has no difficulty band to calibrate, but a hint that plays badly is not worth pressing, so this prints what the policy averages over 400 cards and what it prices each box at. |
 
 ```sh
@@ -26,6 +27,7 @@ npx vitest run --config tools/vitest.sample.config.ts    --root .   # -> tools/s
 npx vitest run --config tools/vitest.dice.config.ts      --root .   # -> tools/dice.txt
 npx vitest run --config tools/vitest.dominoes.config.ts  --root .   # -> tools/dominoes.txt
 npx vitest run --config tools/vitest.artillery.config.ts --root .   # -> tools/artillery.txt
+npx vitest run --config tools/vitest.tetris.config.ts     --root .   # -> tools/tetris.txt
 ```
 
 **Run `calibrate` and `timing` after any change to a shape function.** Reading
@@ -139,4 +141,40 @@ drafts, which is what makes the draft worth thinking about.
 
 ```bash
 npx vitest run --config tools/vitest.artillery.config.ts --root .
+```
+
+## tetris.ts
+
+Measurement for Tetris. There is no generator and no solver — it is real-time, so
+no board is dealt in advance to verify — but there is a difficulty lever, and
+the lesson this project has paid for twice is that a lever's measured effect and
+its intended effect are different numbers until somebody checks.
+
+**It was written before the lever was trusted, and the first design failed it.**
+That version biased the bag by swapping *one* piece with a probability that rose
+with the level and capped at 0.75. Measured: 136.6 pieces of naive survival at
+level 1 against 120.7 at the cap — twelve percent, non-monotonic, and identical
+from level 13 onward because the probability had saturated. Gravity floors at
+level 11, so both levers stopped inside two levels of each other and the game
+stopped getting harder at 13.
+
+**Section 2 is what fixed it.** Swept by whole substitutions rather than by
+probability, the lever had range all along: 138 pieces at none, 108 at one, 104
+at two, 87 at three, 73 at four. The first design was using the first notch of
+five. Depth is now a fraction ramping to the whole donor pool by level 22, and
+the shipped curve runs 134.7 down to 70.0 — monotonic, and still falling for
+eleven levels after the speed ramp has stopped.
+
+Section 1 is the curve the shipped bag produces and is the one to re-run after a
+change; section 3 is the same thing unpinned, as a check that the pinned levels
+are not lying about the real game.
+
+**The bot is the measurement, so read `src/tetris/bot.ts` before believing any of
+it.** It places without hold, without tucks and without lookahead, which is a
+deliberately worse player than the one holding the phone. The numbers are a
+floor on survival rather than a prediction of it, and only the differences
+between rows mean anything.
+
+```bash
+npx vitest run --config tools/vitest.tetris.config.ts --root .
 ```

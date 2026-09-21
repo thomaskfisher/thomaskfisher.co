@@ -25,6 +25,7 @@ in-game currency. Everything is static; all state lives on the player's device.
 | Mexican Train | Playable |
 | Simon | Playable |
 | Artillery | Playable |
+| Tetris | Playable |
 
 ## Working on it
 
@@ -38,18 +39,19 @@ npm run icons      # regenerate PWA icons (output is committed)
 
 ## How it works
 
-**Thirteen of the nineteen are puzzles. Yahtzee, Backgammon, Mancala, Mexican
-Train, Simon and Artillery are not, and all six bend the house rules on
+**Thirteen of the twenty are puzzles. Yahtzee, Backgammon, Mancala, Mexican
+Train, Simon, Artillery and Tetris are not, and all seven bend the house rules on
 purpose.** Everything below about verified levels, measured difficulty and
 unlimited undo describes the puzzles. Yahtzee is a game of chance: there is no
 board to verify, no difficulty to curve, and rewinding a throw would be reading
 the answer. Four of the others have a second person in them, which takes the
 hint with it and — in three of the four — puts a fence around undo. What all
-six keep is everything that made this collection worth building: no ads, no
+seven keep is everything that made this collection worth building: no ads, no
 servers, no currency, nothing locked. What they put in place of the rest is set
-out under *Yahtzee*, *Backgammon*, *Mancala*, *Mexican Train*, *Simon* and
-*Artillery* below. Simon is a memory game: undo and a hint would both be the
-answer.
+out under *Yahtzee*, *Backgammon*, *Mancala*, *Mexican Train*, *Simon*,
+*Artillery* and *Tetris* below. Simon is a memory game: undo and a hint would
+both be the answer. Tetris is the only real-time one, which takes undo, the hint
+and the solver all three.
 
 **Every level is verified before it is shown.** Levels are dealt at random from
 a seed, then solved. A board the solver cannot finish is discarded, so unlike
@@ -461,6 +463,13 @@ src/backgammon/       board, legal, model, render, game, main, rules — no
 src/simon/            model, render, game, main, rules — no generate and no
                       solve: a game is one seeded stream of pads, and round n
                       shows the first n of it
+src/tetris/            model, bag, run, clock, snapshot, bot, render, game,
+                      main, rules — no generate and no solve: it is real-time,
+                      so there is no board dealt in advance to verify. bag.ts
+                      is the difficulty lever, clock.ts is the only thing in
+                      the collection that knows what time it is without a frame
+                      loop, snapshot.ts saves a position rather than a history,
+                      and bot.ts is the naive player the probe measures with
 src/artillery/        terrain, weapons, physics, model, generate, render, game,
                       main, rules — no solve: there is nothing to solve with two
                       players, and what generate.ts verifies instead is that
@@ -790,12 +799,146 @@ and handed the `1fr` to a one-line paragraph — the shop sat at its content
 height with a hand's width of dead space under it, and the board looked half the
 size it is. Every row of `.app--artillery` names its own `grid-row`.
 
+## Tetris
+
+**The only real-time game here.** Ten columns, twenty rows, seven pieces, SRS
+rotation with the full kick tables, hold, a three-deep preview and a ghost
+showing where the piece will land.
+
+It shipped briefly as *Stack*, on the reasoning that the name belongs to
+somebody. It is called Tetris because that is what it is, and because a name
+nobody recognises is a game nobody opens — which is the only test that matters
+for a collection with an audience of one.
+
+**It bends more house rules than anything else in the collection, and the
+bargain is Simon's.** Undo in a real-time game is a rewind of the clock — there
+is no move to take back, the piece fell. A hint is where to put the piece, which
+is the only question the game asks. And a solver has nothing to verify, because
+no board is dealt in advance: the board is whatever the player has built. What
+replaces all three is that nothing is lost *by* losing. The best score rides in
+`stats.bestScore`, every game is a fresh seeded stream rather than a replay of
+the one that just beat you, and a run in progress survives the app being closed.
+
+**There is still no `requestAnimationFrame` loop, and that is not a technicality.**
+A falling-block game sounds like it needs one and does not. The piece is on the
+grid at every moment a player can act on it, so the state changes at discrete
+ticks and the renderer draws on each one. What a frame loop would buy is a piece
+sliding smoothly between two rows, and at ninety milliseconds a row nobody can
+see it. Artillery needed frames because its arc *is* the feedback; this does
+not, and her battery is the better for it. `clock.ts` is the whole of the
+real-time machinery: one self-rescheduling `setTimeout`, one handle, one
+`stop()`. Lock delay is not a second timer — it is the same timer scheduled
+further out, which is the only reason there is one handle to cancel rather than
+two.
+
+**A tick that stops the clock has to win over its own rescheduling.** The first
+version cleared the handle before calling the tick, so that a tick which
+restarted the clock was not overwritten by the reschedule underneath it — and
+that left the opposite case broken, because a handle being null is ambiguous
+inside a tick: it means both "finished normally" and "the handler stopped us".
+A tick that ended the game, opened a sheet or hid the tab therefore rescheduled
+anyway and left gravity running behind the overlay. There is now an explicit
+`stopping` flag alongside the handle, and `clock.test.ts` asserts both
+directions. Neither was caught by playing it; both were caught by writing the
+test that says only one timer may ever be outstanding.
+
+**Difficulty is the bag, not the speed.** The guideline gravity curve keeps
+accelerating past twenty rows a second, which is a fine number on a keyboard and
+unreachable with thumbs on glass. So the speed ramp stops at ninety milliseconds
+a row — level 11, or a hundred lines — and past that the difficulty comes from
+*which pieces arrive*. This is the one lever a falling-block game has: the well
+is ten wide because a phone is, and a bigger one is a longer game rather than a
+harder one.
+
+**The bag gets meaner by substitution, which is what keeps it fair.** The
+standard seven-bag deals each piece once per seven, bounding the longest drought
+at twelve. The obvious implementation — weight S and Z up — throws that away,
+because the tail of a geometric distribution will eventually deal thirty pieces
+with no I in them and the run ends to a coin rather than to a mistake. So a
+biased bag is still seven pieces; some of them are swapped, a donor out and a
+duplicate S or Z in. **The I is never a donor.** It is the only piece that
+clears four rows and the only one that digs a four-deep well back out, so
+withholding it does not make the game harder in an interesting way, it makes it
+arbitrary. Keeping it out of the pool means every bag still holds exactly one,
+the twelve-piece drought bound survives untouched, and the player always has the
+tool — what they lose is everything they would rather use it with.
+
+**The first version of that lever did almost nothing, and only the probe said
+so.** It swapped *one* piece with a probability that rose with the level and
+capped at 0.75, which sounded like a difficulty curve and measured as
+136.6 pieces of naive survival at level 1 against 120.7 at the cap. Twelve
+percent, non-monotonic — level 4 came out *higher* than level 1 — and identical
+from level 13 onward, because the probability had saturated. Gravity floors at
+level 11. So both of the game's levers stopped moving within two levels of each
+other and the game simply stopped getting harder at 13, with a bias that read as
+deliberate the whole way.
+
+**What fixed it was swapping more of the bag rather than swapping more often.**
+Swept by whole notches, the lever turned out to have had range all along: 138
+pieces at no substitutions, 108 at one, 104 at two, 87 at three, 73 at four. The
+first design was using the first notch of five. `biasDepth` is now a *fraction* —
+a bag takes the whole part for certain and the remainder as a chance, so four
+discrete steps spread smoothly across twenty levels instead of lurching — and it
+ramps from level 4 to the whole donor pool at level 22. The measured curve runs
+134.7 down to 70.0, monotonic, and is still falling for eleven levels after the
+speed ramp has stopped. **A lever whose measured effect is far smaller than
+expected is not always a weak lever; sometimes it is a strong one being asked
+for one notch.**
+
+**The bag's bias has to be pinned to when the bag was opened.** A bag is
+regenerated from its index every time it is looked at — that is what lets a save
+be a piece count rather than a generator's internal state — so reading the level
+live meant the line that took a player from level 9 to level 10 re-dealt the
+pieces still sitting in the open bag. The preview would change in front of them
+and the piece that arrived would not be the one shown. `BagState` carries the
+level the current bag was opened at, and `bag.test.ts` asserts that the three
+pieces shown are exactly the three that arrive, at every offset.
+
+**The save is a position, not a history.** Every puzzle here stores a move list
+and replays it, which works because a board is a pure function of its seed and
+the moves are integer arithmetic. A real-time game has no such list: what
+happened is not "left, left, rotate" but "left, left, rotate, and forty-one
+gravity ticks in between", and replaying that faithfully would mean the save
+depending on how long the phone took to wake up. Artillery reached the same
+conclusion from the other direction. A well is 220 cells of three bits, so the
+whole run is about 250 characters — well inside the save code in Settings.
+`decodeRun` refuses anything that does not describe a run somebody could carry
+on, including a piece that does not fit the well it claims to be falling
+through, which is what a block out leaves behind.
+
+**Anything that interrupts play stops the clock and waits for a tap.** A sheet
+opening, the tab being hidden, the page going away. Timers in a hidden tab are
+throttled on some browsers and stopped on others, so catching up on return would
+drop a piece into whatever the well now contains — and a piece that fell while
+the phone was in a pocket fell in a game nobody was playing.
+
+**It declines the shape overlay, as Artillery did, and for a cleaner reason.**
+The overlay exists where colour is the only thing telling two pieces apart. Here
+it never is: a falling piece is identified by its shape, which is the entire
+subject of the game, and a locked cell is just a filled cell whose colour the
+rules never consult. The classic colours are kept because anyone who has played
+the original reads the piece before they read the shape.
+
+**The difficulty signal is survival, not trap rate.** Trap rate asks what
+fraction of naive playthroughs lose, and in a game that always ends that is a
+constant. The same idea inverted works: how *long* a naive player lasts.
+`bot.ts` is that player — it looks one piece ahead, prefers a flat stack with no
+holes, and is careless about a tenth of the time. It deliberately does not use
+hold, does not tuck or spin, and does not read the preview, because all three
+would flatter the bag into looking harmless. `tools/tetris.ts` sweeps it with the
+level pinned, so the bag can be measured with gravity held out of the picture.
+
 ## Deploying
 
 The games are a second Firebase Hosting site in the existing project, so
 deploying them does not touch the portfolio.
 
 ```bash
+# Icons BEFORE the build, always. Vite copies public/ into dist/ as part of
+# the build, so icons regenerated afterwards are written to public/icons and
+# never reach dist — which ships a launcher card pointing at an icon that was
+# never uploaded. Tetris went out that way once; see below.
+npm run icons
 npm run build
 
 # Test on a real phone. Service workers need HTTPS, so a LAN address will
@@ -804,6 +947,14 @@ firebase hosting:channel:deploy preview --only games
 
 # Ship
 firebase deploy --only hosting:games
+```
+
+**The one-command check before deploying a new game** is that the two icon
+directories agree. The build is silent about a missing icon, and so is the
+browser — a broken `<img>` in a card is just an empty square.
+
+```bash
+ls dist/icons | wc -l && ls public/icons | wc -l   # must match
 ```
 
 ### Cut from Yahtzee v1
@@ -1034,6 +1185,41 @@ them; they belong in later as optional modifiers, not as load-bearing rules.
   the widened box, and the board grew again — walking off the right edge of the
   screen. `.app` now pins its column to `minmax(0, 1fr)`, which makes that
   measurement trustworthy for every game here.
+
+- **Regenerate icons before the build, never after.** Vite copies `public/`
+  into `dist/` as part of the build, so icons written afterwards never reach
+  the deployed site. The launcher ships a card pointing at a tile that was
+  never uploaded, and nothing anywhere complains — the build is silent and a
+  broken `<img>` in a card is an empty square. Tetris went live that way. The
+  check is one command and takes a second: `ls dist/icons | wc -l` against
+  `ls public/icons | wc -l`.
+- **A slow test run with timeout failures is contention until proven
+  otherwise.** The suite came back with seven failures across four files, all
+  in generator tests with time budgets — and the run had taken 3821 seconds
+  against its usual 67, because `npm run icons` had been started on top of it
+  and renders eighty PNGs pixel by pixel in pure JS. Re-run alone: 1509 passed,
+  nothing wrong with any of them. Check the duration before reading the
+  failures.
+
+- **A lever whose measured effect is far smaller than expected is not always a
+  weak lever — sometimes it is a strong one being asked for one notch.** Tetris
+  biases its bag towards the awkward pieces, and the first design did it by
+  swapping one piece with a probability that rose to 0.75. Measured, that moved
+  naive survival by twelve percent, non-monotonically, and stopped moving at
+  level 13 — which, with gravity flooring at level 11, meant the game stopped
+  getting harder two levels later. The instinct was that shape is a weak lever
+  in a falling-block game. Sweeping *substitution depth* instead said otherwise:
+  138 pieces at none, 108 at one, 87 at three, 73 at four. The lever had five
+  notches and the design was using the first. Sweep what the lever *is*, not how
+  often you pull it.
+- **The floors that make a difficulty lever fair are worth designing before the
+  lever.** The obvious way to make Tetris pieces nastier is to withhold the I,
+  and it is the wrong one: it is the only piece that clears four rows and digs a
+  four-deep well out, so taking it away is arbitrary rather than hard, and it
+  costs the seven-bag's twelve-piece drought bound — the guarantee that a run
+  ends to a mistake rather than to a coin. Keeping the I out of the donor pool
+  entirely made the fairness argument trivial *and* the lever stronger, because
+  everything else in the bag was then available to take.
 
 - **Turning a board round for the other player is a reflection, not a rotation.**
   The obvious way to give each backgammon player their own view is to rotate the
