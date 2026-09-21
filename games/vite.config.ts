@@ -45,6 +45,7 @@ export default defineConfig({
         tetris: 'tetris/index.html',
         artillery: 'artillery/index.html',
         castle: 'castle/index.html',
+        battleship: 'battleship/index.html',
       },
     },
   },

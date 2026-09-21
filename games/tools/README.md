@@ -18,6 +18,7 @@ so it never runs by accident — these take minutes, not seconds.
 | `artillery.ts` | What does a battlefield cost to generate, how findable is a hit on it, and how many volleys does a match run? |
 | `castle.ts` | What range does Castle's naive trap rate reach along a board's strength climb, which levers move it, and what share of *all* layouts wins at each level? |
 | `tetris.ts` | Does Tetris's biased bag actually make a run shorter, by how much, and where does the speed ramp stop carrying the difficulty? |
+| `battleship.ts` | What does Battleship's openness — deductions on offer per step — range over, and how far do spare givens move it? Also the curve the generator ships against its band. |
 | `dice.ts` | How good is Yahtzee's hint? It has no difficulty band to calibrate, but a hint that plays badly is not worth pressing, so this prints what the policy averages over 400 cards and what it prices each box at. |
 
 ```sh
@@ -30,6 +31,7 @@ npx vitest run --config tools/vitest.dominoes.config.ts  --root .   # -> tools/d
 npx vitest run --config tools/vitest.artillery.config.ts --root .   # -> tools/artillery.txt
 npx vitest run --config tools/vitest.tetris.config.ts     --root .   # -> tools/tetris.txt
 npx vitest run --config tools/vitest.castle.config.ts     --root .   # -> tools/castle.txt (LEVERS=1 adds the lever survey)
+npx vitest run --config tools/vitest.battleship.config.ts --root .   # -> tools/battleship.txt, tools/battleship-curve.txt
 ```
 
 **Run `calibrate` and `timing` after any change to a shape function.** Reading

@@ -1,0 +1,306 @@
+/* ==========================================================================
+   Battleship.
+
+   The fleet list on top, then the sea: an empty corner, the column counts
+   along the top, the row counts down the left, and the grid — Nonogram's
+   two-by-two, sized from one `--cell` so every count sits against its line.
+
+   Ships the player places are the accent colour; the ones the level gave are
+   ink. The difference matters: a given can be leaned on without a second
+   thought, and a placed ship is only as good as the reasoning behind it.
+   ========================================================================== */
+
+.app--battleship {
+  grid-template-rows: auto 1fr auto auto;
+}
+
+/* The fleet list and the sea are centred as one group, so the list sits just
+   above the grid it describes rather than pinned to the top bar. */
+.board {
+  display: grid;
+  grid-template-rows: auto auto;
+  align-content: center;
+  justify-items: center;
+  gap: 10px;
+  min-height: 0;
+  padding: 4px 8px 6px;
+}
+
+/* ---------------------------------------------------------------- fleet */
+
+/*
+ * What is hidden, longest first. The fleet is a rule the player cannot see
+ * anywhere else, and a constraint the player cannot see is a coin flip.
+ */
+.fleet {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 12px;
+  max-width: 420px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.fleet[data-empty] {
+  visibility: hidden;
+}
+
+.fleet-ship {
+  display: inline-flex;
+  transition: opacity 0.2s ease;
+}
+
+.fleet-ship i {
+  position: relative;
+  width: 14px;
+  height: 14px;
+}
+
+/* Found ships fade rather than vanish, so the list keeps its shape. */
+.fleet-ship.is-found {
+  opacity: 0.28;
+}
+
+/* ------------------------------------------------------------------ sea */
+
+.sea {
+  display: grid;
+  grid-template-columns: calc(var(--cell) * 0.7) auto;
+  grid-template-rows: calc(var(--cell) * 0.7) auto;
+  /* Nothing here derives a z-index from game state; the stacking context is
+     written in with the container so that stays cheap to be wrong about. */
+  isolation: isolate;
+  padding: 6px 10px 10px 6px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 6px 18px var(--shadow);
+  /* The grid handles its own drags, so the browser must not claim them as a
+     scroll or the first stroke of every level is swallowed. */
+  touch-action: none;
+}
+
+.sea[data-empty] {
+  visibility: hidden;
+}
+
+.sea-corner {
+  grid-area: 1 / 1;
+}
+
+.sea-cols {
+  grid-area: 1 / 2;
+  display: grid;
+  grid-template-columns: repeat(var(--size), var(--cell));
+}
+
+.sea-rows {
+  grid-area: 2 / 1;
+  display: grid;
+  grid-template-rows: repeat(var(--size), var(--cell));
+}
+
+.sea-count {
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  font-size: calc(var(--cell) * 0.46);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+/* Every ship in the line found: the count has nothing more to say. */
+.sea-count.is-done {
+  opacity: 0.33;
+}
+
+/* More ships marked than the line holds. */
+.sea-count.is-over {
+  color: var(--danger);
+}
+
+/* The line the hint reasoned from. */
+.sea-count.is-lit {
+  color: var(--accent);
+  opacity: 1;
+}
+
+.sea-grid {
+  grid-area: 2 / 2;
+  display: grid;
+  grid-template-columns: repeat(var(--size), var(--cell));
+  grid-template-rows: repeat(var(--size), var(--cell));
+  border-radius: 4px;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.bc {
+  position: relative;
+  width: var(--cell);
+  height: var(--cell);
+  background: var(--bg);
+  box-shadow: inset -1px -1px 0 color-mix(in srgb, var(--text-dim) 26%, transparent);
+}
+
+/* ---------------------------------------------------------------- water */
+
+.bc.is-water {
+  background: color-mix(in srgb, var(--accent) 16%, var(--bg));
+}
+
+/* A wave rather than a cross: water is a thing that is there, not a blank
+   that has been ruled out, and it should read as sea at a glance. */
+.bc.is-water::after,
+.bc[data-hint='water']::after {
+  content: '';
+  position: absolute;
+  inset: 34% 22%;
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 8'%3E%3Cpath d='M1 5c3-4 5-4 8 0s5 4 8 0' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 8'%3E%3Cpath d='M1 5c3-4 5-4 8 0s5 4 8 0' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+.bc.is-water.is-given::after {
+  background: var(--text-dim);
+}
+
+/* ---------------------------------------------------------------- ships */
+
+/*
+ * One pseudo-element per ship square, shaped by `data-shape`. Joined sides run
+ * to the edge of the square so a ship reads as one hull; a closed end gets a
+ * rounded bow. The fleet list uses the same shapes on its own little pieces.
+ *
+ * Kept at one attribute's weight, so the shape rules below — the same weight,
+ * and later — win on `inset` and `border-radius`.
+ */
+[data-shape]::after,
+.bc[data-hint='ship']::after {
+  content: '';
+  position: absolute;
+  inset: 14%;
+  border-radius: 22%;
+  background: var(--accent);
+}
+
+.bc.is-given[data-shape]::after,
+.fleet-ship i::after {
+  background: var(--text);
+}
+
+[data-shape='single']::after {
+  border-radius: 50%;
+}
+
+[data-shape='up']::after {
+  top: 0;
+  border-radius: 0 0 50% 50%;
+}
+
+[data-shape='down']::after {
+  bottom: 0;
+  border-radius: 50% 50% 0 0;
+}
+
+[data-shape='left']::after {
+  left: 0;
+  border-radius: 0 50% 50% 0;
+}
+
+[data-shape='right']::after {
+  right: 0;
+  border-radius: 50% 0 0 50%;
+}
+
+[data-shape='mid-v']::after {
+  top: 0;
+  bottom: 0;
+  border-radius: 0;
+}
+
+[data-shape='mid-h']::after {
+  left: 0;
+  right: 0;
+  border-radius: 0;
+}
+
+/* --------------------------------------------------------------- hints */
+
+.bc.is-hinted {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* The mark the hint asks for, shown faintly where it belongs. Recomputed from
+   the current effect, so it is gone on the next render. */
+.bc[data-hint]::after {
+  opacity: 0.45;
+}
+
+.bc.is-mistake {
+  background: color-mix(in srgb, var(--danger) 35%, var(--bg));
+  box-shadow: inset 0 0 0 2px var(--danger);
+}
+
+/* ---------------------------------------------------------------- brush */
+
+.brushes {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 14px 0;
+}
+
+.brush {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 118px;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  font-weight: 600;
+  box-shadow: 0 2px 0 var(--shadow);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.brush:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.brush:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.brush.is-on {
+  background: var(--accent);
+  color: #fff;
+}
+
+.brush-swatch {
+  width: 17px;
+  height: 17px;
+  background: currentColor;
+}
+
+.brush--ship .brush-swatch {
+  border-radius: 50%;
+}
+
+.brush--water .brush-swatch {
+  height: 8px;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 8'%3E%3Cpath d='M1 5c3-4 5-4 8 0s5 4 8 0' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 8'%3E%3Cpath d='M1 5c3-4 5-4 8 0s5 4 8 0' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}

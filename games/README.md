@@ -29,6 +29,7 @@ The one thing that leaves it is an anonymous daily count (see *Usage counts*).
 | Artillery | Playable |
 | Tetris | Playable |
 | Castle | Playable |
+| Battleship | Playable |
 
 ## Working on it
 
@@ -42,7 +43,7 @@ npm run icons      # regenerate PWA icons (output is committed)
 
 ## How it works
 
-**Fourteen of the twenty-one are puzzles. Yahtzee, Backgammon, Mancala, Mexican
+**Fifteen of the twenty-two are puzzles. Yahtzee, Backgammon, Mancala, Mexican
 Train, Simon, Artillery and Tetris are not, and all seven bend the house rules on
 purpose.** Everything below about verified levels, measured difficulty and
 unlimited undo describes the puzzles. Yahtzee is a game of chance: there is no
@@ -490,6 +491,9 @@ src/castle/           model, solve, generate, art, render, game, main, rules —
                       solve.ts visits every layout of the towers, so it is
                       exact; art.ts is the one set of silhouettes the map, the
                       tray, the preview and the rules sheet all draw
+src/battleship/       model, solve, generate, render, game, main, rules —
+                      solve.ts is six priced deduction rules, and a level
+                      ships only if they finish it with no guessing
 ```
 
 **Sudoku measures work, not technique.** The obvious difficulty signal is the
@@ -1011,6 +1015,61 @@ closed is not replayed on reopening — its result is.
 **It declines the shape overlay and the clock.** Every tower and enemy is a
 different shape as well as a different colour, so the overlay has nothing to
 add; and a clock would run while the wave does, which measures nothing.
+
+## Battleship
+
+**The solitaire puzzle, not the two-player game.** A fleet is hidden in a square
+sea; ships lie straight and never touch, not even at a corner. The player gets
+the number of ship squares in each row and column, the fleet itself, and a few
+squares outright — and deduces the rest. The two-player game was the obvious
+recreation and was passed over deliberately: it is hide-and-seek against a
+layout nobody can see, so no level of it can be verified before it is shown,
+and a loss can be nobody's fault. Seas run from 6x6 to the classic 10x10.
+
+**A level is verified by deduction, which is stronger than unique.** `solve.ts`
+is six rules, each priced: a given piece's shape (1), water at every ship's
+corners (1), a row or column whose count settles it (2), extending a ship that
+is not yet whole (3), water wherever no unplaced ship could reach (4), and the
+squares every position of the last ship of a length shares (6). A level ships
+only if those finish it. As with Nonogram's line solver, every rule writes only
+what is true in *every* consistent layout, so a finished solve proves there was
+one answer; `countLayouts` checks that exhaustively on the small seas, and a
+soundness test runs the rules over sixty random boards and finds no square
+written against the answer.
+
+**Levels are built answer first.** A fleet is dropped at random, the counts are
+read off it, and squares of the answer are handed over as givens — each chosen
+where the solver stalled, so it genuinely unlocks something — until deduction
+finishes the board. Then every given the solver can do without is pruned. A
+fully pruned board has two to six givens. The easy levels get a few spare ship
+pieces back on top; pruning only part of the way was tried first and barely
+moved anything, because "keep half" of three givens keeps one.
+
+**Difficulty is how narrow the way through is.** The first signal tried, solver
+work per square, came out flat — 0.6 to 1.0 at every size and every setting —
+because the count rule writes a whole line for one price. What does vary is
+*openness*: at each step, how many separate non-trivial deductions the board
+offers. Corners and shapes are free and not counted, the way nobody counts
+filling a Sudoku box's last digit. A pruned board averages about 4.5 options a
+step across 2.5 to 7.5; spare givens push it past 8. The score is 35% sea size,
+45% narrowness and 20% how often the two whole-board rules were needed, since
+those are the ones a person finds last. `tools/battleship.ts` hits all 32
+levels of its sweep in band, the slowest built in about 60ms.
+
+**A ship square is drawn as the piece it has to be.** Two squares side by side
+join into one hull; a run closed by water at one end gets a rounded bow there;
+a lone square walled in on all four sides becomes a round single. Until a side
+is closed the square stays a plain block, because a bow would claim something
+the player has not decided. It answers "is this one finished?" without a count,
+and the fleet list above the sea fades each ship as one of its length is closed
+off. Ships the player places are the accent colour, given ones ink.
+
+**Input and the hint are Nonogram's.** A Ship and a Water brush, tap or drag,
+and a drag locks to the row or column its first two squares set. The hint names
+a wrong mark first — water on a ship counts, unlike Nonogram's crosses, since it
+poisons the counts and every placement around it the same way a wrong ship
+does — and otherwise rings the next square, ghosts the mark it wants, and hands
+over that brush. Water is never required to win.
 
 ## Usage counts
 

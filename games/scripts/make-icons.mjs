@@ -1563,6 +1563,63 @@ function drawCastle(size, { maskable }) {
   return encodePng(size, size, canvas.data);
 }
 
+/**
+ * Battleship: a small sea with a fleet on it, the ships drawn as whole hulls
+ * with rounded bows the way the game draws them, and a few squares of marked
+ * water around them. No count digits — at 48px they are noise.
+ */
+function drawBattleship(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.2 : size * 0.13;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const cells = 5;
+  const area = size - inset * 2;
+  const cell = area / cells;
+
+  fillRoundedRect(canvas, inset, inset, area, area, size * 0.03, hex('#16233b'));
+
+  // Marked water: every square the fleet does not use that touches it.
+  const water = [
+    [3, 0], [3, 1], [0, 1], [1, 1], [2, 1], [4, 1],
+    [1, 2], [2, 2], [4, 2], [2, 3], [4, 3], [1, 3], [0, 2], [1, 4], [0, 4], [2, 4], [4, 4], [3, 4],
+  ];
+  for (const [column, row] of water) {
+    fillRoundedRect(
+      canvas,
+      inset + column * cell + cell * 0.06,
+      inset + row * cell + cell * 0.06,
+      cell * 0.88,
+      cell * 0.88,
+      cell * 0.14,
+      hex('#2b4c80'),
+    );
+  }
+
+  const hull = (column, row, across, down, color) => {
+    const pad = cell * 0.08;
+    fillRoundedRect(
+      canvas,
+      inset + column * cell + pad,
+      inset + row * cell + pad,
+      across * cell - pad * 2,
+      down * cell - pad * 2,
+      cell * 0.42,
+      color,
+    );
+  };
+
+  hull(0, 0, 3, 1, hex('#eef3fb'));
+  hull(4, 0, 1, 1, hex('#eef3fb'));
+  hull(3, 2, 1, 2, hex('#4da3ff'));
+  hull(0, 3, 1, 1, hex('#4da3ff'));
+
+  return encodePng(size, size, canvas.data);
+}
+
 const targets = [
   ['colorsort-180.png', 180, { maskable: false }, drawColorSort],
   ['colorsort-192.png', 192, { maskable: false }, drawColorSort],
@@ -1644,6 +1701,10 @@ const targets = [
   ['artillery-192.png', 192, { maskable: false }, drawArtillery],
   ['artillery-512.png', 512, { maskable: false }, drawArtillery],
   ['artillery-maskable-512.png', 512, { maskable: true }, drawArtillery],
+  ['battleship-180.png', 180, { maskable: false }, drawBattleship],
+  ['battleship-192.png', 192, { maskable: false }, drawBattleship],
+  ['battleship-512.png', 512, { maskable: false }, drawBattleship],
+  ['battleship-maskable-512.png', 512, { maskable: true }, drawBattleship],
   ['castle-180.png', 180, { maskable: false }, drawCastle],
   ['castle-192.png', 192, { maskable: false }, drawCastle],
   ['castle-512.png', 512, { maskable: false }, drawCastle],
