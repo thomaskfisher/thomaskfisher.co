@@ -1478,6 +1478,91 @@ function drawArtillery(size, { maskable }) {
   return encodePng(size, size, canvas.data);
 }
 
+/**
+ * A road winding down into a castle, with one tower standing guard beside it.
+ *
+ * The castle is the mark — crenellations and a flag read at 48px where nothing
+ * else here would — and the road is what says "they are coming to it". The
+ * tower is the player's part, so it gets the brightest colour on the tile.
+ */
+function drawCastle(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.18 : size * 0.1;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const area = size - inset * 2;
+  const at = (fx) => fx * area;
+  const x0 = inset;
+  const y0 = inset;
+
+  const GRASS = hex('#2f6b45');
+  const ROAD = hex('#e6d3a3');
+  const STONE = hex('#9aa2ae');
+  const GATE = hex('#3a3326');
+  const FLAG = hex('#e6394a');
+  const TOWER = hex('#35b56a');
+
+  fillRoundedRect(canvas, x0, y0, area, area, area * 0.12, GRASS);
+
+  // The road: down, across, down, into the gate.
+  const road = [
+    [0.26, 0.0],
+    [0.26, 0.4],
+    [0.62, 0.4],
+    [0.62, 0.78],
+  ];
+  for (let i = 0; i < road.length - 1; i++) {
+    const [ax, ay] = road[i];
+    const [bx, by] = road[i + 1];
+    fillLine(canvas, [x0 + at(ax), y0 + at(ay)], [x0 + at(bx), y0 + at(by)], at(0.13), ROAD);
+  }
+  // Round the corners so it reads as one road rather than three sticks.
+  for (const [cx, cy] of road.slice(1, -1)) {
+    fillRoundedRect(canvas, x0 + at(cx - 0.065), y0 + at(cy - 0.065), at(0.13), at(0.13), at(0.065), ROAD);
+  }
+
+  // The castle: a wall with three merlons, a gate, a flag.
+  const cx = x0 + at(0.4);
+  const cy = y0 + at(0.66);
+  const cw = at(0.46);
+  const ch = at(0.28);
+  fillRoundedRect(canvas, cx, cy, cw, ch, at(0.02), STONE);
+  for (const f of [0, 0.4, 0.8]) {
+    fillRoundedRect(canvas, cx + cw * f, cy - at(0.07), cw * 0.2, at(0.08), 0, STONE);
+  }
+  fillRoundedRect(canvas, cx + cw * 0.36, cy + ch * 0.35, cw * 0.28, ch * 0.66, cw * 0.14, GATE);
+  fillLine(canvas, [cx + cw * 0.5, cy - at(0.07)], [cx + cw * 0.5, cy - at(0.2)], at(0.02), hex('#6b5a45'));
+  fillTriangle(
+    canvas,
+    [cx + cw * 0.5, cy - at(0.2)],
+    [cx + cw * 0.5 + at(0.12), cy - at(0.165)],
+    [cx + cw * 0.5, cy - at(0.13)],
+    FLAG,
+  );
+
+  // The tower beside the bend, with its arrowhead.
+  const tx = x0 + at(0.08);
+  const ty = y0 + at(0.52);
+  const tw = at(0.24);
+  fillRoundedRect(canvas, tx, ty, tw, tw * 1.05, at(0.03), TOWER);
+  for (const f of [0, 0.4, 0.8]) {
+    fillRoundedRect(canvas, tx + tw * f, ty - at(0.045), tw * 0.2, at(0.05), 0, TOWER);
+  }
+  fillTriangle(
+    canvas,
+    [tx + tw * 0.5, ty + tw * 0.18],
+    [tx + tw * 0.8, ty + tw * 0.5],
+    [tx + tw * 0.2, ty + tw * 0.5],
+    hex('#ffffff'),
+  );
+  fillRoundedRect(canvas, tx + tw * 0.4, ty + tw * 0.48, tw * 0.2, tw * 0.34, 0, hex('#ffffff'));
+
+  return encodePng(size, size, canvas.data);
+}
+
 const targets = [
   ['colorsort-180.png', 180, { maskable: false }, drawColorSort],
   ['colorsort-192.png', 192, { maskable: false }, drawColorSort],
@@ -1559,6 +1644,10 @@ const targets = [
   ['artillery-192.png', 192, { maskable: false }, drawArtillery],
   ['artillery-512.png', 512, { maskable: false }, drawArtillery],
   ['artillery-maskable-512.png', 512, { maskable: true }, drawArtillery],
+  ['castle-180.png', 180, { maskable: false }, drawCastle],
+  ['castle-192.png', 192, { maskable: false }, drawCastle],
+  ['castle-512.png', 512, { maskable: false }, drawCastle],
+  ['castle-maskable-512.png', 512, { maskable: true }, drawCastle],
 ];
 
 for (const [name, size, options, draw] of targets) {

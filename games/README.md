@@ -28,6 +28,7 @@ The one thing that leaves it is an anonymous daily count (see *Usage counts*).
 | Simon | Playable |
 | Artillery | Playable |
 | Tetris | Playable |
+| Castle | Playable |
 
 ## Working on it
 
@@ -41,7 +42,7 @@ npm run icons      # regenerate PWA icons (output is committed)
 
 ## How it works
 
-**Thirteen of the twenty are puzzles. Yahtzee, Backgammon, Mancala, Mexican
+**Fourteen of the twenty-one are puzzles. Yahtzee, Backgammon, Mancala, Mexican
 Train, Simon, Artillery and Tetris are not, and all seven bend the house rules on
 purpose.** Everything below about verified levels, measured difficulty and
 unlimited undo describes the puzzles. Yahtzee is a game of chance: there is no
@@ -485,6 +486,10 @@ public/               icons, per-game manifest, a two-line sw.js per game,
 examples/             reference material for the originals — never deployed
 tools/                calibration harnesses — not built, not in `npm test`
 scripts/make-icons.mjs
+src/castle/           model, solve, generate, art, render, game, main, rules —
+                      solve.ts visits every layout of the towers, so it is
+                      exact; art.ts is the one set of silhouettes the map, the
+                      tray, the preview and the rules sheet all draw
 ```
 
 **Sudoku measures work, not technique.** The obvious difficulty signal is the
@@ -939,6 +944,73 @@ holes, and is careless about a tenth of the time. It deliberately does not use
 hold, does not tuck or spin, and does not read the preview, because all three
 would flatter the bag into looking harmless. `tools/tetris.ts` sweeps it with the
 level pinned, so the bag can be measured with gravity held out of the picture.
+
+## Castle
+
+**Tower defense as a placement puzzle.** A road winds from the top of the map to
+the castle gate. Beside it are a few stone plots, and the level hands over a
+fixed set of towers — arrows, cannons, frost — to put on them. Press Go and a
+wave walks the road; one enemy through the gate loses it. Kingdom Rush builds
+*during* the wave, which makes it a game of timing and thumbs. Here every
+decision is made before the first enemy moves, and the wave that follows is a
+pure function of where the towers stand.
+
+That reframing is what lets the genre keep the collection's promise. A level is
+a finite set of layouts, so **every level is verified by trying all of them**:
+`solve.ts` visits each distinct placement (identical towers counted once) and
+the first that holds the gate ends the search. Nothing is pruned on a guess, so
+running out of layouts means no layout wins. The top of the curve is ten plots
+and five towers — 7,560 layouts — and most levels are a few hundred.
+
+**The wave is integers all the way down.** Positions along the road are twelfths
+of a cell, speeds are twelfths per tick, ranges are squared distances in the same
+units. Nothing in `simulate` touches a float, so a layout wins or loses the same
+on every engine forever, which is what lets the save be a move list — placements,
+removals and Go, one integer each — when Artillery, with its floating-point
+ballistics, had to store a snapshot.
+
+**Each tower has one job, and each enemy is the answer to one of them.** Arrows
+are quick and single-target, and do a single point against a knight's armour.
+Cannons are slow, splash, and ignore armour. Frost does no damage at all and
+halves the speed of everything inside it — worth most where the road passes it
+twice. Grunts come in packs, runners outrun a cannon's reload, knights shrug off
+arrows. Kinds arrive one at a time along the curve (arrows and cannons against
+grunts, then runners, then frost, then knights), so a new thing is always shown
+alone before it is combined with the others.
+
+**Difficulty is a climb, not a deal.** A level is built — road, plots, a wave in
+groups of one kind so the preview can say "three knights" — and then every layout
+is played once at a gentle strength and the winners kept. Hit points then go up
+eight per cent a step: the winners are re-checked, and a fixed sample of forty
+*naive* layouts (each tower dropped where its own kind sees the most road,
+weighted rather than argmaxed, and one in five placed anywhere) is re-played to
+measure how many of them now lose. The first strength whose trap rate lands in
+the band ships. A strength is never accepted without a layout that has been
+played and seen to win at it, so solvability is structural rather than lucky.
+`tools/castle.ts` measured the signal before the band was trusted: along one
+board's climb the naive trap rate runs from 0.00 to about 0.9, smooth and
+monotonic, and at the top of the curve 2-8% of all layouts win against roughly
+half at level 1.
+
+**The outcome is settled when Go is pressed; the show is decoration.** `simulate`
+produces every frame before the first token moves, and playback walks that list
+on one `setTimeout` with a CSS transition of exactly one tick easing tokens
+between positions — still no frame loop. Skip, reduced motion and a hidden tab
+all jump to the last frame. Undo is live during the show, which makes the timer
+the one deferred mutation that matters: every `reset` effect stops it. A probe
+that undoes mid-wave and then waits past the wave's length finds no tokens and
+no sheet; with the `stopWave()` call removed it finds nine enemies still walking
+a map that is back in planning.
+
+**The hint follows one winning layout.** It is found once and followed while
+every tower on the map agrees with it. When the towers already down cannot be
+completed into a win, the hint picks the winning layout that keeps the most of
+them and lights a tower to take back, in red. A wave launched before the app was
+closed is not replayed on reopening — its result is.
+
+**It declines the shape overlay and the clock.** Every tower and enemy is a
+different shape as well as a different colour, so the overlay has nothing to
+add; and a clock would run while the wave does, which measures nothing.
 
 ## Usage counts
 

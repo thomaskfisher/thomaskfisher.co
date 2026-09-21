@@ -44,6 +44,7 @@ export default defineConfig({
         simon: 'simon/index.html',
         tetris: 'tetris/index.html',
         artillery: 'artillery/index.html',
+        castle: 'castle/index.html',
       },
     },
   },
