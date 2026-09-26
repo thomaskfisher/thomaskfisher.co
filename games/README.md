@@ -23,6 +23,7 @@ The one thing that leaves it is an anonymous daily count (see *Usage counts*).
 | Pipes | Playable |
 | 2048 | Playable |
 | Wordle | Playable |
+| Connections | Playable |
 | Mancala | Playable |
 | Mexican Train | Playable |
 | Simon | Playable |
@@ -43,7 +44,7 @@ npm run icons      # regenerate PWA icons (output is committed)
 
 ## How it works
 
-**Fifteen of the twenty-two are puzzles. Yahtzee, Backgammon, Mancala, Mexican
+**Sixteen of the twenty-three are puzzles. Yahtzee, Backgammon, Mancala, Mexican
 Train, Simon, Artillery and Tetris are not, and all seven bend the house rules on
 purpose.** Everything below about verified levels, measured difficulty and
 unlimited undo describes the puzzles. Yahtzee is a game of chance: there is no
@@ -494,6 +495,9 @@ src/castle/           model, solve, generate, art, render, game, main, rules —
 src/battleship/       model, solve, generate, render, game, main, rules —
                       solve.ts is six priced deduction rules, and a level
                       ships only if they finish it with no guessing
+src/connections/      categories, model, solve, generate, render, game, main,
+                      rules — categories.ts is the hand-written bank every
+                      puzzle is dealt from, and all the solver can see
 ```
 
 **Sudoku measures work, not technique.** The obvious difficulty signal is the
@@ -608,6 +612,48 @@ cent of the answers, including words nobody would call proper nouns. Switching
 the dictionary to ENABLE and keeping the frequency list only for *ordering*
 fixed it at the root: something is a word because a dictionary says so, and
 common because a corpus says so, and those are two different questions.
+
+## Connections
+
+**Puzzles, not levels.** Every other puzzle here climbs to its ceiling by level
+50. This one is numbered the way the original is — Puzzle 1, Puzzle 2 — and has
+no curve: every puzzle is one plain group, one broader, one that needs knowing
+something and one piece of wordplay, yellow to purple, with a similar helping of
+red herrings. The save still calls the number a level, because the shared code
+does; nothing on screen does.
+
+**A board ships only with exactly one answer, across the whole bank.**
+`categories.ts` holds about 330 hand-written categories and 2,650 words. For a
+dealt board, `solve.ts` builds every four-word set any category accepts — a
+category with six members on the board contributes all fifteen of its subsets —
+and walks exact cover over them exhaustively. One way to split the sixteen
+words ships; two is thrown away. The limit of the guarantee is the bank: a
+category nobody wrote down is invisible to the solver, which is why the lists
+are written to be complete for short common words, the ones that turn up in
+other lists. Spelling-rule categories (*Hidden numbers*, *Starts with a body
+part*) are tested against every word in the bank rather than listed, because
+no list could be complete: `MONEY`, `TENNIS` and `OZONE` come from three
+unrelated places.
+
+**Herrings are planted, not hoped for.** Random word choice almost never
+builds one — the median trap rate was zero. So the generator picks a decoy
+category first, chooses answer categories that overlap it, and places the
+decoy's words across different groups before filling the rest; or it houses a
+fifth member of one answer category in another group (a fifth fish among the
+instruments). Then the solver decides whether the result still has one answer.
+
+**Trap rate here is mistakes spent, not runs lost.** The naive player guesses
+any accepted set it has not tried, weighted towards obvious categories, and
+never repeats itself — so it cannot lose on a board with fewer than four decoy
+sets, and fair boards nearly always have fewer. Loss rate was zero at the
+median. The share of the four mistakes it burns is the same idea measured
+finely enough to steer by. A puzzle ships with a trap rate between 0.12 (the
+herrings landed) and 0.6 (the fourth mistake is judgement, not luck).
+
+**The hint follows one group.** Each press rings one more word of the easiest
+unsolved group, and the press after the fourth selects them — filling in, not
+submitting, as Wordle's hint does. The group is kept until solved, so the hint
+never wanders.
 
 ## Mancala
 

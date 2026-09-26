@@ -39,6 +39,7 @@ export default defineConfig({
         pipes: 'pipes/index.html',
         twenty48: 'twenty48/index.html',
         wordle: 'wordle/index.html',
+        connections: 'connections/index.html',
         mancala: 'mancala/index.html',
         dominoes: 'dominoes/index.html',
         simon: 'simon/index.html',

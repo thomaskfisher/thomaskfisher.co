@@ -12,6 +12,7 @@ import { RULES as NONOGRAM } from '../nonogram/rules';
 import { RULES as PIPES } from '../pipes/rules';
 import { RULES as TWENTY48 } from '../twenty48/rules';
 import { RULES as WORDLE } from '../wordle/rules';
+import { RULES as CONNECTIONS } from '../connections/rules';
 import { RULES as MANCALA } from '../mancala/rules';
 import { RULES as DOMINOES } from '../dominoes/rules';
 import { RULES as SIMON } from '../simon/rules';
@@ -35,6 +36,7 @@ const RULES = [
   PIPES,
   TWENTY48,
   WORDLE,
+  CONNECTIONS,
   MANCALA,
   DOMINOES,
   SIMON,

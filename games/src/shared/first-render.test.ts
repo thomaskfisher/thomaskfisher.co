@@ -15,6 +15,7 @@ import { NonogramGame } from '../nonogram/game';
 import { PipesGame } from '../pipes/game';
 import { Twenty48Game } from '../twenty48/game';
 import { WordleGame } from '../wordle/game';
+import { ConnectionsGame } from '../connections/game';
 import { MancalaGame } from '../mancala/game';
 import { DominoesGame } from '../dominoes/game';
 import { SimonGame } from '../simon/game';
@@ -56,6 +57,7 @@ const games = [
   ['Pipes', () => new PipesGame()],
   ['2048', () => new Twenty48Game()],
   ['Wordle', () => new WordleGame()],
+  ['Connections', () => new ConnectionsGame()],
   ['Mancala', () => new MancalaGame()],
   ['Mexican Train', () => new DominoesGame()],
   ['Simon', () => new SimonGame()],

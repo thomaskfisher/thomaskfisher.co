@@ -1,0 +1,224 @@
+/* ==========================================================================
+   Connections.
+
+   Four rows: the top bar, the board, the mistakes and the Submit row, and the
+   controls. Submit sits right above the controls, in the thumb's reach.
+   ========================================================================== */
+
+.app--connections {
+  grid-template-rows: auto 1fr auto auto;
+}
+
+.board {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  padding: 6px 12px;
+}
+
+/* ------------------------------------------------------------------ grid */
+
+.cn-grid {
+  display: grid;
+  grid-template-columns: repeat(4, var(--tile-w, 80px));
+  grid-auto-rows: var(--row, 64px);
+  gap: 8px;
+  /* Nothing here derives a z-index from game state; the stacking context is
+     written in with the container so that stays cheap to be wrong about. */
+  isolation: isolate;
+}
+
+.cn-grid[data-empty] {
+  visibility: hidden;
+}
+
+.cn-tile {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  /* Shrinks long words to fit rather than wrapping or clipping them. `--len`
+     is the word's length, floored at five so short words do not balloon. */
+  font-size: min(1.05rem, calc((var(--tile-w, 80px) - 10px) / (var(--len, 5) * 0.8)));
+  box-shadow: 0 2px 0 var(--shadow);
+  transition: background 0.12s ease, color 0.12s ease, transform 0.1s ease;
+}
+
+.cn-tile:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.cn-tile.is-selected {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.cn-tile.is-hinted {
+  outline: 2px dashed var(--accent);
+  outline-offset: -3px;
+}
+
+/* ------------------------------------------------------------ solved bars */
+
+.cn-bar {
+  grid-column: 1 / -1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: #1b1b1b;
+  text-align: center;
+  overflow: hidden;
+}
+
+/*
+ * The four group colours, easiest to trickiest. Literal rather than themed,
+ * like Wordle's green and yellow: they carry meaning, and every player of the
+ * original already reads them. Dark text on all four, in both themes.
+ */
+.cn-bar--0 { background: #f9df6d; }
+.cn-bar--1 { background: #a0c35a; }
+.cn-bar--2 { background: #b0c4ef; }
+.cn-bar--3 { background: #ba81c5; }
+
+/* Groups the player did not find, shown after a loss. */
+.cn-bar.is-revealed {
+  opacity: 0.72;
+}
+
+.cn-bar-name {
+  font-size: min(0.95rem, calc(var(--row, 64px) * 0.24));
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.cn-bar-words {
+  max-width: 100%;
+  font-size: min(0.85rem, calc(var(--row, 64px) * 0.21));
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cn-shape {
+  display: none;
+  position: absolute;
+  top: 5px;
+  left: 8px;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+:root[data-shapes='on'] .cn-shape {
+  display: block;
+}
+
+/* ------------------------------------------------ mistakes and actions */
+
+.cn-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 14px 6px;
+}
+
+.cn-mistakes {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.cn-mistakes span {
+  margin-right: 4px;
+}
+
+.cn-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--text);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.cn-dot.is-spent {
+  opacity: 0.18;
+  transform: scale(0.8);
+}
+
+.cn-action-row {
+  display: flex;
+  gap: 10px;
+}
+
+.cn-action {
+  min-width: 92px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1.5px solid var(--glass-edge);
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 700;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.cn-action:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
+.cn-action:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.cn-action--primary:not(:disabled) {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
+}
+
+@media (max-height: 680px) {
+  .cn-action {
+    padding: 9px 14px;
+  }
+  .cn-actions {
+    gap: 7px;
+  }
+}
+
+/* ----------------------------------------------------------------- toast */
+
+.toast {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 9px 15px;
+  border-radius: 10px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+  animation: fade-in 0.14s ease both;
+}

@@ -1090,6 +1090,45 @@ function drawWordle(size, { maskable }) {
 }
 
 /**
+ * A board half solved: a yellow and a purple bar across the top, and two rows
+ * of blank tiles with one picked out. No words — they do not survive the
+ * shrink — so the bars in the original's colours are what says Connections.
+ */
+function drawConnections(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.2 : size * 0.13;
+  const radius = maskable ? 0 : size * 0.22;
+
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const area = size - inset * 2;
+  const gap = area * 0.05;
+  const cell = (area - gap * 3) / 4;
+  const round = cell * 0.18;
+
+  fillRoundedRect(canvas, inset, inset, area, cell, round, hex('#f9df6d'));
+  fillRoundedRect(canvas, inset, inset + cell + gap, area, cell, round, hex('#ba81c5'));
+
+  for (let row = 2; row < 4; row++) {
+    for (let column = 0; column < 4; column++) {
+      const picked = row === 3 && column === 1;
+      fillRoundedRect(
+        canvas,
+        inset + column * (cell + gap),
+        inset + row * (cell + gap),
+        cell,
+        cell,
+        round,
+        hex(picked ? '#eef3fb' : '#4a5a7d'),
+      );
+    }
+  }
+
+  return encodePng(size, size, canvas.data);
+}
+
+/**
  * A board with its pits and a store, and seeds in the pits.
  *
  * Six pits a side do not survive the shrink — at 48px they are a row of grey
@@ -1681,6 +1720,10 @@ const targets = [
   ['wordle-192.png', 192, { maskable: false }, drawWordle],
   ['wordle-512.png', 512, { maskable: false }, drawWordle],
   ['wordle-maskable-512.png', 512, { maskable: true }, drawWordle],
+  ['connections-180.png', 180, { maskable: false }, drawConnections],
+  ['connections-192.png', 192, { maskable: false }, drawConnections],
+  ['connections-512.png', 512, { maskable: false }, drawConnections],
+  ['connections-maskable-512.png', 512, { maskable: true }, drawConnections],
   ['mancala-180.png', 180, { maskable: false }, drawMancala],
   ['mancala-192.png', 192, { maskable: false }, drawMancala],
   ['mancala-512.png', 512, { maskable: false }, drawMancala],
