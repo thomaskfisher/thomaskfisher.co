@@ -13,7 +13,7 @@ import { applyTheme, el, icons, openSheet, prefersReducedMotion } from '../share
 import { pinViewportHeight } from '../shared/viewport';
 import { ConnectionsGame, GAME_ID, type GameState } from './game';
 import { GROUP_SIZE } from './model';
-import { BoardRenderer, describeProgress } from './render';
+import { BoardRenderer, describeProgress, groupSummary } from './render';
 import { RULES } from './rules';
 
 const app = document.getElementById('app');
@@ -151,7 +151,7 @@ game.subscribe((state) => {
   if (state.phase === 'lost' && lastPhase !== 'lost') {
     sfx.lose();
     clearPendingSheet();
-    pendingSheet = window.setTimeout(() => showLoss(), SHEET_DELAY_MS);
+    pendingSheet = window.setTimeout(() => showLoss(state), SHEET_DELAY_MS);
   }
 
   lastPhase = state.phase;
@@ -213,6 +213,7 @@ function showWin(state: GameState): void {
           `<b>${mistakes}</b><span>${mistakes === 1 ? 'mistake' : 'mistakes'}</span>`,
         ),
       );
+      sheet.content.append(groupSummary(state));
 
       const next = el('button', { class: 'button button--full' }, 'Next puzzle');
       next.addEventListener('click', () => {
@@ -226,13 +227,14 @@ function showWin(state: GameState): void {
 }
 
 /**
- * Out of mistakes. The board behind the sheet already shows every group, so
- * the sheet says nothing about them. Undo is offered first and costs nothing.
+ * Out of mistakes. The sheet lists every group, found or not, since it covers
+ * the board that also shows them. Undo is offered first and costs nothing.
  */
-function showLoss(): void {
+function showLoss(state: GameState): void {
   openSheet(
     (sheet) => {
       sheet.content.append(el('h2', { class: 'lose-title' }, 'Out of mistakes'));
+      sheet.content.append(groupSummary(state));
 
       const back = el('button', { class: 'button button--full' }, 'Undo');
       back.addEventListener('click', () => {

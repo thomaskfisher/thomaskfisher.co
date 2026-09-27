@@ -75,16 +75,7 @@ export class BoardRenderer {
     const { progress } = state;
     let newest: HTMLElement | null = null;
 
-    // A lost puzzle shows every group, found or not, so the loss is worth
-    // something: you see what you were up against.
-    const shown = progress.solved.slice();
-    if (state.phase === 'lost') {
-      generated.groups.forEach((_group, index) => {
-        if (!shown.includes(index)) shown.push(index);
-      });
-    }
-
-    for (const [position, groupIndex] of shown.entries()) {
+    for (const [position, groupIndex] of shownGroups(state).entries()) {
       const group = generated.groups[groupIndex] as Group;
       const bar = this.bar(state, group, !progress.solved.includes(groupIndex));
       this.gridEl.append(bar);
@@ -198,6 +189,50 @@ export class BoardRenderer {
 }
 
 export const TILES_PER_ROW = GROUP_SIZE;
+
+/**
+ * The groups on show, in the order they were found. A lost puzzle shows every
+ * group, found or not, so the loss is worth something: you see what you were
+ * up against.
+ */
+function shownGroups(state: GameState): number[] {
+  const shown = state.progress.solved.slice();
+  if (state.phase === 'lost' && state.generated) {
+    state.generated.groups.forEach((_group, index) => {
+      if (!shown.includes(index)) shown.push(index);
+    });
+  }
+  return shown;
+}
+
+/**
+ * Every group and its four words, for the end-of-puzzle sheet. The sheet
+ * covers the board, and the bars there clip long word lists anyway, so the
+ * answers are repeated here in full, wrapping rather than truncating.
+ */
+export function groupSummary(state: GameState): HTMLElement {
+  const list = el('ul', { class: 'cn-summary' });
+  const generated = state.generated;
+  if (!generated) return list;
+
+  for (const groupIndex of shownGroups(state)) {
+    const group = generated.groups[groupIndex] as Group;
+    const found = state.progress.solved.includes(groupIndex);
+    const words = indicesOf(group.mask)
+      .map((index) => generated.words[index] ?? '')
+      .join(', ');
+    const item = el('li', {
+      class: `cn-summary-group cn-bar--${group.color}${found ? '' : ' is-revealed'}`,
+    });
+    item.append(
+      el('span', { class: 'cn-shape', 'aria-hidden': 'true' }, SHAPES[group.color] ?? ''),
+      el('b', {}, escapeHtml(group.name)),
+      el('span', {}, escapeHtml(words)),
+    );
+    list.append(item);
+  }
+  return list;
+}
 
 function escapeHtml(text: string): string {
   return text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);

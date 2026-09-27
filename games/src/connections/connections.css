@@ -129,6 +129,43 @@
   display: block;
 }
 
+/* ------------------------------------------------ end-of-puzzle answers */
+
+.cn-summary {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.cn-summary-group {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  padding: 9px 26px;
+  border-radius: 8px;
+  color: #1b1b1b;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.cn-summary-group b {
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.cn-summary-group span:last-child {
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.cn-summary-group.is-revealed {
+  opacity: 0.72;
+}
+
 /* ------------------------------------------------ mistakes and actions */
 
 .cn-actions {
