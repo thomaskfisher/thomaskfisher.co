@@ -5,30 +5,74 @@
  * Browsers refuse to start an AudioContext without a user gesture, so the
  * context is created lazily on the first tap and every call before that is a
  * no-op rather than an error.
+ *
+ * iOS is stricter than Android on two counts:
+ *  - Web Audio is muted by the ring/silent switch unless the page asks for
+ *    the "playback" audio session. Most iPhones live on silent, so without
+ *    this the games are simply mute. The in-game setting is the mute.
+ *  - The context only unlocks when resumed inside a touchend/click/keydown
+ *    handler (pointerdown from a finger does not count), and Safari suspends
+ *    or "interrupts" it whenever the page is backgrounded. So every gesture
+ *    re-unlocks it, whatever the game does with that gesture.
  */
 
 let context: AudioContext | null = null;
 let enabled = true;
 
+interface AudioSessionNavigator {
+  audioSession?: { type: string };
+}
+
+function claimPlaybackSession(): void {
+  const session = (navigator as AudioSessionNavigator).audioSession;
+  if (session && session.type !== 'playback') {
+    try {
+      session.type = 'playback';
+    } catch {
+      // Unsupported — nothing more to do.
+    }
+  }
+}
+
 export function setSoundEnabled(value: boolean): void {
   enabled = value;
+  // Turning sound on happens in a tap on the settings toggle.
+  if (value) unlock();
 }
 
 function ctx(): AudioContext | null {
   if (!enabled) return null;
   if (context) {
-    // Safari suspends the context when the page is backgrounded.
-    if (context.state === 'suspended') void context.resume();
+    if (context.state !== 'running') void context.resume().catch(() => undefined);
     return context;
   }
   try {
     const Ctor = window.AudioContext ?? (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!Ctor) return null;
+    claimPlaybackSession();
     context = new Ctor();
     return context;
   } catch {
     return null;
   }
+}
+
+/** Called from inside a user gesture: start or resume the context, and play a silent sample, which is what finally wakes it on older iOS. */
+function unlock(): void {
+  const audio = ctx();
+  if (!audio) return;
+  try {
+    const source = audio.createBufferSource();
+    source.buffer = audio.createBuffer(1, 1, audio.sampleRate);
+    source.connect(audio.destination);
+    source.start(0);
+  } catch {
+    // Best effort.
+  }
+}
+
+for (const type of ['touchend', 'pointerup', 'click', 'keydown'] as const) {
+  window.addEventListener(type, unlock, { capture: true, passive: true });
 }
 
 interface ToneOptions {
