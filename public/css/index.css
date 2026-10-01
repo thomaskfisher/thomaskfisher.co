@@ -705,6 +705,96 @@ h1, h2, h3, h4, h5 {
     vertical-align: 2px;
 }
 
+/* ── Blog ────────────────────────────────────────────── */
+.section--blog {
+    border-top: 1px solid var(--border);
+}
+
+.section--blog .section-heading {
+    margin-bottom: 16px;
+}
+
+.section-sub {
+    font-size: 16px;
+    color: var(--text-mid);
+    margin-bottom: clamp(40px, 6vw, 72px);
+}
+
+.post-list {
+    border-top: 1px solid var(--border);
+}
+
+.post-item {
+    display: grid;
+    grid-template-columns: 110px 1fr auto;
+    align-items: baseline;
+    gap: 24px;
+    padding: 26px 0;
+    border-bottom: 1px solid var(--border);
+    text-decoration: none;
+    color: inherit;
+    transition: padding-left 0.35s var(--ease);
+}
+.post-item:hover { padding-left: 14px; }
+
+.post-date {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+
+.post-main {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+}
+
+.post-title {
+    font-family: var(--font-display);
+    font-size: clamp(18px, 2vw, 22px);
+    font-weight: 500;
+    color: var(--text);
+    transition: color 0.2s;
+}
+.post-item:hover .post-title { color: var(--accent); }
+
+.post-desc {
+    font-size: 14px;
+    color: var(--text-mid);
+}
+
+.post-arrow,
+.post-all em {
+    font-style: normal;
+    color: var(--accent);
+}
+
+.post-arrow {
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity 0.25s, transform 0.25s var(--ease);
+}
+.post-item:hover .post-arrow {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.post-all {
+    display: inline-block;
+    margin-top: 32px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-mid);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+.post-all:hover { color: var(--accent); }
+
 /* ── Contact ─────────────────────────────────────────── */
 .section--contact {
     background: var(--bg-alt);
@@ -879,6 +969,9 @@ h1, h2, h3, h4, h5 {
     .header-nav { display: none; }
 
     .portfolio-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .post-item { grid-template-columns: 1fr; gap: 6px; padding: 22px 0; }
+    .post-main { flex-direction: column; }
+    .post-arrow { display: none; }
     .about-ctas { flex-direction: column; }
     .testimonial { padding: 28px 24px; }
     .quote-decoration { font-size: 72px; }
