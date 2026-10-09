@@ -10,6 +10,7 @@ The one thing that leaves it is an anonymous daily count (see *Usage counts*).
 | --- | --- |
 | Color Sort | Playable |
 | Screw Land | Playable |
+| Screw Land 3D | Playable |
 | Bus Jam | Playable |
 | Survival | Playable |
 | Yahtzee | Playable |
@@ -412,6 +413,75 @@ objects, they can be generated forever. Structures are assembled bottom-up, so
 they always come apart physically — which leaves colour as the only thing the
 solver has to verify.
 
+**Screw Land 3D puts the skin back on without giving up infinite levels.** It
+is Screw Land's game, with the object built entirely from pieces: solid blocks
+(a house's walls, its roof, a car's wheels) and thin plates bolted over them,
+underneath and round the back included. Every piece is held on by screws and
+falls away when its last one is out, blocks exactly like plates, so a cleared
+level leaves nothing behind. Four decisions carry it:
+
+- **The objects are templates, not models.** Ten families — house, car, tree,
+  boat, rocket, robot, table, train, burger, tower — each a few lines in
+  `templates.ts` that
+  roll proportions and optional pieces from the seed. Every plate and screw on
+  top is generated fresh, so ten silhouettes do not cap the level count. They
+  come in seeded blocks holding each family once, so none appears twice
+  running.
+- **3D is geometry, and the puzzle is still the covering table.** A piece
+  covers a screw when it sits on the ray from that screw along the screw's own
+  outward normal: a roof covers the screws in the top of its wall, a plate the
+  screws under it. `indexStructure` computes that into exactly Screw Land's
+  covering-table shape, and nothing downstream knows the difference. The solver
+  is a copy with its names changed. Pieces are assembled one at a time, the
+  template's blocks first in build order, and each is accepted only if nothing
+  already placed sits in front of its own screws: the 3D version of bottom-up
+  stacking.
+- **Nothing is ever left floating.** Every piece after the first gets a
+  *support*: an earlier piece it touches and hides a screw of. A roof hides a
+  screw in the top of the wall, a wheel one in the side of the body. The
+  support cannot fall while that screw is covered, so it cannot fall first.
+  `isSupported` checks this on every board. A busy object needs more of these
+  hidden screws than an early level budgets for, so the screw count grows by
+  whole boxes until the object fits. A template whose blocks do not each touch
+  an earlier one is a bug. The robot first built its two legs, which do not
+  touch, and now starts from the torso.
+- **What 3D adds is visibility, and the difficulty model measures it.** A screw
+  on the underside is reachable from the start and invisible until you turn
+  the object over. The trap-rate rollout looks from one direction at a time,
+  can only take screws it can see, and sometimes turns to look elsewhere.
+  `isVisibleFrom` is the one test the rollout, the renderer and the hint all
+  use. Projection is orthographic so that test means the same thing on screen
+  as in the model: a reachable screw is always visible looking straight down
+  its normal, which is what the hint falls back to. The renderer adds one
+  condition on top: a screw that is not free to take is never drawn, even
+  where a gap lets you see it past the edge of whatever covers it. A visible
+  screw always means one you can take, so a glimpse of a deep screw never looks
+  like a way to skip the pieces above it.
+
+Rendering is a hand-written WebGL renderer, the only GPU code in the
+collection, with the screws as ordinary DOM buttons projected over it. The
+rules see hard boxes; the screen sees toys. Every box is drawn as a rounded box
+— edges bevelled into quarter-cylinders, corners into spheres — with soft
+two-band "plastic" shading, a glossy highlight, and an outline drawn as a
+slightly inflated shell turned inside out. Colours live in `style.ts`: bright
+parts per family, and plate tones that belong to the object (green tiles on a
+green-roofed house) but stay lighter than the parts and less saturated than
+any screw, which is what the eye is hunting for. Each
+button is squashed by a CSS matrix into the ellipse a round head makes from
+that angle. Keeping screws in the DOM keeps the glyph overlay, screen-reader
+labels and the scripted hint playthrough exactly as every other game has them.
+The canvas draws on state change, on drag, and for the few hundred milliseconds
+a plate falls or the hint turns the object; it has no running loop.
+
+Two things the first browser run caught that no unit test could. WebGL 1
+refuses to link a program whose two stages declare the same uniform at
+different default precisions, and that failure looks exactly like "this
+browser has no WebGL". The fragment stage now gets the box size as a varying.
+And headless Chrome under `--disable-gpu`, which `cdp.mjs` passes, has no WebGL
+at all. Swap that flag for `--use-angle=swiftshader --enable-unsafe-swiftshader`
+to drive this game, and write the driver's output to a file rather than a pipe:
+it exits straight after printing, and Node drops whatever is still buffered.
+
 **Fifty levels that mean something, then an endless supply of them.**
 `shared/difficulty.ts` opens at roughly a quarter of full intensity, reaches
 full intensity by level 50, and stays there. Levels past 50 keep coming forever
@@ -447,6 +517,10 @@ src/shared/           rng, storage, progress, difficulty, audio, ui, pwa,
                       how-to-play (the rules sheet + its drawing helpers)
 src/colorsort/        model, solve, generate, layout, render, game, main, rules
 src/screwland/        model, solve, generate, render, game, main, rules
+src/screwland3d/      model, solve, templates, generate, view, gl, style,
+                      render, sinks, game, main, rules — gl.ts is the only WebGL in
+                      the collection; view.ts is the camera maths, kept pure so
+                      it is tested without a GPU
 src/busjam/           model, solve, generate, render, game, main, rules
 src/survival/         model, solve, generate, render, game, main, rules
 src/fivedice/         model, advise (the hint), render, game, main, rules —
@@ -1281,6 +1355,11 @@ carrying while the core is still being calibrated.
 The `?` unknown-colour passengers, ice-encased passengers, and numbered spawn
 tunnels visible in `examples/bus-jam/busjam2.png`. The core is solid without
 them; they belong in later as optional modifiers, not as load-bearing rules.
+
+### Cut from Screw Land 3D v1
+
+Pinch to zoom and a reset-view button. Zoom is not needed while the object is
+fitted to the board at every angle, and a drag gets back to any view.
 
 ### Things worth not relearning
 

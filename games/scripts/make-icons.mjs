@@ -303,6 +303,62 @@ function drawScrewLand(size, { maskable }) {
 }
 
 /**
+ * Screw Land's plates and screws, but on an isometric block: three faces
+ * showing, a screw on each. The block is what tells it apart from Screw Land on
+ * a home screen where both sit side by side.
+ */
+function drawScrewLand3d(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.19 : size * 0.11;
+  const radius = maskable ? 0 : size * 0.22;
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const area = size - inset * 2;
+  const at = (fx, fy) => [inset + area * fx, inset + area * fy];
+  const quad = (a, b, c, d, color) => {
+    fillTriangle(canvas, at(...a), at(...b), at(...c), hex(color));
+    fillTriangle(canvas, at(...a), at(...c), at(...d), hex(color));
+  };
+
+  // Top, left and right faces, lit from the upper left.
+  quad([0.5, 0.06], [0.93, 0.29], [0.5, 0.52], [0.07, 0.29], '#9eabc3');
+  quad([0.07, 0.29], [0.5, 0.52], [0.5, 0.96], [0.07, 0.73], '#6a7a97');
+  quad([0.5, 0.52], [0.93, 0.29], [0.93, 0.73], [0.5, 0.96], '#4f5d76');
+
+  const heads = [
+    [0.5, 0.29, '#2b7fe8'],
+    [0.285, 0.62, '#e6394a'],
+    [0.715, 0.62, '#f5c518'],
+  ];
+  const headRadius = area * 0.085;
+  for (const [fx, fy, color] of heads) {
+    const [cx, cy] = at(fx, fy);
+    fillRoundedRect(
+      canvas,
+      cx - headRadius,
+      cy - headRadius,
+      headRadius * 2,
+      headRadius * 2,
+      headRadius,
+      hex(color),
+    );
+    fillRoundedRect(
+      canvas,
+      cx - headRadius * 0.62,
+      cy - headRadius * 0.16,
+      headRadius * 1.24,
+      headRadius * 0.32,
+      headRadius * 0.16,
+      hex('#101a2e'),
+      0.55,
+    );
+  }
+
+  return encodePng(size, size, canvas.data);
+}
+
+/**
  * A bus with three coloured windows over three waiting heads in the same
  * colours. Reads at 48px as "match these people to that bus", which is the
  * whole game.
@@ -1668,6 +1724,10 @@ const targets = [
   ['screwland-192.png', 192, { maskable: false }, drawScrewLand],
   ['screwland-512.png', 512, { maskable: false }, drawScrewLand],
   ['screwland-maskable-512.png', 512, { maskable: true }, drawScrewLand],
+  ['screwland3d-180.png', 180, { maskable: false }, drawScrewLand3d],
+  ['screwland3d-192.png', 192, { maskable: false }, drawScrewLand3d],
+  ['screwland3d-512.png', 512, { maskable: false }, drawScrewLand3d],
+  ['screwland3d-maskable-512.png', 512, { maskable: true }, drawScrewLand3d],
   ['busjam-180.png', 180, { maskable: false }, drawBusJam],
   ['busjam-192.png', 192, { maskable: false }, drawBusJam],
   ['busjam-512.png', 512, { maskable: false }, drawBusJam],

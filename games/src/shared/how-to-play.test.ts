@@ -5,6 +5,7 @@ import { RULES as BUSJAM } from '../busjam/rules';
 import { RULES as COLORSORT } from '../colorsort/rules';
 import { RULES as DEPOT } from '../depot/rules';
 import { RULES as SCREWLAND } from '../screwland/rules';
+import { RULES as SCREWLAND3D } from '../screwland3d/rules';
 import { RULES as SOLITAIRE } from '../solitaire/rules';
 import { RULES as SPIDER } from '../spider/rules';
 import { RULES as SUDOKU } from '../sudoku/rules';
@@ -25,6 +26,7 @@ import { defaultSave, migrate } from './progress';
 const RULES = [
   COLORSORT,
   SCREWLAND,
+  SCREWLAND3D,
   BUSJAM,
   SURVIVAL,
   DEPOT,

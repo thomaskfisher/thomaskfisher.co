@@ -26,6 +26,7 @@ export default defineConfig({
         launcher: 'index.html',
         colorsort: 'colorsort/index.html',
         screwland: 'screwland/index.html',
+        screwland3d: 'screwland3d/index.html',
         busjam: 'busjam/index.html',
         survival: 'survival/index.html',
         fivedice: 'fivedice/index.html',

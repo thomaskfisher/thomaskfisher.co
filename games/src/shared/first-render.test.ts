@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ColorSortGame } from '../colorsort/game';
 import { ScrewLandGame } from '../screwland/game';
+import { ScrewLand3dGame } from '../screwland3d/game';
 import { BusJamGame } from '../busjam/game';
 import { SurvivalGame } from '../survival/game';
 import { FiveDiceGame } from '../fivedice/game';
@@ -44,6 +45,7 @@ import { TetrisGame } from '../tetris/game';
 const games = [
   ['Color Sort', () => new ColorSortGame()],
   ['Screw Land', () => new ScrewLandGame()],
+  ['Screw Land 3D', () => new ScrewLand3dGame()],
   ['Bus Jam', () => new BusJamGame()],
   ['Survival', () => new SurvivalGame()],
   ['Yahtzee', () => new FiveDiceGame()],

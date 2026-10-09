@@ -1,0 +1,377 @@
+/* ==========================================================================
+   Screw Land 3D.
+
+   The boxes, queue and tray are Screw Land's, copied so neither game can break
+   the other. The board is new: a WebGL canvas with a layer of screw buttons
+   over it, each one translated to its projected position and squashed by a
+   matrix into the ellipse a round head makes from the current angle.
+   ========================================================================== */
+
+.sinks {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px 10px;
+}
+
+.boxes {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+}
+
+.box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: var(--box-size, 60px);
+  height: var(--box-size, 60px);
+  padding: 7px;
+  border-radius: 13px;
+  background: linear-gradient(160deg, var(--box, #444) 0%, var(--box-edge, #222) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 2px 5px var(--shadow);
+  transition: transform 0.18s cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+
+.box.is-closed {
+  background: var(--glass);
+  box-shadow: none;
+  opacity: 0.35;
+}
+
+.hole {
+  display: grid;
+  place-items: center;
+  width: 25%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.32);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.hole.is-filled {
+  /* A seated screw, not a white plug: same head treatment as on the board so
+     the connection between the two is obvious. */
+  background: radial-gradient(circle at 34% 28%, #f2f5fb 0%, #b9c3d4 100%);
+  box-shadow:
+    inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 0, 0, 0.2);
+  animation: hole-pop 0.28s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+
+.hole.is-filled .screw-slot::before,
+.hole.is-filled .screw-slot::after {
+  background: rgba(0, 0, 0, 0.34);
+  box-shadow: none;
+}
+
+@keyframes hole-pop {
+  from {
+    transform: scale(0.4);
+  }
+}
+
+.box-complete {
+  animation: box-clear 0.34s ease both;
+}
+
+@keyframes box-clear {
+  40% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* --------------------------------------------------------------- queue */
+
+/* The colours waiting to open, next first. Sits between the boxes it feeds and
+   the tray it rescues, because that is the decision it informs. */
+.queue {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--queue-chip, 18px);
+}
+
+/* `display: flex` above outranks the user-agent rule for [hidden], so the last
+   box opening would leave an empty strip holding its height. */
+.queue[hidden] {
+  display: none;
+}
+
+.queue-chip {
+  width: var(--queue-chip, 18px);
+  height: var(--queue-chip, 18px);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, var(--head) 0%, var(--head-edge) 100%);
+  box-shadow: 0 1px 2px var(--shadow);
+  /* Fade with distance down the queue: the next box is the one worth reading. */
+  opacity: calc(1 - var(--queue-rank, 0) * 0.22);
+  transform: scale(calc(1 - var(--queue-rank, 0) * 0.08));
+}
+
+.queue-chip.is-unknown {
+  background: var(--glass);
+  box-shadow: none;
+  opacity: 0.3;
+  transform: scale(0.6);
+}
+
+.queue .screw-glyph,
+.queue .screw-slot {
+  transform: scale(0.7);
+}
+
+/* ------------------------------------------------------------------ tray */
+
+.tray {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--glass);
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* The tray filling up is how you lose, so it says so before it does. */
+.tray.is-critical {
+  background: color-mix(in srgb, var(--danger) 22%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 45%, transparent);
+}
+
+/* And says so loudly once it has. The sheet arrives 420ms later, so this is
+   what connects the tap to the loss. */
+.tray.is-overflowed {
+  animation: tray-overflow 0.42s ease-in-out 2 both;
+}
+
+@keyframes tray-overflow {
+  0%,
+  100% {
+    background: color-mix(in srgb, var(--danger) 22%, transparent);
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  50% {
+    background: color-mix(in srgb, var(--danger) 62%, transparent);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tray.is-overflowed {
+    animation: none;
+    background: color-mix(in srgb, var(--danger) 62%, transparent);
+  }
+}
+
+.tray-slot {
+  display: grid;
+  place-items: center;
+  width: var(--tray-slot, 24px);
+  height: var(--tray-slot, 24px);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.26);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.tray-slot.is-filled {
+  background: radial-gradient(circle at 34% 30%, var(--head) 0%, var(--head-edge) 100%);
+  box-shadow:
+    inset 0 -1px 2px rgba(0, 0, 0, 0.3),
+    0 1px 2px var(--shadow);
+  animation: hole-pop 0.28s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+
+/* ----------------------------------------------------------------- board */
+
+.structure {
+  position: relative;
+  margin: auto;
+  /* Screws carry z-index from depth (1000 + 10 * z), well past the settings
+     overlay. Isolating keeps that ordering internal to the board. */
+  isolation: isolate;
+  /* The board is the drag surface: no scrolling, no pinch, no text selection. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+
+.structure.is-dragging {
+  cursor: grabbing;
+}
+
+.object-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.screw-layer {
+  position: absolute;
+  inset: 0;
+  isolation: isolate;
+}
+
+.structure.is-celebrating .object-canvas {
+  animation: structure-cheer 0.7s ease both;
+}
+
+@keyframes structure-cheer {
+  40% {
+    transform: scale(1.05);
+  }
+}
+
+/* ---------------------------------------------------------------- screws */
+
+.screw {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--screw-size, 26px);
+  height: var(--screw-size, 26px);
+  margin-left: calc(var(--screw-size, 26px) / -2);
+  margin-top: calc(var(--screw-size, 26px) / -2);
+  border: 0;
+  touch-action: none;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  /* A glossy dome: a hot highlight up and to the left, the colour, then a
+     darker lip. */
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0) 32%),
+    radial-gradient(circle at 50% 45%, var(--head, #ccc) 55%, var(--head-edge, #888) 100%);
+  /* A pale washer ring under the head and a soft contact shadow. Both sit
+     inside the placement matrix, so they foreshorten with the face. */
+  box-shadow:
+    0 0 0 calc(var(--screw-size, 26px) * 0.09) rgba(255, 255, 255, 0.92),
+    0 0 0 calc(var(--screw-size, 26px) * 0.13) rgba(30, 36, 52, 0.18),
+    inset 0 -2px 3px rgba(0, 0, 0, 0.28);
+  transition: filter 0.14s ease;
+}
+
+/* `transform` places the screw, so press feedback uses brightness instead. */
+.screw:active:not(:disabled) {
+  filter: brightness(0.82);
+}
+
+/* Toggled with `.hidden`, and `display: grid` above would otherwise win. */
+.screw[hidden] {
+  display: none;
+}
+
+.screw.is-gone {
+  display: none;
+}
+
+.screw-slot {
+  position: relative;
+  width: 56%;
+  height: 56%;
+}
+
+/* Crossed slots, so the head reads as a screw rather than a minus sign. */
+.screw-slot::before,
+.screw-slot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.42);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.screw-slot::before {
+  width: 100%;
+  height: 2.5px;
+}
+
+.screw-slot::after {
+  width: 2.5px;
+  height: 100%;
+}
+
+.screw-glyph {
+  width: 58%;
+  height: 58%;
+  fill: rgba(255, 255, 255, 0.88);
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+.screw.is-rejected {
+  animation: screw-shake 0.32s ease-in-out both;
+}
+
+/* `translate` and `rotate` are separate properties from `transform`, so these
+   wiggle the screw without undoing its placement. */
+@keyframes screw-shake {
+  0%,
+  100% {
+    translate: 0;
+    rotate: 0deg;
+  }
+  25% {
+    translate: -4px 0;
+    rotate: -12deg;
+  }
+  60% {
+    translate: 4px 0;
+    rotate: 12deg;
+  }
+}
+
+.screw.is-hinted {
+  animation: screw-hint 0.7s ease-in-out 2 both;
+}
+
+@keyframes screw-hint {
+  50% {
+    box-shadow:
+      0 0 0 4px var(--accent-soft),
+      0 0 0 2px var(--accent),
+      0 1px 3px rgba(0, 0, 0, 0.4);
+    scale: 1.16;
+  }
+}
+
+/* Screw in flight from the board to a box or tray slot. */
+.screw-flight {
+  position: fixed;
+  z-index: 40;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, var(--head) 0%, var(--head-edge) 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  transition: transform 0.34s cubic-bezier(0.4, 0, 0.5, 1), opacity 0.34s ease;
+}
+
+/* ---------------------------------------------------------------- states */
+
+.board-note {
+  display: grid;
+  place-items: center;
+  color: var(--text-dim);
+  font-size: 0.86rem;
+}
+
