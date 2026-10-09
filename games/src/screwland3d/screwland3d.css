@@ -261,11 +261,11 @@
   background:
     radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0) 32%),
     radial-gradient(circle at 50% 45%, var(--head, #ccc) 55%, var(--head-edge, #888) 100%);
-  /* A pale washer ring under the head and a soft contact shadow. Both sit
-     inside the placement matrix, so they foreshorten with the face. */
+  /* A thin dark edge, so a head still separates from a pale plate. There was
+     a white washer ring here; it read as clutter and came out. The shadow sits
+     inside the placement matrix, so it foreshortens with the face. */
   box-shadow:
-    0 0 0 calc(var(--screw-size, 26px) * 0.09) rgba(255, 255, 255, 0.92),
-    0 0 0 calc(var(--screw-size, 26px) * 0.13) rgba(30, 36, 52, 0.18),
+    0 0 0 1px rgba(30, 36, 52, 0.3),
     inset 0 -2px 3px rgba(0, 0, 0, 0.28);
   transition: filter 0.14s ease;
 }
