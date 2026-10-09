@@ -12,6 +12,7 @@ The one thing that leaves it is an anonymous daily count (see *Usage counts*).
 | Screw Land | Playable |
 | Screw Land 3D | Playable |
 | Bus Jam | Playable |
+| Marble Sort | Playable |
 | Survival | Playable |
 | Yahtzee | Playable |
 | Gridlock | Playable |
@@ -45,7 +46,7 @@ npm run icons      # regenerate PWA icons (output is committed)
 
 ## How it works
 
-**Sixteen of the twenty-three are puzzles. Yahtzee, Backgammon, Mancala, Mexican
+**Seventeen of the twenty-four are puzzles. Yahtzee, Backgammon, Mancala, Mexican
 Train, Simon, Artillery and Tetris are not, and all seven bend the house rules on
 purpose.** Everything below about verified levels, measured difficulty and
 unlimited undo describes the puzzles. Yahtzee is a game of chance: there is no
@@ -56,8 +57,10 @@ seven keep is everything that made this collection worth building: no ads, no
 servers, no currency, nothing locked. What they put in place of the rest is set
 out under *Yahtzee*, *Backgammon*, *Mancala*, *Mexican Train*, *Simon*,
 *Artillery* and *Tetris* below. Simon is a memory game: undo and a hint would
-both be the answer. Tetris is the only real-time one, which takes undo, the hint
-and the solver all three.
+both be the answer. Tetris is real-time with nothing dealt in advance, which takes
+undo, the hint and the solver all three. Marble Sort is real-time too and is a
+puzzle anyway — verified levels, unlimited undo, a free hint — for reasons set
+out under its own heading.
 
 **Every level is verified before it is shown.** Levels are dealt at random from
 a seed, then solved. A board the solver cannot finish is discarded, so unlike
@@ -514,6 +517,7 @@ src/shared/           rng, storage, progress, difficulty, audio, ui, pwa,
                       cards (Solitaire + Spider), levelSource,
                       buffer-sink (Screw Land + Bus Jam),
                       timer + timed-play + timer-chip (the optional clock),
+                      clock (the one-handle tick for real-time games),
                       how-to-play (the rules sheet + its drawing helpers)
 src/colorsort/        model, solve, generate, layout, render, game, main, rules
 src/screwland/        model, solve, generate, render, game, main, rules
@@ -522,6 +526,10 @@ src/screwland3d/      model, solve, templates, generate, view, gl, style,
                       the collection; view.ts is the camera maths, kept pure so
                       it is tested without a GPU
 src/busjam/           model, solve, generate, render, game, main, rules
+src/marblesort/       model, solve, generate, render, game, main, rules — the
+                      model is a fixed-tick belt, so a level plus (tick, pipe)
+                      taps replays exactly; the belt turns continuously and
+                      motion is CSS transitions between ticks, not a frame loop
 src/survival/         model, solve, generate, render, game, main, rules
 src/fivedice/         model, advise (the hint), render, game, main, rules —
                       no generate and no solve: there is no level to build or
@@ -542,12 +550,11 @@ src/backgammon/       board, legal, model, render, game, main, rules — no
 src/simon/            model, render, game, main, rules — no generate and no
                       solve: a game is one seeded stream of pads, and round n
                       shows the first n of it
-src/tetris/            model, bag, run, clock, snapshot, bot, render, game,
+src/tetris/            model, bag, run, snapshot, bot, render, game,
                       main, rules — no generate and no solve: it is real-time,
                       so there is no board dealt in advance to verify. bag.ts
-                      is the difficulty lever, clock.ts is the only thing in
-                      the collection that knows what time it is without a frame
-                      loop, snapshot.ts saves a position rather than a history,
+                      is the difficulty lever, its clock now lives in
+                      shared/clock.ts (Marble Sort ticks on it too), snapshot.ts saves a position rather than a history,
                       and bot.ts is the naive player the probe measures with
 src/artillery/        terrain, weapons, physics, model, generate, render, game,
                       main, rules — no solve: there is nothing to solve with two
@@ -932,7 +939,7 @@ size it is. Every row of `.app--artillery` names its own `grid-row`.
 
 ## Tetris
 
-**The only real-time game here.** Ten columns, twenty rows, seven pieces, SRS
+**The first real-time game here.** Ten columns, twenty rows, seven pieces, SRS
 rotation with the full kick tables, hold, a three-deep preview and a ghost
 showing where the piece will land.
 
@@ -966,7 +973,7 @@ grid at every moment a player can act on it, so the state changes at discrete
 ticks and the renderer draws on each one. What a frame loop would buy is a piece
 sliding smoothly between two rows, and at ninety milliseconds a row nobody can
 see it. Artillery needed frames because its arc *is* the feedback; this does
-not, and her battery is the better for it. `clock.ts` is the whole of the
+not, and her battery is the better for it. `shared/clock.ts` is the whole of the
 real-time machinery: one self-rescheduling `setTimeout`, one handle, one
 `stop()`. Lock delay is not a second timer — it is the same timer scheduled
 further out, which is the only reason there is one handle to cancel rather than
@@ -1191,6 +1198,81 @@ poisons the counts and every placement around it the same way a wrong ship
 does — and otherwise rings the next square, ghosts the mark it wants, and hands
 over that brush. Water is never required to win.
 
+## Marble Sort
+
+**Pipes drop marbles onto a looping belt, and blocks under it take their own
+colour.** Tap a pipe and a handful falls into a funnel, which feeds the belt one
+marble at a time. A marble passing over the open block of its colour drops in;
+a full block clears and the one under it rises. Anything that matches nothing
+rides round again, taking up a slot. A belt full of marbles nothing will take is
+the loss.
+
+**It is real time and still a puzzle, which is the first time this collection
+has managed both.** Tetris gave up undo, the hint and the solver because nothing
+in it is dealt in advance. Here everything is: the belt advances one slot per
+tick, a tick is integer arithmetic, and so a level plus a list of
+(tick, pipe) taps replays exactly — on reload, on undo, in a bug report. The save
+is still a move list; a move is a tap packed with the tick it was made on.
+
+**The belt never stops, as in the original.** The first version paused it
+whenever nothing more could land, which saved battery and also told her exactly
+when it was safe to tap — and that cue made the game noticeably easier. It now
+turns for as long as the level is played, and stops only for a sheet, a hidden
+tab, a win or a loss.
+
+**What makes it solvable is that it *settles*, not that it stops.** Once the
+funnel is empty and no marble on the belt matches an open block, ticks only
+carry the same marbles round. From a settled position "tap a pipe and wait
+until nothing more lands" is always open to her, which turns the game into
+turns for the solver: it searches settled positions. The catch is that she taps
+wherever in the belt's rotation her thumb happens to, not at the tick the
+search chose, and rotation can in principle decide which of two same-coloured
+blocks a marble reaches first. Measured over 640 played lines with random waits
+it never changed an outcome; the generator now replays every level's line with
+random waits before each tap anyway, and discards any board where timing
+matters. The hint searches again from the live position each time, trying the
+last line's next tap first so it does not flip between two lines. Asked for
+while marbles are still landing, it waits until they have.
+
+**Undo rewinds to the tick the last tap was made on**, and a save is the taps
+with their ticks: reopening the app puts the belt where it was at the last tap
+and turns it on from there. A tap made while marbles were still landing comes back with them still
+in the air. One consequence worth knowing: a burst of taps that has already
+doomed the belt may need several undos, because taking back the last tap leaves
+the ones before it in the funnel.
+
+**Motion is CSS, not a frame loop.** Each belt cell is one element for the whole
+level; a tick moves its transform to the next slot and a linear transition one
+tick long carries it there, so the page does nothing between ticks but wait on
+the clock — about ten small style writes a second while she plays, none while
+the tab is hidden. Landings, clears and the handful falling from a pipe are
+throwaway WAAPI ghosts that commit nothing, so an undo landing mid-flight cannot
+be raced.
+
+**Drop size against belt length is the lever, and it is set as a share.** The
+probe (`tools/marblesort.ts`) found that colours, columns, block size and stack
+depth each move trap rate by a few points; drop size against the room on the
+belt moves it from nothing to nearly everything. Trap rate saturates by the
+middle of the curve, though — almost every careless run loses, and yet "tap the
+colour the open blocks want most" still wins most boards. So the score also
+carries **greedy loss**, how often that one rule fails, and it is what the top
+of the curve is selected on. Mixing the block order barely moves trap rate and
+is what produces boards greedy play loses.
+
+**Two slots of belt per column is a floor, not a lever.** A column one slot wide
+is legal and unreadable: three holes stop fitting at six columns. Holding two
+lengthens the belt on wide boards, and drop size being a share of it absorbs
+that.
+
+**Deep blocks hide as `?` past the middle of the curve**, down to the top two
+rows at the ceiling. It is presentation only: the solver sees every colour, so a
+level is verified with the whole stack known, and losing to what was under a `?`
+is one undo away. The top two rows are always shown — one row is a coin flip.
+
+**The shape overlay draws each empty hole with the shape it wants**, rather than
+labelling the block. At six columns a block has no room for a label beside
+three holes.
+
 ## Usage counts
 
 `public/visit.js`, loaded by every page next to `/warm.js`, adds one to
@@ -1349,6 +1431,12 @@ Boss enemies with their own health bars, squad splitting across two lanes
 upgrades. The first is a barrier with different art and adds no decision; the
 other two each add a whole second thing to reason about, and neither is worth
 carrying while the core is still being calibrated.
+
+### Cut from Marble Sort v1
+
+- **Pipes of unknown colour.** The original can hide what a pipe drops. With a
+  belt this tight that makes a tap a bet rather than a decision, and the solver
+  could only promise a win to someone who could see.
 
 ### Cut from Bus Jam v1
 

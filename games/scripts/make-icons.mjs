@@ -434,6 +434,61 @@ function drawBusJam(size, { maskable }) {
  * colours the game uses for add and multiply, and the squad at the bottom.
  * Reads at 48px as "get past those to reach that", which is the whole game.
  */
+/**
+ * Marble Sort: three pipes in the original's blue, white and red, the belt
+ * under them carrying a few marbles, and the tops of three blocks below.
+ */
+function drawMarbleSort(size, { maskable }) {
+  const canvas = createCanvas(size);
+
+  const inset = maskable ? size * 0.19 : size * 0.1;
+  const radius = maskable ? 0 : size * 0.22;
+  fillRoundedRect(canvas, 0, 0, size, size, radius, BACKGROUND);
+
+  const area = size - inset * 2;
+  const x = (f) => inset + area * f;
+  const y = (f) => inset + area * f;
+  const colors = ['#2b7fe8', '#e9eef7', '#e6394a'];
+
+  // Pipes, each with a squarer nozzle.
+  colors.forEach((color, i) => {
+    const cx = 0.2 + i * 0.3;
+    fillRoundedRect(canvas, x(cx - 0.09), y(0), area * 0.18, area * 0.3, area * 0.04, hex(color));
+    fillRoundedRect(canvas, x(cx - 0.07), y(0.26), area * 0.14, area * 0.09, area * 0.03, hex(color), 0.8);
+  });
+
+  // The belt: a stadium ring.
+  const beltTop = 0.44;
+  const beltH = 0.28;
+  fillRoundedRect(canvas, x(0), y(beltTop), area, area * beltH, area * beltH / 2, hex('#4f5d76'));
+  fillRoundedRect(
+    canvas,
+    x(0.09),
+    y(beltTop + 0.09),
+    area * 0.82,
+    area * (beltH - 0.18),
+    area * (beltH - 0.18) / 2,
+    BACKGROUND,
+  );
+
+  // Marbles riding it, top and bottom.
+  const m = area * 0.075;
+  const marble = (fx, fy, color) =>
+    fillRoundedRect(canvas, x(fx) - m, y(fy) - m, m * 2, m * 2, m, hex(color));
+  marble(0.3, beltTop + 0.045, '#2b7fe8');
+  marble(0.48, beltTop + 0.045, '#e6394a');
+  marble(0.66, beltTop + 0.045, '#2b7fe8');
+  marble(0.22, beltTop + beltH - 0.045, '#e9eef7');
+  marble(0.78, beltTop + beltH - 0.045, '#e6394a');
+
+  // Blocks below.
+  colors.forEach((color, i) => {
+    fillRoundedRect(canvas, x(0.04 + i * 0.32), y(0.8), area * 0.28, area * 0.2, area * 0.04, hex(color));
+  });
+
+  return encodePng(size, size, canvas.data);
+}
+
 function drawSurvival(size, { maskable }) {
   const canvas = createCanvas(size);
 
@@ -1732,6 +1787,10 @@ const targets = [
   ['busjam-192.png', 192, { maskable: false }, drawBusJam],
   ['busjam-512.png', 512, { maskable: false }, drawBusJam],
   ['busjam-maskable-512.png', 512, { maskable: true }, drawBusJam],
+  ['marblesort-180.png', 180, { maskable: false }, drawMarbleSort],
+  ['marblesort-192.png', 192, { maskable: false }, drawMarbleSort],
+  ['marblesort-512.png', 512, { maskable: false }, drawMarbleSort],
+  ['marblesort-maskable-512.png', 512, { maskable: true }, drawMarbleSort],
   ['survival-180.png', 180, { maskable: false }, drawSurvival],
   ['survival-192.png', 192, { maskable: false }, drawSurvival],
   ['survival-512.png', 512, { maskable: false }, drawSurvival],

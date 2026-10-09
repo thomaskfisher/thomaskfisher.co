@@ -28,6 +28,7 @@ export default defineConfig({
         screwland: 'screwland/index.html',
         screwland3d: 'screwland3d/index.html',
         busjam: 'busjam/index.html',
+        marblesort: 'marblesort/index.html',
         survival: 'survival/index.html',
         fivedice: 'fivedice/index.html',
         gridlock: 'gridlock/index.html',

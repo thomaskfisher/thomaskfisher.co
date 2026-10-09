@@ -43,7 +43,7 @@ import {
   defaultSave,
   loadSave,
 } from '../shared/progress';
-import { GravityClock } from './clock';
+import { GravityClock } from '../shared/clock';
 import { LOCK_DELAY_MS, LOCK_RESETS, SOFT_DROP_MS, gravityMs, isResting } from './model';
 import { decodeRun, encodeRun } from './snapshot';
 import {

@@ -1,6 +1,10 @@
 /**
  * The gravity clock. The only thing in this game that knows what time it is.
  *
+ * Written for Tetris and moved here when Marble Sort's belt wanted exactly the
+ * same thing: a fixed step, one handle, and a hard stop. Anything real-time in
+ * this collection ticks through this rather than growing its own timer.
+ *
  * **There is no `requestAnimationFrame` loop here, and the house rule survives
  * intact.** A falling block game sounds like it needs one and does not: the
  * piece is on the grid at every moment a player can act on it, so the state

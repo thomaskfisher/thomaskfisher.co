@@ -1,6 +1,6 @@
 ---
 name: new-game
-description: Build a new ad-free puzzle game for the games.thomaskfisher.com collection. Use whenever Thomas has an idea for a game to recreate — trigger on "new game", "I want to build <game>", "recreate <game>", "let's add a game", "my wife likes <game>", or any description of a mobile puzzle game he wants a version of. Carries the standing goals and house rules so he never has to restate them, and the architecture, process and hard-won calibration lessons from Color Sort and Screw Land so a third game does not relearn them.
+description: Build a new ad-free puzzle game for the games.thomaskfisher.com collection. Use whenever Thomas has an idea for a game to recreate — trigger on "new game", "I want to build <game>", "recreate <game>", "let's add a game", "my wife likes <game>", or any description of a mobile puzzle game he wants a version of — turn-based, real-time or 3D. Carries the standing goals and house rules so he never has to restate them, and the architecture, process and hard-won calibration lessons from Color Sort and Screw Land so a third game does not relearn them.
 ---
 
 # New game for games.thomaskfisher.com
@@ -69,8 +69,14 @@ short first; it is much harder to cut afterwards.
 - **Generation is seeded and deterministic** — a level is a pure function of
   `(profileSeed, level, difficultyOffset)`. Saves then store a move list, not a
   board; bugs reproduce exactly; levels are shareable by number.
-- **Render on state change only.** No `requestAnimationFrame` loop. These are
-  turn-based; her battery should outlast the originals.
+- **Draw only what the game needs.** Turn-based games render on state change
+  only. Real-time and 3D games are welcome — Thomas wants more of both — and
+  where the original keeps moving, keep it moving: Marble Sort first paused
+  its belt whenever nothing could land, and Thomas found that made it too easy
+  (the pause told her when it was safe to tap). What stays non-negotiable is
+  cheap motion and a hard stop: a tick plus CSS transitions rather than a
+  frame loop, and everything halted for a sheet, a hidden tab, a win or a loss.
+  See *Real-time and 3D games* below for how.
 - **Portrait, one-handed, controls in the bottom third.**
 - **The board always fits without scrolling**, at every level size.
 
@@ -88,6 +94,7 @@ Reuse from `games/src/shared/` — do not reimplement:
 | `difficulty.ts` | saturating curve, jitter, breather levels, hidden rubber band |
 | `levelSource.ts` | worker + prefetch of level N+1, main-thread fallback |
 | `buffer-sink.ts` | limited buffer feeding colour-capacity sinks |
+| `clock.ts` | the one-handle fixed-step timer for real-time games (Tetris, Marble Sort) |
 | `palette.ts` | 14 colours each paired with a shape glyph |
 | `audio.ts` | synthesised sfx, no asset files |
 | `ui.ts`, `settings-sheet.ts`, `shell.css` | chrome, sheets, touch hardening |
@@ -126,10 +133,67 @@ mechanic — never the goals above.
 - Which mechanics from the original to cut for v1. Always propose cuts; the
   originals pile on modifiers (unknown-colour tiles, frozen pieces, spawners)
   that are noise until the core is solid.
-- If the original is 3D, whether to reframe it in 2D. Screw Land's 3D was skin
-  over a layering rule; reframing kept the puzzle and made infinite generation
-  tractable. A library of hand-modelled 3D objects caps "infinite" at however
-  many someone modelled.
+- If the original is 3D, whether to build it in 3D or reframe it in 2D. Both are
+  on the table — Thomas wants more 3D, and Screw Land 3D is the template. The
+  trade to put to him: 3D must still be generated, not hand-modelled, because
+  a library of modelled objects caps "infinite" at however many someone made.
+  Screw Land 3D solved that with procedural templates over a rule that is
+  checkable in plain arithmetic.
+- If the original is real-time, say how the guarantees survive (below) rather
+  than asking whether to make it turn-based. Real time is the default answer
+  now; offer turn-based only if the timing adds nothing but stress.
+
+## Real-time and 3D games
+
+Thomas asked for more of these after Marble Sort. Every house rule still holds;
+here is how each one survives, so the next game does not rediscover it.
+
+- **Simulate on a fixed tick in integer arithmetic.** A level plus a list of
+  `(tick, move)` pairs then replays exactly, which keeps the move-list save,
+  undo, deterministic generation and reproducible bugs all at once. Marble
+  Sort packs `tick * 8 + pipe` into one number so the save stays `number[]`.
+  Only reach for a position snapshot (Tetris, Artillery) when the sim is
+  floating point or nothing is dealt in advance.
+- **One clock: `shared/clock.ts`.** One handle, one `stop()`, and a tick that
+  returns 0 to stop itself. Never a second timer. Hold it with named reasons
+  (`'settings'`, `'howto'`, `'hidden'`) so closing one sheet does not restart a
+  belt a hidden tab is holding, and pause on `visibilitychange` *and*
+  `pagehide` — a backgrounded tab must not run on throttled timers.
+- **Define when the world has settled, even if it keeps moving.** A settled
+  position is one where ticks change nothing that matters — Marble Sort's belt
+  still turns, but nothing lands or enters. "Act, then wait until it settles"
+  is always open to a real-time player, so the solver searches settled
+  positions as if the game were turn-based. **Then prove timing does not
+  matter:** she acts wherever in the motion her thumb lands, not at the tick
+  the search picked. Replay the winning line with random waits before every
+  move in the generator and discard any board it fails on, and have the hint
+  re-solve from the live position, preferring the last line's next move so it
+  does not ping-pong. Do not make the clock stop at rest just to make solving
+  easy — that was Marble Sort's first version, and it was too easy to play.
+- **Undo rewinds the clock to the tick of the last move**, not to the last rest.
+  A burst of moves may then need several undos; say so in the README.
+- **Interpolate with CSS transitions, not a frame loop.** Each moving thing is
+  one element for the level; a tick sets its transform and a linear transition
+  one tick long carries it. The compositor does the motion and the page sleeps
+  between ticks. A `requestAnimationFrame` loop is justified only where the
+  continuous motion *is* the information (Artillery's arc) — and then it walks
+  a path the model already resolved and decides nothing.
+- **One-shot effects are WAAPI ghosts that commit nothing.** A throwaway
+  element animated and removed on `finished`. The board underneath is always
+  drawn from the current state, so an undo mid-flight cannot be raced — the
+  `setTimeout` lesson below, solved by construction.
+- **The generator's rollouts run the same tick function the game runs.** Not a
+  turn-based paraphrase of it. Marble Sort's solver, trap-rate rollouts and live
+  clock all call one `step()`.
+- **3D: WebGL for the object, DOM for anything tappable.** Screw Land 3D draws
+  with `gl.ts` and lays real `<button>`s over the projected points, which keeps
+  tap targets, screen-reader labels, colour-vision glyphs and automated
+  playthroughs working. Camera maths stays pure (`view.ts`) so it is tested
+  without a GPU, and rotation is view state — never saved, never in undo. A
+  3D scene renders on interaction and during its own animations, then stops.
+- **Verify motion in the real browser.** `cdp.mjs` runs on real time; for a
+  playthrough longer than a few seconds, start the loop in one eval, have it
+  set a `window.__done` flag, and `waitFor` the flag with a long `timeout`.
 
 ## Build order
 

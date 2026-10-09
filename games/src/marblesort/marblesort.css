@@ -1,0 +1,421 @@
+/* ==========================================================================
+   Marble Sort.
+
+   One absolutely positioned machine, laid out in px by render.ts. The board is
+   its own stacking context: ghosts, the pile and the pipes are layered by
+   z-index here, and none of that may compete with the sheets above the app.
+   ========================================================================== */
+
+.ms-board {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  /* Taps on the machine are taps, not scrolls or zooms. */
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ms-board.is-loading > * {
+  visibility: hidden;
+}
+
+/* ------------------------------------------------------------------ pipes */
+
+.ms-pipes {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.ms-pipe {
+  position: absolute;
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  pointer-events: auto;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease;
+}
+
+.ms-pipe:active:not(:disabled) {
+  transform: translateY(3px) scale(0.97);
+}
+
+/* The tube: a glossy cylinder in the pipe's colour. */
+.ms-pipe-tube {
+  position: absolute;
+  inset: 0 6% 22% 6%;
+  border-radius: 0 0 10px 10px;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.22) 0%,
+      rgba(255, 255, 255, 0.38) 22%,
+      rgba(255, 255, 255, 0.06) 45%,
+      rgba(0, 0, 0, 0.16) 100%
+    ),
+    var(--c);
+  box-shadow: inset 0 -6px 10px rgba(0, 0, 0, 0.22);
+}
+
+.ms-pipe-count {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 30%;
+  color: #fff;
+  font-weight: 800;
+  font-size: clamp(14px, 4.4vw, 20px);
+  text-align: center;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.45),
+    0 0 6px rgba(0, 0, 0, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The nozzle: a square cap with the colour's glyph when the overlay is on. */
+.ms-pipe-nozzle {
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  bottom: 0;
+  height: 26%;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.3) 0 18%, transparent 19%) 0 0 / 33% 50%,
+    linear-gradient(180deg, var(--c), var(--c-shade));
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.3),
+    0 3px 6px var(--shadow);
+}
+
+.ms-pipe.is-empty {
+  cursor: default;
+}
+
+.ms-pipe.is-empty .ms-pipe-tube,
+.ms-pipe.is-empty .ms-pipe-nozzle {
+  filter: grayscale(0.85);
+  opacity: 0.35;
+}
+
+.ms-pipe:disabled {
+  cursor: default;
+}
+
+.ms-pipe.is-hinted {
+  animation: ms-pipe-hint 0.7s ease-in-out 3 both;
+}
+
+@keyframes ms-pipe-hint {
+  50% {
+    transform: translateY(-6px) scale(1.06);
+    filter: drop-shadow(0 0 10px var(--accent));
+  }
+}
+
+/* ----------------------------------------------------------------- funnel */
+
+.ms-funnel {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.ms-funnel svg {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.ms-funnel-body {
+  fill: var(--glass);
+  stroke: var(--glass-edge);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.ms-pile {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* ----------------------------------------------------------------- marbles */
+
+.ms-marble {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--marble);
+  height: var(--marble);
+  margin: calc(var(--marble) / -2) 0 0 calc(var(--marble) / -2);
+  transition: transform var(--tick, 95ms) linear;
+  will-change: transform;
+}
+
+.ms-marble.is-static {
+  margin: 0;
+  transition: none;
+}
+
+.ms-marble > i {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.85) 0 9%, transparent 30%),
+    radial-gradient(circle at 50% 55%, var(--c) 0 52%, var(--c-shade) 100%);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.32);
+}
+
+.ms-marble.is-on > i {
+  opacity: 1;
+}
+
+.ms-marble.is-entering > i {
+  animation: ms-enter var(--tick, 95ms) ease-out both;
+}
+
+@keyframes ms-enter {
+  from {
+    transform: translateY(-60%) scale(0.8);
+  }
+}
+
+.ms-pile .ms-marble.is-falling > i {
+  animation: ms-fall 0.26s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+@keyframes ms-fall {
+  from {
+    transform: translateY(-140%);
+    opacity: 0;
+  }
+}
+
+.ms-marbles.is-snapping .ms-marble {
+  transition: none;
+}
+
+.ms-glyph {
+  width: 62%;
+  height: 62%;
+  fill: rgba(255, 255, 255, 0.92);
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.35));
+}
+
+.ms-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.ms-ghost {
+  left: 0;
+  top: 0;
+}
+
+/* ------------------------------------------------------------------- belt */
+
+.ms-belt {
+  position: absolute;
+  z-index: 2;
+  background: var(--surface);
+  box-shadow:
+    inset 0 0 0 3px var(--glass-edge),
+    inset 0 4px 10px var(--shadow),
+    0 4px 12px var(--shadow);
+}
+
+/* The track the marbles ride on, with chevrons showing which way it turns.
+   They move only while the belt does — `is-running` is on the board. */
+.ms-rails {
+  position: absolute;
+  inset: calc(var(--marble) * 1.24);
+  border-radius: 999px;
+  background: var(--bg);
+  box-shadow: inset 0 0 0 2px var(--glass-edge);
+}
+
+.ms-rails::before,
+.ms-rails::after {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  height: calc(var(--marble) * 0.32);
+  opacity: 0.35;
+  background-repeat: repeat-x;
+  background-size: calc(var(--marble) * 0.7) 100%;
+}
+
+/* Top straight runs right to left, bottom left to right. */
+.ms-rails::before {
+  top: calc(var(--marble) * -0.86);
+  background-image: linear-gradient(
+    135deg,
+    transparent 40%,
+    var(--text-dim) 40% 55%,
+    transparent 55%
+  );
+}
+
+.ms-rails::after {
+  bottom: calc(var(--marble) * -0.86);
+  background-image: linear-gradient(
+    45deg,
+    transparent 40%,
+    var(--text-dim) 40% 55%,
+    transparent 55%
+  );
+}
+
+.ms-board.is-running .ms-rails::before {
+  animation: ms-chevrons-left 0.6s linear infinite;
+}
+
+.ms-board.is-running .ms-rails::after {
+  animation: ms-chevrons-right 0.6s linear infinite;
+}
+
+@keyframes ms-chevrons-left {
+  to {
+    background-position-x: calc(var(--marble) * -0.7);
+  }
+}
+
+@keyframes ms-chevrons-right {
+  to {
+    background-position-x: calc(var(--marble) * 0.7);
+  }
+}
+
+.ms-marbles {
+  position: absolute;
+  inset: 0;
+}
+
+.ms-board.is-lost .ms-belt {
+  box-shadow:
+    inset 0 0 0 3px var(--danger),
+    0 0 18px color-mix(in srgb, var(--danger) 45%, transparent);
+}
+
+/* ---------------------------------------------------------------- columns */
+
+.ms-columns {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.ms-column {
+  position: absolute;
+  overflow: hidden;
+  /* Fade the stack out towards the bottom of the board rather than cutting it. */
+  -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent);
+  mask-image: linear-gradient(180deg, #000 70%, transparent);
+}
+
+.ms-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ms-block,
+.ms-clear-ghost {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  height: var(--block-h);
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--c), var(--c-shade));
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.32),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.18),
+    0 2px 4px var(--shadow);
+}
+
+.ms-clear-ghost {
+  position: absolute;
+  --block-h: 100%;
+}
+
+/* Deeper blocks are dimmed so the open row reads first. */
+.ms-block:not(.is-top) {
+  filter: saturate(0.8) brightness(0.88);
+}
+
+.ms-block.is-hidden {
+  background: var(--glass);
+  box-shadow: inset 0 0 0 2px var(--glass-edge);
+  filter: none;
+}
+
+.ms-unknown {
+  color: var(--text-dim);
+  font-weight: 800;
+  font-size: calc(var(--block-h) * 0.5);
+}
+
+.ms-holes {
+  display: flex;
+  gap: calc(var(--hole) * 0.22);
+  justify-content: center;
+}
+
+.ms-hole {
+  flex: 0 0 auto;
+  width: var(--hole);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.35);
+}
+
+.ms-block.is-top .ms-hole {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.ms-hole.is-filled {
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.85) 0 9%, transparent 30%),
+    radial-gradient(circle at 50% 55%, var(--c) 0 52%, var(--c-shade) 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.ms-hole {
+  display: grid;
+  place-items: center;
+}
+
+.ms-hole-glyph {
+  width: 70%;
+  height: 70%;
+  fill: var(--c-shade);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ms-marble {
+    transition: none;
+  }
+  .ms-board.is-running .ms-rails::before,
+  .ms-board.is-running .ms-rails::after {
+    animation: none;
+  }
+}
