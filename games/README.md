@@ -1259,6 +1259,15 @@ carries **greedy loss**, how often that one rule fails, and it is what the top
 of the curve is selected on. Mixing the block order barely moves trap rate and
 is what produces boards greedy play loses.
 
+**Because drop size is the lever, the pipe shows it.** A pipe is a glass tube
+holding its marbles as the handfuls they will fall in, each labelled, the next
+one at the open end in full colour; the collar at the top carries the total.
+The first version showed only the total, on a block standing in for a nozzle,
+so a tap of a dozen read as a surprise rather than a misjudgement. One
+marble per tap was the other answer, and it was turned down: drip-feeding
+takes away the lever, and emptying a pipe becomes twenty taps of chores. The
+drop now animates its whole handful rather than five marbles standing in for it.
+
 **Two slots of belt per column is a floor, not a lever.** A column one slot wide
 is legal and unreadable: three holes stop fitting at six columns. Holding two
 lengthens the belt on wide boards, and drop size being a share of it absorbs

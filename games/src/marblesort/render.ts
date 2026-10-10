@@ -27,7 +27,7 @@ import { glyphSvg, paint } from '../shared/palette';
 import { el } from '../shared/ui';
 import type { GameState } from './game';
 import { TICK_MS } from './game';
-import { CURVE_SLOTS, type Level, type Sim, type TickEvents, geometryFor, slotOf } from './model';
+import { CURVE_SLOTS, type Level, type Sim, type TickEvents, geometryFor, handfuls, pipeCounts, slotOf } from './model';
 
 export interface RenderOptions {
   showGlyphs: boolean;
@@ -92,6 +92,9 @@ export class MarbleRenderer {
   private columns: HTMLElement[] = [];
   private columnKeys: string[] = [];
   private pileKey = '';
+  private pipeKeys: string[] = [];
+  /** The fullest pipe's start, so every tube drains on the same scale. */
+  private pipeScale = 1;
   private hinted = -1;
 
   constructor(
@@ -265,13 +268,16 @@ export class MarbleRenderer {
           `top:${layout.pipeTop}px;width:${layout.pipeWidth}px;height:${layout.pipeHeight}px`,
       });
       button.innerHTML =
-        '<span class="ms-pipe-tube"></span>' +
-        '<span class="ms-pipe-count"></span>' +
-        `<span class="ms-pipe-nozzle">${this.options.showGlyphs ? glyphSvg(color, 'glyph ms-glyph') : ''}</span>`;
+        '<span class="ms-pipe-tube"><span class="ms-pipe-load"></span></span>' +
+        `<span class="ms-pipe-cap">${this.options.showGlyphs ? glyphSvg(color, 'glyph ms-glyph') : ''}` +
+        '<span class="ms-pipe-total"></span></span>' +
+        '<span class="ms-pipe-mouth"></span>';
       button.addEventListener('click', () => this.options.onTapPipe(color));
       return button;
     });
     this.pipesEl.replaceChildren(...this.pipes);
+    this.pipeKeys = this.pipes.map(() => '');
+    this.pipeScale = Math.max(1, ...pipeCounts(level));
 
     // Funnel: a wide mouth under the pipes narrowing to a spout over the entry
     // slot, which sits left of centre. Drawn as one SVG path.
@@ -338,13 +344,40 @@ export class MarbleRenderer {
       const pipe = this.pipes[color];
       if (!pipe) continue;
       const left = sim.remaining[color] ?? 0;
-      const count = pipe.querySelector('.ms-pipe-count') as HTMLElement;
-      if (count.textContent !== String(left)) count.textContent = String(left);
+      const bands = handfuls(left, level.dropSize);
+      const key = bands.join('.');
+      if (key !== this.pipeKeys[color]) {
+        this.pipeKeys[color] = key;
+        this.renderLoad(pipe, bands);
+        (pipe.querySelector('.ms-pipe-total') as HTMLElement).textContent = String(left);
+      }
       pipe.classList.toggle('is-empty', left === 0);
       pipe.disabled = !playing || left === 0;
       pipe.classList.toggle('is-hinted', this.hinted === color);
-      pipe.setAttribute('aria-label', `${paint(color).name} pipe, ${left} left`);
+      pipe.setAttribute(
+        'aria-label',
+        left === 0 ? `${paint(color).name} pipe, empty` : `${paint(color).name} pipe, drops ${bands[0]}, ${left} left`,
+      );
     }
+  }
+
+  /**
+   * What is left in a pipe, drawn as the handfuls it will come out in: the next
+   * one at the open end in full colour, later ones stacked above it. Heights
+   * are shares of the fullest pipe, so a tube visibly drains — but never so
+   * thin that a band's count no longer fits in it.
+   */
+  private renderLoad(pipe: HTMLButtonElement, bands: number[]): void {
+    const load = pipe.querySelector('.ms-pipe-load') as HTMLElement;
+    const gaps = (bands.length - 1) * 2;
+    load.replaceChildren(
+      ...bands.map((count, i) => {
+        const band = el('span', { class: i === 0 ? 'ms-handful is-next' : 'ms-handful' });
+        band.style.height = `calc((100% - ${gaps}px) * ${count / this.pipeScale})`;
+        band.textContent = String(count);
+        return band;
+      }),
+    );
   }
 
   private renderBelt(sim: Sim, layout: Layout, snap: boolean, state: GameState): void {
@@ -529,11 +562,16 @@ export class MarbleRenderer {
   private animateDrop(color: number, count: number, layout: Layout): void {
     const x = layout.pipeXs[color];
     if (x === undefined) return;
-    const from = { x, y: layout.pipeTop + layout.pipeHeight - layout.marble * 0.4 };
+    // Out of the open end, not from inside the glass.
+    const from = { x, y: layout.pipeTop + layout.pipeHeight };
     const to = { x: (x + layout.spout.x) / 2, y: (layout.funnelTop + layout.funnelBottom) / 2 };
-    for (let i = 0; i < Math.min(count, 5); i++) {
-      const spread = (i - 2) * layout.marble * 0.45;
-      this.ghostMarble(color, from, { x: to.x + spread, y: to.y }, layout.marble * 0.92, 200 + i * 35);
+    // The whole handful falls, in rows of five, staggered so a big one still
+    // lands inside half a second.
+    const stagger = Math.min(35, 280 / count);
+    for (let i = 0; i < count; i++) {
+      const spread = ((i % 5) - 2) * layout.marble * 0.45;
+      const lift = Math.floor(i / 5) * layout.marble * 0.4;
+      this.ghostMarble(color, from, { x: to.x + spread, y: to.y - lift }, layout.marble * 0.92, 200 + i * stagger);
     }
   }
 

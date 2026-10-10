@@ -7,6 +7,7 @@ import {
   emptyEvents,
   encodeMove,
   geometryFor,
+  handfuls,
   isWellFormed,
   pipeCounts,
   replay,
@@ -65,6 +66,18 @@ describe('pipes', () => {
     expect(tap(level, sim, 0)).toBe(1);
     expect(tap(level, sim, 0)).toBe(0);
     expect(sim.funnel).toEqual([0, 0, 0]);
+  });
+
+  it('show the handfuls their taps will drop', () => {
+    expect(handfuls(27, 12)).toEqual([12, 12, 3]);
+    expect(handfuls(24, 12)).toEqual([12, 12]);
+    expect(handfuls(5, 12)).toEqual([5]);
+    expect(handfuls(0, 12)).toEqual([]);
+
+    const level = { ...tiny, dropSize: 2 };
+    const sim = createSim(level);
+    const shown = handfuls(sim.remaining[0] as number, level.dropSize);
+    expect(shown.map(() => tap(level, sim, 0))).toEqual(shown);
   });
 });
 

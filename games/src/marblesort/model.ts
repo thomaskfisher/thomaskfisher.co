@@ -194,6 +194,14 @@ export function tap(level: Level, sim: Sim, color: number): number {
   return count;
 }
 
+/** The handfuls `left` marbles will drop in, next first — the
+ * sizes `tap` will return, one tap at a time. */
+export function handfuls(left: number, dropSize: number): number[] {
+  const bands: number[] = [];
+  for (let n = left; n > 0; n -= dropSize) bands.push(Math.min(dropSize, n));
+  return bands;
+}
+
 /** Something that happened in a tick, for the renderer to animate. */
 export interface Landing {
   cell: number;
